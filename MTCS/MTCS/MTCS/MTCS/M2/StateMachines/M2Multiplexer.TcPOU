@@ -1,0 +1,115 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.5">
+  <POU Name="M2Multiplexer" Id="{cb4769da-62c2-4198-bd0b-3d4e62de1572}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK M2Multiplexer EXTENDS SM_M2Multiplexer
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[_selectingAxis();
+
+_update();]]></ST>
+    </Implementation>
+    <Method Name="_update" Id="{2e9e1a41-2d52-4d1c-8fd0-964301b397be}">
+      <Declaration><![CDATA[METHOD _update
+VAR_INPUT
+END_VAR
+VAR
+END_VAR]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[
+SUPER^();
+
+
+IF statuses.healthStatus.good THEN
+    
+    IF statuses.busyStatus.idle THEN
+        IF powered THEN
+            actualStatus := 'Idle';
+        ELSE
+            actualStatus := 'Powered off';
+		END_IF
+    ELSIF statuses.busyStatus.busy THEN
+        IF processes.selectAxis.statuses.busyStatus.busy THEN
+            actualStatus := 'Selecting axis';
+        ELSIF parts.A.statuses.busyStatus.busy THEN
+            actualStatus := 'Setting A';
+        ELSIF parts.B.statuses.busyStatus.busy THEN
+            actualStatus := 'Setting B';
+        ELSIF parts.C.statuses.busyStatus.busy THEN
+            actualStatus := 'Setting C';
+        ELSIF parts.CW.statuses.busyStatus.busy THEN
+            actualStatus := 'Setting CW';
+        ELSIF parts.release.statuses.busyStatus.busy THEN
+            actualStatus := 'Setting brake';
+        ELSIF parts.driveEnable.statuses.busyStatus.busy THEN
+            actualStatus := 'Setting drive enable';
+		END_IF
+    ELSE
+        actualStatus := 'UNKNOWN';
+	END_IF
+
+ELSE
+    
+    IF noFault THEN
+        actualStatus := 'ERROR';
+    ELSE
+        IF parts.driveEnable.digitalOutput THEN
+            actualStatus := 'Fault (signal low!)';
+        ELSE
+            actualStatus := 'Drive not enabled';
+		END_IF
+	END_IF
+
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_selectingAxis" Id="{ac6339f9-4523-4aa6-bda0-05d76fcd347a}">
+      <Declaration><![CDATA[METHOD _selectingAxis
+VAR_INPUT
+END_VAR
+VAR
+    address : WORD;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF processes.selectAxis.isBusy() THEN
+    
+    // get the address for the given axis
+    address := M2AxisToAddress(processes.selectAxis.get.axis);
+
+    IF NOT processes.selectAxis.isStarted() THEN
+        // set the A,B,C outputs
+        parts.A.processes.setEnabled.start( address.0 );
+        parts.B.processes.setEnabled.start( address.1 );
+        parts.C.processes.setEnabled.start( address.2 );
+        // OK we're started now
+        processes.selectAxis.setStarted();
+	END_IF
+
+    
+    IF      parts.A.processes.setEnabled.isIdle()
+        AND parts.B.processes.setEnabled.isIdle()
+        AND parts.C.processes.setEnabled.isIdle()
+    THEN
+        IF      parts.A.processes.setEnabled.isGood()
+            AND parts.B.processes.setEnabled.isGood()
+            AND parts.C.processes.setEnabled.isGood()
+        THEN
+            processes.selectAxis.setGood();
+        ELSE
+            processes.selectAxis.setBad();
+        END_IF
+        
+        processes.selectAxis.setFinished();
+	END_IF
+    
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+  </POU>
+</TcPlcObject>

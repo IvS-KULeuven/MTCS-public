@@ -1,0 +1,143 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.5">
+  <POU Name="HydraulicsSide" Id="{abad1f51-9246-4351-a64f-f0bfff11fcd3}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK HydraulicsSide EXTENDS SM_HydraulicsSide
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR
+    isTop : BOOL;
+    _resettingDriveState : INT;
+    _resettingDriveTon : TON;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[_update();
+
+_resettingDrive();
+_changingFrequencySetpoint();
+
+// simulation values
+IF GLOBAL.config.SIMULATION_ACTIVE THEN
+    entranceFilter1OK := TRUE;
+    entranceFilter2OK := TRUE;
+    entranceFilter3OK := TRUE;
+    entranceFilter4OK := TRUE;
+END_IF
+
+
+_update();]]></ST>
+    </Implementation>
+    <Method Name="setSide" Id="{043bb301-84df-4c82-9406-cdaabf4cdebf}">
+      <Declaration><![CDATA[METHOD setSide
+VAR_INPUT
+    top : BOOL;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[isTop := top;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_resettingDrive" Id="{29bac89e-bee5-447a-9c84-9e9fb7a3b5c2}">
+      <Declaration><![CDATA[METHOD _resettingDrive
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF processes.resetDrive.isBusy() THEN
+    
+    // set the signal high for a little while
+    CASE _resettingDriveState OF
+        0:
+            resetDriveSignal := TRUE;
+            _resettingDriveTon(IN := FALSE);
+            _resettingDriveTon(IN := TRUE,
+                               PT := T#500MS); 
+            _resettingDriveState := 1;
+        1:
+            _resettingDriveTon(IN := TRUE);
+            IF _resettingDriveTon.Q THEN
+                _resettingDriveState := 2;
+			END_IF
+        2:
+            resetDriveSignal := FALSE;
+            // wait again a little while
+            _resettingDriveTon(IN := FALSE);
+            _resettingDriveTon(IN := TRUE,
+                               PT := T#500MS); 
+            _resettingDriveState := 3;
+        3:
+            _resettingDriveTon(IN := TRUE);
+            IF _resettingDriveTon.Q THEN
+                _resettingDriveState := 4;
+			END_IF
+        4:
+            // done!
+            processes.resetDrive.setGood();
+            processes.resetDrive.setFinished();
+            _resettingDriveState := 0;
+            
+	END_CASE
+
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_update" Id="{59db1c7f-18c8-44f3-b0ae-0d86e4afa77b}">
+      <Declaration><![CDATA[METHOD _update
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// copy some values from the safety
+IF isTop THEN
+    driveTripOK := safetyHydraulics.topTripOK;
+    driveRelease := safetyHydraulics.pumpsRelease;
+    driveMinFrequency := safetyHydraulics.pumpsMinFrequency;
+ELSE
+    driveTripOK := safetyHydraulics.bottomTripOK;
+    driveRelease := safetyHydraulics.pumpsRelease;
+    driveMinFrequency := safetyHydraulics.pumpsMinFrequency;
+END_IF
+
+// update the state machine
+SUPER^(
+    operatorStatus := operatorStatus, 
+    operatingStatus := operatingStatus, 
+    safetyHydraulics := safetyHydraulics,
+    config := config,
+    hydraulicsConfig := hydraulicsConfig);
+
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_changingFrequencySetpoint" Id="{91778a0f-9c94-4dd5-88e2-8278a789187a}">
+      <Declaration><![CDATA[METHOD _changingFrequencySetpoint
+VAR_INPUT
+END_VAR
+VAR
+    limitedSetpoint : LREAL;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF processes.changeFrequencySetpoint.isBusy() THEN
+    
+
+    // limit the value
+    limitedSetpoint := LIMIT(-config.maxFrequency, processes.changeFrequencySetpoint.get.setpoint, config.maxFrequency);
+    
+    // update the setpoint
+    driveSetpoint(newHertzValue := limitedSetpoint);
+    
+    // update the analog output
+    driveSetpointSignal := LREAL_TO_INT(driveSetpoint.hertz.value / 100.0 * (EXPT(2, 15)-1));
+    
+    // done
+    processes.changeFrequencySetpoint.setGood();
+    processes.changeFrequencySetpoint.setFinished();
+    
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+  </POU>
+</TcPlcObject>

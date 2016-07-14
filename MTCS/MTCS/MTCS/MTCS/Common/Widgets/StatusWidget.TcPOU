@@ -1,0 +1,20 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.2">
+  <POU Name="StatusWidget" Id="{06bd82d5-1bda-49d6-920b-7e6bf7cb9442}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK StatusWidget
+VAR_INPUT
+	text  : STRING;
+	color : StatusColor;
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

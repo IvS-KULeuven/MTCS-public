@@ -1,0 +1,18 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.5">
+  <DUT Name="AxesTabs" Id="{20e939ad-5749-44d1-94ff-32045bbbef99}">
+    <Declaration><![CDATA[TYPE AxesTabs :
+(
+	OVERVIEW := 0,
+	MANUAL := 1,
+    AXES := 2,
+	TARGET := 3,
+    TPOINT := 4,
+    ADVANCED := 5,
+    IO := 6,
+    CONFIG := 7
+);
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

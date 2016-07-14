@@ -1,0 +1,17 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="AxesManualTabs" Id="{a676ea36-0b8a-45ed-a02d-b67173e03fae}">
+    <Declaration><![CDATA[TYPE AxesManualTabs :
+(
+	TAB_POSITIONS := 0,
+    TAB_JOYSTICK_AZIELE := 1,
+    TAB_JOYSTICK_ROT := 2,
+    TAB_OFFSETS_AZIELE := 3,
+    TAB_OFFSETS_ALPHADELTA := 4,
+    TAB_MOVEABSOLUTE := 5,
+    TAB_MOVEVELOCITY  := 6
+);
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

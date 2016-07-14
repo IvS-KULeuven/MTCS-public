@@ -1,0 +1,154 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.5">
+  <POU Name="M2FastTaskControl" Id="{4a4873b8-c95a-443c-a438-6426884a6d17}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK M2FastTaskControl
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+    setCounterValue AT %Q* : UDINT;
+    setCounter AT %Q* : BOOL;
+    setCounterDone AT %I* : BOOL;
+    errorCause : STRING;
+END_VAR
+VAR_IN_OUT
+    brakeReleaseSignal : BOOL;
+    actualCounterValue : UDINT;
+END_VAR
+VAR
+    _state : INT;
+    _ton : TON;
+    
+    _aborting : BOOL;
+    _setpointCounterValue : UDINT;
+    _timeout : TIME;
+    _waitAfterMove : TIME;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[// This FB should be called in a fast task (e.g. 2ms or less) 
+// to make sure that the brake signal is set as soon as the
+// final position is almost reached
+
+CASE _state OF
+    
+    0:
+        // idle, not doing anything
+        setCounter := FALSE;
+        _aborting := FALSE;
+    1:
+        // reset the counter value
+        setCounterValue := 0;
+        setCounter := TRUE;
+        // start a timeout-timer
+        _ton(IN := FALSE);
+        _ton(IN := TRUE, PT := T#100MS);
+        _state := 2;
+    2:
+        _ton(IN := TRUE);
+        IF setCounterDone THEN
+            _state := 3;
+            setCounter := FALSE;
+        ELSIF _ton.Q THEN 
+            errorCause := 'Counter reset error'; 
+            setCounter := FALSE;
+            _state := 999;
+        END_IF
+        // we're allowed to abort here and to go immediately back to the initial state
+        IF _aborting THEN
+            _state := 0;
+		END_IF
+    3:
+        // we're allowed to abort here and to go immediately back to the initial state
+        IF _aborting THEN
+            _state := 0;
+        ELSE
+            // start the motion
+            brakeReleaseSignal := TRUE;
+            _state := 4;
+            // start a timeout-timer
+            _ton(IN := FALSE);
+            _ton(IN := TRUE, PT := _timeout);
+		END_IF
+     4:
+        _ton(IN := TRUE);
+        // wait until the setpointCounterValue is reached
+        IF actualCounterValue >= _setpointCounterValue THEN
+            brakeReleaseSignal := FALSE;
+            _state := 5;
+        ELSIF _ton.Q THEN 
+            errorCause := 'Timeout elapsed!'; 
+            _state := 999;
+        ELSIF _aborting THEN
+            // we can abort by putting on the brake signal and going to the initial state
+            brakeReleaseSignal := FALSE;
+            _state := 0;
+		END_IF
+     5:
+        // wait some time after the movement
+        // start a timer
+        _ton(IN := FALSE);
+        _ton(IN := TRUE, PT := _waitAfterMove);
+        _state := 6;
+     6:
+        _ton(IN := TRUE);
+        IF _ton.Q THEN 
+            // OK done! 
+            _state := 0;
+        END_IF 
+     999:
+        // ERROR!
+        brakeReleaseSignal := FALSE;
+END_CASE
+
+
+]]></ST>
+    </Implementation>
+    <Method Name="isError" Id="{093410dc-7f2f-4641-9967-9aa89baba3dd}">
+      <Declaration><![CDATA[METHOD isError : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[
+isError := _state = 999;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="isBusy" Id="{2a853bdd-1904-4218-a1e9-1af6bc8f4d3e}">
+      <Declaration><![CDATA[METHOD isBusy : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[isBusy := _state > 0 AND _state < 999;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="abort" Id="{c40ffa48-da92-4692-a7cf-6cdbc0580512}">
+      <Declaration><![CDATA[METHOD abort
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[_aborting := TRUE;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="start" Id="{c8612411-b212-441b-8989-997c2cbddd86}">
+      <Declaration><![CDATA[METHOD start
+VAR_INPUT
+    setpointCounterValue : UDINT;
+    timeout : TIME;
+    waitAfterMove : TIME;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF NOT isBusy() THEN
+    _setpointCounterValue := setpointCounterValue;
+    _timeout := timeout;
+    _state := 1;
+    _waitAfterMove := waitAfterMove;
+    _aborting := FALSE;
+    errorCause := '';
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+  </POU>
+</TcPlcObject>

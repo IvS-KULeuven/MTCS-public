@@ -1,0 +1,20 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="CoverPanelSetParts" Id="{05c367ac-731f-4940-a06e-e8a2b78a8502}">
+    <Declaration><![CDATA[TYPE CoverPanelSetParts :
+STRUCT
+	///Panel 1
+	p1: CoverPanel;
+	///Panel 2
+	p2: CoverPanel;
+	///Panel 3
+	p3: CoverPanel;
+	///Panel 4
+	p4: CoverPanel;
+	///Relay for the magnets of this panelset
+	magnetsRelay: SimpleRelay;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

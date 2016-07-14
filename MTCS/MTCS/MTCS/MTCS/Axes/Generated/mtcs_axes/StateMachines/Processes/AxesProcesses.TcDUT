@@ -1,0 +1,48 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="AxesProcesses" Id="{ddae268e-d545-48d3-8897-4bee6361196f}">
+    <Declaration><![CDATA[TYPE AxesProcesses :
+STRUCT
+	///Start initializing
+	initialize: Process;
+	///Reset the axis (no homing)
+	reset: Process;
+	///Lock the system
+	lock: Process;
+	///Unlock the system
+	unlock: Process;
+	///Change the operating state (e.g. AUTO, MANUAL, ...)
+	changeOperatingState: ChangeOperatingStateProcess;
+	///Set a new target
+	setTarget: AxesSetTargetProcess;
+	///Point the telescope to a new target
+	point: AxesPointProcess;
+	///Point the telescope relative to the current target
+	pointRelative: AxesPointRelativeProcess;
+	///Stop the axes (i.e. stop pointing, tracking, moving, ...)
+	stop: AxesStopProcess;
+	///Quickly stop the axes (i.e. stop pointing, tracking, moving, ...)
+	quickStop: AxesStopProcess;
+	///Power on the axes
+	powerOn: AxesMultiPowerOnProcess;
+	///Power off the axes
+	powerOff: AxesPowerOffProcess;
+	///Do a homing of the axes
+	doHoming: AxesDoHomingProcess;
+	///Move the axes in alt-azimuth to an absolute position
+	moveAbsolute: AxesMultiMoveProcess;
+	///Move the axes in alt-azimuth relative to the current position
+	moveRelative: AxesMultiMoveProcess;
+	///Move the axes to the given known position
+	moveKnownPosition: AxesMoveKnownPositionProcess;
+	///Enable a pointing model with the given name
+	enablePointingModel: AxesEnablePointingModelProcess;
+	///Disable the currently active pointing model
+	disablePointingModel: Process;
+	///Set an additional alpha/delta velocity (e.g. to track solar system objects)
+	setAlphaDeltaVelocity: AxesSetAlphaDeltaVelocityProcess;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

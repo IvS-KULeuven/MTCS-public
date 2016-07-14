@@ -1,0 +1,80 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="AxesUnlockBrakeHelper" Id="{661a8fd0-e377-40fa-a119-a81d9bf4faf9}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK AxesUnlockBrakeHelper
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+    unlockBrake : AxesUnlockBrakeProcess;
+    driveChannel : AX52XXDriveChannel;
+END_VAR
+VAR
+    _ton : TON;
+    _seconds : LREAL;
+    _formatString : FB_FormatString;
+    _msg : STRING;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[IF unlockBrake.isBusy() THEN
+    
+    IF NOT unlockBrake.isStarted() THEN
+        unlockBrake._state := 0;
+        unlockBrake.setStarted();
+	END_IF
+    
+    CASE unlockBrake._state OF
+        0:
+            unlockBrake.setActualStatus('Unlocking brake'); 
+            driveChannel.processes.setBrake.start(DriveBrakeStates.BRAKE_FORCE_UNLOCK);
+            unlockBrake._state := 1;
+        1:
+            IF driveChannel.processes.setBrake.isIdle() THEN
+                IF driveChannel.processes.setBrake.isGood() THEN
+                    _ton(IN := FALSE);
+                    _ton(IN := TRUE, PT := LREAL_TO_TIME(unlockBrake.get.seconds * 1000.0));
+                    unlockBrake._state := 2;
+                ELSE
+                    unlockBrake._state := 999;
+                    unlockBrake.setActualStatus('Could not change brake to FORCE UNLOCK'); 
+				END_IF
+			END_IF
+        2:
+            _ton(IN := TRUE);
+            IF _ton.Q THEN
+                unlockBrake._state := 3;
+            ELSE
+                _seconds := TIME_TO_LREAL(_ton.ET) / 1000.0;
+                _formatString(sFormat := 'Waiting for %.1fs...', arg1 := F_LREAL(_seconds), sOut => _msg);
+                unlockBrake.setActualStatus(_msg); 
+			END_IF
+        3:
+            unlockBrake.setActualStatus('Setting brake to auto'); 
+            driveChannel.processes.setBrake.start(DriveBrakeStates.BRAKE_AUTOMATIC);
+            unlockBrake._state := 4;
+        4:
+            IF driveChannel.processes.setBrake.isIdle() THEN
+                IF driveChannel.processes.setBrake.isGood() THEN
+                    unlockBrake.setActualStatus('Done, brake set to AUTO again'); 
+                    unlockBrake._state := 1000;
+                ELSE
+                    unlockBrake.setActualStatus('Could not change brake to AUTO!!! Brake is still UNLOCKED!!!'); 
+                    unlockBrake._state := 999;
+				END_IF
+			END_IF
+
+        999:
+            unlockBrake.setBad();
+            unlockBrake.setFinished();
+        1000:
+            unlockBrake.setGood();
+            unlockBrake.setFinished();
+        
+    END_CASE
+    
+END_IF]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

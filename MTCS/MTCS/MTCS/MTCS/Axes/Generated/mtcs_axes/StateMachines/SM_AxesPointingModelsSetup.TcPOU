@@ -1,0 +1,43 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="SM_AxesPointingModelsSetup" Id="{9ff22e87-64fe-47c6-b5c0-f937fc9c572f}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK SM_AxesPointingModelsSetup
+VAR_INPUT
+	///Is control enabled?
+	{attribute 'OPC.UA.DA' := '0'}
+	isEnabled: BOOL;
+END_VAR
+VAR_OUTPUT
+	///Current status description
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	actualStatus: STRING;
+	///Statuses of the state machine
+	statuses: AxesPointingModelsSetupStatuses;
+	///Parts of the state machine
+	parts: AxesPointingModelsSetupParts;
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[parts.model0( isEnabled := isEnabled );
+parts.model1( isEnabled := isEnabled );
+parts.model2( isEnabled := isEnabled );
+parts.model3( isEnabled := isEnabled );
+parts.model4( isEnabled := isEnabled );
+parts.model5( isEnabled := isEnabled );
+parts.model6( isEnabled := isEnabled );
+parts.model7( isEnabled := isEnabled );
+parts.model8( isEnabled := isEnabled );
+parts.model9( isEnabled := isEnabled );
+statuses.busyStatus( isBusy := parts.model0.parts.configManager.statuses.busyStatus.busy OR (parts.model1.parts.configManager.statuses.busyStatus.busy OR (parts.model2.parts.configManager.statuses.busyStatus.busy OR (parts.model3.parts.configManager.statuses.busyStatus.busy OR (parts.model4.parts.configManager.statuses.busyStatus.busy OR (parts.model5.parts.configManager.statuses.busyStatus.busy OR (parts.model6.parts.configManager.statuses.busyStatus.busy OR (parts.model7.parts.configManager.statuses.busyStatus.busy OR (parts.model8.parts.configManager.statuses.busyStatus.busy OR parts.model9.parts.configManager.statuses.busyStatus.busy)))))))) );
+statuses.healthStatus(
+    isGood := parts.model0.parts.configManager.statuses.healthStatus.isGood AND (parts.model1.parts.configManager.statuses.healthStatus.isGood AND (parts.model2.parts.configManager.statuses.healthStatus.isGood AND (parts.model3.parts.configManager.statuses.healthStatus.isGood AND (parts.model4.parts.configManager.statuses.healthStatus.isGood AND (parts.model5.parts.configManager.statuses.healthStatus.isGood AND (parts.model6.parts.configManager.statuses.healthStatus.isGood AND (parts.model7.parts.configManager.statuses.healthStatus.isGood AND (parts.model8.parts.configManager.statuses.healthStatus.isGood AND parts.model9.parts.configManager.statuses.healthStatus.isGood)))))))),
+    hasWarning := parts.model0.parts.configManager.statuses.healthStatus.hasWarning OR (parts.model1.parts.configManager.statuses.healthStatus.hasWarning OR (parts.model2.parts.configManager.statuses.healthStatus.hasWarning OR (parts.model3.parts.configManager.statuses.healthStatus.hasWarning OR (parts.model4.parts.configManager.statuses.healthStatus.hasWarning OR (parts.model5.parts.configManager.statuses.healthStatus.hasWarning OR (parts.model6.parts.configManager.statuses.healthStatus.hasWarning OR (parts.model7.parts.configManager.statuses.healthStatus.hasWarning OR (parts.model8.parts.configManager.statuses.healthStatus.hasWarning OR parts.model9.parts.configManager.statuses.healthStatus.hasWarning)))))))));
+]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

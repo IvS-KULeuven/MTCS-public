@@ -1,0 +1,41 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.5">
+  <POU Name="M3PositionIDToName" Id="{53156081-e6e9-4f3a-86f6-a6c7837b9932}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION M3PositionIDToName : STRING
+VAR_INPUT
+    id : M3PositionIDs;
+END_VAR
+VAR_IN_OUT
+    config : M3KnownPositionsConfig;
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[CASE id OF
+    M3PositionIDs.CASSEGRAIN:
+        M3PositionIDToName := config.cassegrain.name;
+    M3PositionIDs.NASMYTH_A:
+        M3PositionIDToName := config.nasmythA.name;
+    M3PositionIDs.NASMYTH_B:
+        M3PositionIDToName := config.nasmythB.name;
+    M3PositionIDs.NASMYTH_C:
+        M3PositionIDToName := config.nasmythC.name;
+    M3PositionIDs.NASMYTH_D:
+        M3PositionIDToName := config.nasmythD.name;
+    M3PositionIDs.OTHER_0:
+        M3PositionIDToName := config.other0.name;
+    M3PositionIDs.OTHER_1:
+        M3PositionIDToName := config.other1.name;
+    M3PositionIDs.OTHER_2:
+        M3PositionIDToName := config.other2.name;
+    M3PositionIDs.OTHER_3:
+        M3PositionIDToName := config.other3.name;
+    M3PositionIDs.OTHER_4:
+        M3PositionIDToName := config.other4.name;
+    M3PositionIDs.UNKNOWN:
+        M3PositionIDToName := 'UNKNOWN';
+END_CASE]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

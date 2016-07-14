@@ -1,0 +1,30 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="AxesSetTargetProcessArgs" Id="{648d40c3-2c9c-4c1d-a867-5ac598d8ae3d}">
+    <Declaration><![CDATA[TYPE AxesSetTargetProcessArgs :
+STRUCT
+	///The units in which alpha is given
+	alphaUnits: AxesAlphaUnits;
+	///Right ascention, in the units of the alphaUnits argument
+	alpha: LREAL;
+	///The units in which delta is given
+	deltaUnits: AxesDeltaUnits;
+	///Declination, in the units of the deltaUnits argument
+	delta: LREAL;
+	///The units in which muAlpha and muDelta are given
+	muUnits: AxesMuUnits;
+	///Right ascention proper motion, the units of muUmits (do not multiply by cos(delta)!)
+	muAlpha: LREAL;
+	///Declination proper motion, in radians/year
+	muDelta: LREAL;
+	///Object parallax, in arcseconds
+	parallax: LREAL;
+	///Object radial velocity, in km/s
+	radialVelocity: LREAL;
+	///Epoch, e.g. 2000.0
+	epoch: LREAL := 2000;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

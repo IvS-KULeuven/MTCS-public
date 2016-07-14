@@ -1,0 +1,35 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="SM_AX52XXDrive" Id="{3e340137-8349-4197-ba2f-7863109c4231}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK SM_AX52XXDrive
+VAR_INPUT
+	///Is control enabled?
+	{attribute 'OPC.UA.DA' := '0'}
+	isEnabled: BOOL;
+END_VAR
+VAR_OUTPUT
+	///Current status description
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	actualStatus: STRING;
+	///Statuses of the state machine
+	statuses: AX52XXDriveStatuses;
+	///Parts of the state machine
+	parts: AX52XXDriveParts;
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[parts.channelA( isEnabled := isEnabled );
+parts.channelB( isEnabled := isEnabled );
+statuses.busyStatus( isBusy := parts.channelA.statuses.healthStatus.hasWarning OR parts.channelB.statuses.healthStatus.hasWarning );
+statuses.healthStatus(
+    isGood := parts.channelA.statuses.healthStatus.isGood AND parts.channelB.statuses.healthStatus.isGood,
+    hasWarning := parts.channelA.statuses.healthStatus.hasWarning OR parts.channelB.statuses.healthStatus.hasWarning);
+]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

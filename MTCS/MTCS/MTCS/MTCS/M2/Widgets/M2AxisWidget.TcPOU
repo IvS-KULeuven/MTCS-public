@@ -1,0 +1,72 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.5">
+  <POU Name="M2AxisWidget" Id="{c577cf47-caa1-4be5-865f-9fb45c574031}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK M2AxisWidget
+VAR_INPUT
+    axis : M2Axes;
+    absolute_setpoint : LREAL;
+    absolute_go : BOOL;
+    relative_setpoint : LREAL;
+    relative_goLeft : BOOL;
+    relative_goRight : BOOL;
+    backlashLifted : BOOL;
+    powered : BOOL;
+    tech : BOOL;
+    finalSenseCW : BOOL;
+END_VAR
+VAR_OUTPUT
+    name : STRING;
+    absolute_go_disabled : BOOL;
+    relative_goLeft_disabled : BOOL;
+    relative_goLeft_text : STRING;
+    relative_goRight_disabled : BOOL;
+    relative_goRight_text : STRING;
+    position_mm : LREAL;
+    poweredTextColor : DWORD;
+END_VAR
+VAR_IN_OUT
+    linearPosition : LinearPosition;
+    moveAbsolute : M2MoveProcess;
+    moveRelative : M2MoveProcess;
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[name := M2AxisToString(axis);
+absolute_go_disabled := moveAbsolute.statuses.enabledStatus.disabled OR (axis <> M2Axes.Z AND NOT tech);
+relative_goLeft_disabled := moveRelative.statuses.enabledStatus.disabled OR (axis <> M2Axes.Z AND NOT tech);
+relative_goRight_disabled := moveRelative.statuses.enabledStatus.disabled OR (axis <> M2Axes.Z AND NOT tech);
+position_mm := linearPosition.millimeters.value;
+
+IF finalSenseCW THEN
+    relative_goLeft_text := '<<<';
+    relative_goRight_text := '>';
+ELSE
+    relative_goLeft_text := '<';
+    relative_goRight_text := '>>>';
+END_IF
+
+IF absolute_go THEN
+    moveAbsolute.request(axis := axis, position := absolute_setpoint); 
+    absolute_go := FALSE;
+END_IF
+
+IF relative_goLeft THEN
+    moveRelative.request(axis := axis, position := -ABS(relative_setpoint)); 
+    relative_goLeft := FALSE;
+END_IF
+
+IF relative_goRight THEN
+    moveRelative.request(axis := axis, position := ABS(relative_setpoint)); 
+    relative_goRight := FALSE;
+END_IF
+
+IF powered THEN
+    poweredTextColor := Colors.BLACK;
+ELSE
+    poweredTextColor := Colors.DARK_GRAY;
+END_IF]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

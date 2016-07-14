@@ -1,0 +1,24 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="AxesParts" Id="{6f9ffd53-398f-427e-bd05-640afc426e08}">
+    <Declaration><![CDATA[TYPE AxesParts :
+STRUCT
+	///The azimuth axis
+	azi: AxesAzimuthAxis;
+	///The elevation axis
+	ele: AxesElevationAxis;
+	///The cassegrain derotator axis
+	roc: AxesRotationAxis;
+	///The nasmyth derotator axis
+	ron: AxesRotationAxis;
+	///I/O modules and drives
+	io: AxesIO;
+	///The config manager (to load/save/activate configuration data)
+	configManager: ConfigManager;
+	///The TPOINT models setup
+	tpoint: AxesPointingModelsSetup;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

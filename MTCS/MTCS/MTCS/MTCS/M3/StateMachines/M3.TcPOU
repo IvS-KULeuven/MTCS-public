@@ -1,0 +1,535 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="M3" Id="{1ffe6dd1-282b-40f9-b7fe-8b504d9fc25c}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK M3 EXTENDS SM_M3
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR
+    _initializingCurrentAction : INT;
+    _onFirstStartCurrentAction : INT;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[_update();
+
+_onFirstStart();
+_initializing();
+_locking();
+_unlocking();
+_changingOperatingState();
+_updateActualKnownPositionName();
+_gotoKnownPosition();
+_gotoNewPosition();
+_abort();
+_reset();
+
+IF statuses.initializationStatus.initialized THEN
+    // store the actual values of the rotation axes persistently
+    REMANENT.M3_ROTPOS_POSITION := parts.rotation.parts.positioningHallAxis.actPos.degrees.value;
+    REMANENT.M3_ROTABL_POSITION := parts.rotation.parts.antiBacklashAxis.actPos.degrees.value;
+END_IF
+
+_update();]]></ST>
+    </Implementation>
+    <Method Name="_locking" Id="{1e5859ec-d939-40b0-86da-d679b2356af3}">
+      <Declaration><![CDATA[METHOD _locking
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF processes.lock.statuses.busyStatus.busy THEN
+	statuses.initializationStatus(state := InitializationStates.LOCKED);
+	
+	// done
+	processes.lock.setGood();
+	processes.lock.setFinished();
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_reset" Id="{3601c5f8-345c-4d19-a429-f74a26111e60}">
+      <Declaration><![CDATA[METHOD _reset
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF processes.reset.isBusy() THEN
+    
+    parts.gotoProcedure.reset();
+    
+    processes.reset.setGood();
+    processes.reset.setFinished();
+ 
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_gotoKnownPosition" Id="{3e3c1f80-3a5b-4e99-bc46-8661078326f0}">
+      <Declaration><![CDATA[METHOD _gotoKnownPosition
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF processes.gotoKnownPosition.isBusy() THEN
+    
+    IF NOT processes.gotoKnownPosition.isStarted() THEN
+
+        IF processes.gotoKnownPosition.get.name = config.knownPositions.cassegrain.name THEN
+            parts.gotoProcedure.startCfg(cfg := config.knownPositions.cassegrain);
+        ELSIF processes.gotoKnownPosition.get.name = config.knownPositions.nasmythA.name THEN
+            parts.gotoProcedure.startCfg(cfg := config.knownPositions.nasmythA);
+        ELSIF processes.gotoKnownPosition.get.name = config.knownPositions.nasmythB.name THEN
+            parts.gotoProcedure.startCfg(cfg := config.knownPositions.nasmythB);
+        ELSIF processes.gotoKnownPosition.get.name = config.knownPositions.nasmythB.name THEN
+            parts.gotoProcedure.startCfg(cfg := config.knownPositions.nasmythB);
+        ELSIF processes.gotoKnownPosition.get.name = config.knownPositions.nasmythC.name THEN
+            parts.gotoProcedure.startCfg(cfg := config.knownPositions.nasmythC);
+        ELSIF processes.gotoKnownPosition.get.name = config.knownPositions.nasmythD.name THEN
+            parts.gotoProcedure.startCfg(cfg := config.knownPositions.nasmythD);
+        ELSIF processes.gotoKnownPosition.get.name = config.knownPositions.other0.name THEN
+            parts.gotoProcedure.startCfg(cfg := config.knownPositions.other0);
+        ELSIF processes.gotoKnownPosition.get.name = config.knownPositions.other1.name THEN
+            parts.gotoProcedure.startCfg(cfg := config.knownPositions.other1);
+        ELSIF processes.gotoKnownPosition.get.name = config.knownPositions.other2.name THEN
+            parts.gotoProcedure.startCfg(cfg := config.knownPositions.other2);
+        ELSIF processes.gotoKnownPosition.get.name = config.knownPositions.other3.name THEN
+            parts.gotoProcedure.startCfg(cfg := config.knownPositions.other3);
+        ELSIF processes.gotoKnownPosition.get.name = config.knownPositions.other4.name THEN
+            parts.gotoProcedure.startCfg(cfg := config.knownPositions.other4);
+        END_IF
+        
+        processes.gotoKnownPosition.setStarted();
+        
+	END_IF
+    
+    processes.gotoKnownPosition.setActualStatus( processes.gotoKnownPosition.actualStatus );
+    
+    IF parts.gotoProcedure.statuses.busyStatus.idle THEN
+        
+        IF parts.gotoProcedure.statuses.healthStatus.good THEN
+            processes.gotoKnownPosition.setGood();
+            processes.gotoKnownPosition.setActualStatus('Done');
+        ELSE
+            processes.gotoKnownPosition.setBad();
+        END_IF
+        
+        processes.gotoKnownPosition.setFinished();
+    END_IF
+
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_update" Id="{6d87fac5-70ec-4b96-9ba2-b9e6890bec8c}">
+      <Declaration><![CDATA[METHOD _update
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[SUPER^(operatorStatus := operatorStatus);
+
+IF statuses.initializationStatus.initialized THEN
+    IF statuses.healthStatus.bad THEN
+        actualStatus := 'ERROR';
+    ELSIF statuses.healthStatus.good OR statuses.healthStatus.warning THEN
+        IF statuses.operatingStatus.manual THEN
+            actualStatus := 'MANUAL';
+        ELSIF statuses.operatingStatus.auto THEN
+            IF statuses.busyStatus.busy THEN
+                IF parts.gotoProcedure.statuses.busyStatus.busy THEN
+                    actualStatus := parts.gotoProcedure.actualStatus;
+                ELSE
+                    actualStatus := 'BUSY';
+				END_IF
+            ELSIF statuses.busyStatus.idle THEN
+                IF actualKnownPositionName <> '' THEN
+                    actualStatus := CONCAT('At ', actualKnownPositionName);
+                ELSE
+                    actualStatus := 'Unconfigured position!';
+				END_IF
+            ELSE
+                actualStatus := 'UNKNOWN';
+			END_IF
+        ELSE
+            actualStatus := 'UNKNOWN';
+		END_IF
+    ELSE
+        actualStatus := 'UNKNOWN';
+	END_IF
+ELSE
+    actualStatus := InitializationStatusToString(statuses.initializationStatus);
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_updateActualKnownPositionName" Id="{8207ab8b-3d8f-4c1f-bb0f-dc69f3a8c8c2}">
+      <Declaration><![CDATA[METHOD _updateActualKnownPositionName
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF _isKnownPositionActive(config.knownPositions.cassegrain) THEN
+    actualKnownPositionName := config.knownPositions.cassegrain.name;
+	actualKnownPositionID := M3PositionIDs.CASSEGRAIN;
+ELSIF _isKnownPositionActive(config.knownPositions.nasmythA) THEN
+    actualKnownPositionName := config.knownPositions.nasmythA.name;
+	actualKnownPositionID := M3PositionIDs.NASMYTH_A;
+ELSIF _isKnownPositionActive(config.knownPositions.nasmythB) THEN
+    actualKnownPositionName := config.knownPositions.nasmythB.name;
+	actualKnownPositionID := M3PositionIDs.NASMYTH_B;
+ELSIF _isKnownPositionActive(config.knownPositions.nasmythC) THEN
+    actualKnownPositionName := config.knownPositions.nasmythC.name;
+	actualKnownPositionID := M3PositionIDs.NASMYTH_C;
+ELSIF _isKnownPositionActive(config.knownPositions.nasmythD) THEN
+    actualKnownPositionName := config.knownPositions.nasmythD.name;
+	actualKnownPositionID := M3PositionIDs.NASMYTH_D;
+ELSIF _isKnownPositionActive(config.knownPositions.other0) THEN
+    actualKnownPositionName := config.knownPositions.other0.name;
+	actualKnownPositionID := M3PositionIDs.OTHER_0;
+ELSIF _isKnownPositionActive(config.knownPositions.other1) THEN
+    actualKnownPositionName := config.knownPositions.other1.name;
+	actualKnownPositionID := M3PositionIDs.OTHER_1;
+ELSIF _isKnownPositionActive(config.knownPositions.other2) THEN
+    actualKnownPositionName := config.knownPositions.other2.name;
+	actualKnownPositionID := M3PositionIDs.OTHER_2;
+ELSIF _isKnownPositionActive(config.knownPositions.other3) THEN
+    actualKnownPositionName := config.knownPositions.other3.name;
+	actualKnownPositionID := M3PositionIDs.OTHER_3;
+ELSIF _isKnownPositionActive(config.knownPositions.other4) THEN
+    actualKnownPositionName := config.knownPositions.other4.name;
+	actualKnownPositionID := M3PositionIDs.OTHER_4;
+ELSE
+    actualKnownPositionName := '';
+	actualKnownPositionID := M3PositionIDs.UNKNOWN;
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_initializing" Id="{a3ecc461-d8a8-400b-acdc-fd5e4a6d0aae}">
+      <Declaration><![CDATA[METHOD _initializing
+VAR_INPUT
+END_VAR
+VAR
+    
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF processes.initialize.statuses.busyStatus.busy THEN
+	
+	// start up the initialization
+	IF NOT processes.initialize.statuses.startedStatus.started THEN
+        // we're now initializing
+        statuses.initializationStatus(state := InitializationStates.INITIALIZING);
+        _initializingCurrentAction := 0;
+		// OK we're started now
+		processes.initialize.setStarted();
+	END_IF;
+    
+    // process the actions
+    CASE _initializingCurrentAction OF
+        
+        0:
+            // start loading the config from XML file
+            parts.configManager.processes.load.start(parts.configManager.processes.load.set.filePath);
+            _initializingCurrentAction := 1;
+        1:
+            // wait until the config has been loaded
+            IF parts.configManager.processes.load.statuses.busyStatus.idle THEN
+                IF parts.configManager.processes.load.statuses.healthStatus.good THEN
+                    _initializingCurrentAction := 2;
+                ELSE
+                    _initializingCurrentAction := 999;
+                END_IF
+            END_IF
+        2:
+            // now start activating the config
+            parts.configManager.processes.activate.start();
+            _initializingCurrentAction := 3;
+        3:
+            // wait until the config has been activated
+            IF parts.configManager.processes.activate.statuses.busyStatus.idle THEN
+                IF parts.configManager.processes.activate.statuses.healthStatus.good THEN
+                    _initializingCurrentAction := 4;
+                ELSE
+                    _initializingCurrentAction := 999;
+                END_IF
+            END_IF
+        4:
+            // now start initializing the drives
+            parts.rotation.parts.positioningDrive.processes.initialize.start();
+            parts.rotation.parts.antiBacklashDrive.processes.initialize.start();
+            parts.translation.parts.motorDrive.processes.initialize.start();
+            _initializingCurrentAction := 5;
+        5:
+            // wait until the drives are initialized
+            IF     parts.rotation.parts.positioningDrive.processes.initialize.statuses.busyStatus.idle
+               AND parts.rotation.parts.antiBacklashDrive.processes.initialize.statuses.busyStatus.idle
+               AND parts.translation.parts.motorDrive.processes.initialize.statuses.busyStatus.idle
+            THEN
+                IF     parts.rotation.parts.positioningDrive.processes.initialize.statuses.healthStatus.good 
+                   AND parts.rotation.parts.antiBacklashDrive.processes.initialize.statuses.healthStatus.good
+                   AND parts.translation.parts.motorDrive.processes.initialize.statuses.healthStatus.good
+                THEN
+                    _initializingCurrentAction := 6;
+                ELSE
+                    _initializingCurrentAction := 999;
+                END_IF
+            END_IF
+        6:
+            // start initializing the axes
+            parts.rotation.parts.positioningAxis.processes.initialize.start();
+            parts.rotation.parts.antiBacklashAxis.processes.initialize.start();
+            parts.translation.parts.motorAxis.processes.initialize.start();
+            parts.rotation.parts.positioningHallAxis.processes.reset.start(); // only encoder axis, so only reset
+            _initializingCurrentAction := 7;
+        7:
+            // wait until the axes are initialized
+            IF      parts.rotation.parts.positioningAxis.processes.initialize.isIdle()
+                AND parts.rotation.parts.antiBacklashAxis.processes.initialize.isIdle()
+                AND parts.translation.parts.motorAxis.processes.initialize.isIdle()
+                AND parts.rotation.parts.positioningHallAxis.processes.reset.isIdle() 
+            THEN
+                IF     parts.rotation.parts.positioningAxis.processes.initialize.isGood()
+                    OR parts.rotation.parts.antiBacklashAxis.processes.initialize.isGood()
+                    OR parts.translation.parts.motorAxis.processes.initialize.isGood()
+                    OR parts.rotation.parts.positioningHallAxis.processes.reset.isGood() 
+                THEN
+                    _initializingCurrentAction := 8;
+                ELSE
+                    _initializingCurrentAction := 999;
+                END_IF
+            END_IF
+        8:
+            // start setting the operating state to AUTO
+            processes.changeOperatingState.start(OperatingStates.AUTO);
+            _initializingCurrentAction := 9;
+        9:
+            // wait until the operating state has changed
+            IF processes.changeOperatingState.statuses.busyStatus.idle THEN
+                IF processes.changeOperatingState.statuses.healthStatus.good THEN
+                    _initializingCurrentAction := 10;
+                ELSE
+                    _initializingCurrentAction := 999;
+                END_IF
+            END_IF
+        10:
+            // update the actual positions of the rotation motors. See GVLs/REMANENT for more info.
+            parts.rotation.parts.positioningHallAxis.processes.setPosition.start(value := REMANENT.M3_ROTPOS_POSITION);
+            parts.rotation.parts.antiBacklashAxis.processes.setPosition.start(value := REMANENT.M3_ROTABL_POSITION);
+            _initializingCurrentAction := 11;
+        11:
+            // wait until the homing offsets have been written
+            IF     parts.rotation.parts.positioningHallAxis.processes.setPosition.isIdle()
+               AND parts.rotation.parts.antiBacklashAxis.processes.setPosition.isIdle() 
+            THEN
+                IF     parts.rotation.parts.positioningHallAxis.processes.setPosition.isGood()
+                   AND parts.rotation.parts.antiBacklashAxis.processes.setPosition.isGood()
+                THEN
+                    _initializingCurrentAction := 12;
+                ELSE
+                    _initializingCurrentAction := 999;
+                END_IF
+            END_IF
+        12:
+            // start the homing of the translation axis
+            parts.translation.processes.startHoming.start();
+            _initializingCurrentAction := 13;
+        13:
+            // wait until the homing has been done
+            IF     parts.translation.parts.homingProcedure.statuses.busyStatus.idle THEN
+                IF parts.translation.parts.homingProcedure.statuses.healthStatus.good THEN
+                    _initializingCurrentAction := 14;
+                ELSE
+                    _initializingCurrentAction := 999;
+                END_IF
+            END_IF
+        14:
+            // do we move to a known position?
+            IF config.moveAfterInitialization THEN
+                processes.gotoKnownPosition.start(name := config.moveAfterInitializationPosition);
+                _initializingCurrentAction := 15;
+            ELSE
+                _initializingCurrentAction := 16;
+			END_IF
+        15:
+            // wait for the movement
+            IF processes.gotoKnownPosition.isIdle() THEN
+                IF processes.gotoKnownPosition.isGood() THEN
+                    _initializingCurrentAction := 16;
+                ELSE
+                    _initializingCurrentAction := 999;
+				END_IF
+			END_IF
+        16:
+            // just finish!
+            _initializingCurrentAction := 1000;
+        999:
+            // there has been an error!
+            statuses.initializationStatus(state := InitializationStates.INITIALIZING_FAILED);
+            // done
+            processes.initialize.setBad();
+            processes.initialize.setFinished();
+        1000:
+            // all done!
+            statuses.initializationStatus(state := InitializationStates.INITIALIZED);
+            processes.initialize.setGood();
+            processes.initialize.setFinished();
+	END_CASE
+    
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_abort" Id="{b86218c0-1456-4232-8973-b7c8f9804a5f}">
+      <Declaration><![CDATA[METHOD _abort
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF processes.abort.isBusy() THEN
+    
+    parts.gotoProcedure.abort();
+    
+    processes.abort.setGood();
+    processes.abort.setFinished();
+ 
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_gotoNewPosition" Id="{b8b5b54d-6f9f-4a54-9423-a39be18fbcab}">
+      <Declaration><![CDATA[METHOD _gotoNewPosition
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF processes.gotoNewPosition.isBusy() THEN
+    
+    parts.gotoProcedure.start(
+            rotationPosition    := processes.gotoNewPosition.get.rotationPosition,
+            rotationOffset      := processes.gotoNewPosition.get.rotationOffset,
+            translationPosition := processes.gotoNewPosition.get.translationPosition,
+            doRotation          := processes.gotoNewPosition.get.doRotation,
+            doTranslation       := processes.gotoNewPosition.get.doTranslation);
+    
+    processes.gotoNewPosition.setGood();
+    processes.gotoNewPosition.setFinished();
+ 
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_isKnownPositionActive" Id="{bdabd34b-47d7-4e6d-90d9-3489dc1b3180}">
+      <Declaration><![CDATA[METHOD _isKnownPositionActive : BOOL
+VAR_INPUT
+    position : M3PositionConfig;
+END_VAR
+VAR
+    rotationOK : BOOL;
+    translationOK : BOOL;
+END_VAR]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF position.name = '' THEN
+    _isKnownPositionActive := FALSE;
+ELSE
+    rotationOK    :=     ABS(parts.rotation.actualPosition.degrees.value        - position.rotationPosition   ) <= config.rotation.maxPositionError
+                     AND ABS(parts.rotation.actualOffset.degrees.value          - position.rotationOffset     ) <= config.rotation.maxOffsetError;
+    translationOK :=     ABS(parts.translation.actualPosition.millimeters.value - position.translationPosition) <= config.translation.maxPositionError;
+
+    IF position.doRotation AND position.doTranslation THEN
+        _isKnownPositionActive := rotationOK AND translationOK;
+    ELSIF position.doRotation THEN
+        _isKnownPositionActive := rotationOK;
+    ELSIF position.doTranslation THEN
+        _isKnownPositionActive := translationOK;
+    ELSE
+        _isKnownPositionActive := FALSE;
+    END_IF
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_onFirstStart" Id="{db0af042-3b5e-4605-9a88-430e7a7d239e}">
+      <Declaration><![CDATA[METHOD _onFirstStart
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[CASE _onFirstStartCurrentAction OF
+    0:
+        // start loading the config from XML file
+        parts.configManager.processes.load.start(parts.configManager.processes.load.set.filePath);
+        _onFirstStartCurrentAction := 1;
+    1:
+        // wait until the config has been loaded
+        IF parts.configManager.processes.load.statuses.busyStatus.idle THEN
+            IF parts.configManager.processes.load.statuses.healthStatus.good THEN
+                _onFirstStartCurrentAction := 2;
+            ELSE
+                _onFirstStartCurrentAction := 999;
+            END_IF
+        END_IF
+    2:
+        // now start activating the config
+        parts.configManager.processes.activate.start();
+        _onFirstStartCurrentAction := 3;
+    3:
+        // wait until the config has been activated
+        IF parts.configManager.processes.activate.statuses.busyStatus.idle THEN
+            IF parts.configManager.processes.activate.statuses.healthStatus.good THEN
+                _onFirstStartCurrentAction := 4;
+            ELSE
+                _onFirstStartCurrentAction := 999;
+            END_IF
+        END_IF
+    4:
+        // nothing to do, done!
+        ;
+    999:
+        // error, but nothing we can do about it now!
+        ;
+
+END_CASE]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="FB_init" Id="{e4f340ee-3b3d-49b8-84d4-4e1b62f04e0e}">
+      <Declaration><![CDATA[METHOD FB_init : BOOL
+VAR_INPUT
+	bInitRetains : BOOL; // if TRUE, the retain variables are initialized (warm start / cold start)
+	bInCopyCode : BOOL;  // if TRUE, the instance afterwards gets moved into the copy code (online change)
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[parts.configManager.configure(
+    editableConfigAddress       := ADR(editableConfig),
+    activeConfigAddress         := ADR(config),
+    configLength                := SIZEOF(editableConfig),
+    editableConfigSymbolName    := GLOBAL.config.M3_EDITABLE_CONFIG_SYMBOL_NAME,
+    activeConfigSymbolName      := GLOBAL.config.M3_ACTIVE_CONFIG_SYMBOL_NAME,
+    configFilePath              := GLOBAL.config.M3_CONFIG_FILE_PATH);]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_unlocking" Id="{f65bc880-492b-4a0e-8667-5136155587df}">
+      <Declaration><![CDATA[METHOD _unlocking
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF processes.unlock.statuses.busyStatus.busy THEN
+	statuses.initializationStatus(state := InitializationStates.INITIALIZED);
+	
+	// done
+	processes.unlock.setGood();
+	processes.unlock.setFinished();
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_changingOperatingState" Id="{fa88571d-1320-47e5-919e-f1db0353931b}">
+      <Declaration><![CDATA[METHOD _changingOperatingState
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF SUPER^.processes.changeOperatingState.statuses.busyStatus.busy THEN
+	SUPER^.processes.changeOperatingState.setStarted();
+	SUPER^.statuses.operatingStatus(state := SUPER^.processes.changeOperatingState.get.state);
+	SUPER^.processes.changeOperatingState.setFinished();
+END_IF
+]]></ST>
+      </Implementation>
+    </Method>
+  </POU>
+</TcPlcObject>

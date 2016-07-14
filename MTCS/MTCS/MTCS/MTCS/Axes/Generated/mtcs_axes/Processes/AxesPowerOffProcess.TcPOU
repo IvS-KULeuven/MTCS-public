@@ -1,0 +1,65 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="AxesPowerOffProcess" Id="{7de623f4-da6d-41d2-a6ea-343b70ba95f1}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK AxesPowerOffProcess EXTENDS BaseProcess
+VAR_INPUT
+	///State of the process
+	state: INT;
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[IF do_request THEN
+    do_request_result := request();
+    do_request := FALSE;
+END_IF;
+SUPER^();
+]]></ST>
+    </Implementation>
+    <Method Name="request" Id="{71ed9d49-831a-4753-a128-3ea142a5d4ff}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD request : RequestResults
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF THIS^.statuses.enabledStatus.enabled THEN
+    THIS^.start();
+    request := RequestResults.ACCEPTED;
+ELSE
+    request := RequestResults.REJECTED;
+END_IF;
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="start" Id="{dd4423dc-6d65-4532-a40c-df01e765afe3}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD start
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[THIS^.statuses.busyStatus( isBusy := TRUE );
+THIS^.statuses.healthStatus( isGood := TRUE );
+]]></ST>
+      </Implementation>
+    </Method>
+  </POU>
+</TcPlcObject>

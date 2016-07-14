@@ -1,0 +1,45 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.2">
+  <POU Name="AverageCurrent" Id="{78f3bdbb-2871-4269-a58a-d77234821796}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK AverageCurrent EXTENDS SM_AverageCurrent
+VAR_INPUT
+    noOfSamples : UINT := 100;
+    ctrlTimeMultiplier : UINT := 1;
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR
+    _ctrl_moving_avg : FB_CTRL_MOVING_AVERAGE;
+    _params : ST_CTRL_MOVING_AVERAGE_PARAMS;
+    _array : ARRAY [1..100] OF LREAL;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[_params.nSamplesToFilter  := noOfSamples;
+_params.tCtrlCycleTime    := GLOBAL.config.PLC_CTRL_TIME * ctrlTimeMultiplier;
+
+_ctrl_moving_avg(
+    fIn             := SUPER^.newAmpsValue,
+    fManSyncValue   := 0.0,
+    bSync           := FALSE,
+    eMode           := E_CTRL_MODE.eCTRL_MODE_ACTIVE,
+    bHold           := FALSE,
+    stParams        := _params);
+
+SUPER^(newAmpsValue := _ctrl_moving_avg.fOut);]]></ST>
+    </Implementation>
+    <Method Name="FB_init" Id="{231b79c5-66c2-40c6-b8b9-80b4c93977a4}">
+      <Declaration><![CDATA[METHOD FB_init : BOOL
+VAR_INPUT
+	bInitRetains : BOOL; // if TRUE, the retain variables are initialized (warm start / cold start)
+	bInCopyCode : BOOL;  // if TRUE, the instance afterwards gets moved into the copy code (online change)
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[_params.tTaskCycleTime    := GLOBAL.config.PLC_TASK_TIME;
+_params.pWorkArray_ADR    := ADR(_array);
+_params.nWorkArray_SIZEOF := SIZEOF(_array);]]></ST>
+      </Implementation>
+    </Method>
+  </POU>
+</TcPlcObject>

@@ -1,0 +1,43 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.5">
+  <POU Name="M2ComputeThermalFocusFromId" Id="{4c1374b2-7b35-43ab-b8cf-1e8d05651193}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION M2ComputeThermalFocusFromId : LREAL // returns position in mm
+VAR_INPUT
+    positionId : M3PositionIDs;
+END_VAR
+VAR_IN_OUT
+    config : M2ThermalFocusConfig;
+    temperatures : TelemetryTemperatures;
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[
+CASE positionId OF
+    M3PositionIDs.CASSEGRAIN:
+        M2ComputeThermalFocusFromId := M2ComputeThermalFocus(config := config.cassegrain, temperatures);
+    M3PositionIDs.NASMYTH_A:
+        M2ComputeThermalFocusFromId := M2ComputeThermalFocus(config := config.nasmythA, temperatures);
+    M3PositionIDs.NASMYTH_B:
+        M2ComputeThermalFocusFromId := M2ComputeThermalFocus(config := config.nasmythB, temperatures);
+    M3PositionIDs.NASMYTH_C:
+        M2ComputeThermalFocusFromId := M2ComputeThermalFocus(config := config.nasmythC, temperatures);
+    M3PositionIDs.NASMYTH_D:
+        M2ComputeThermalFocusFromId := M2ComputeThermalFocus(config := config.nasmythD, temperatures);
+    M3PositionIDs.OTHER_0:
+        M2ComputeThermalFocusFromId := M2ComputeThermalFocus(config := config.other0, temperatures);
+    M3PositionIDs.OTHER_1:
+        M2ComputeThermalFocusFromId := M2ComputeThermalFocus(config := config.other1, temperatures);
+    M3PositionIDs.OTHER_2:
+        M2ComputeThermalFocusFromId := M2ComputeThermalFocus(config := config.other2, temperatures);
+    M3PositionIDs.OTHER_3:
+        M2ComputeThermalFocusFromId := M2ComputeThermalFocus(config := config.other3, temperatures);
+    M3PositionIDs.OTHER_4:
+        M2ComputeThermalFocusFromId := M2ComputeThermalFocus(config := config.other4, temperatures);
+    M3PositionIDs.UNKNOWN:
+        M2ComputeThermalFocusFromId := 0.0;
+END_CASE]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

@@ -1,0 +1,108 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="SM_ServicesTimingSerialInfo" Id="{bb08082b-b48e-4482-9b15-630602ac9d03}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK SM_ServicesTimingSerialInfo
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+	///Current status description
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	actualStatus: STRING;
+	///Is the serial data not being received within time?
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	serialTimeout: BOOL;
+	///Is there any problem with the COM port?
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	comError: BOOL;
+	///COM error id (see Beckhoff ComError_t)
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	comErrorID: INT;
+	///Description of the COM error id
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	comErrorDescription: STRING;
+	///Time: hours (0-24)
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	time_h: USINT;
+	///Time: minutes (0-59)
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	time_m: USINT;
+	///Time: seconds (0-59, or 60 if leap second)
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	time_s: USINT;
+	///Latitude: degrees (0-90)
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	latitude_deg: USINT;
+	///Latitude: minutes (0.0-59.99999)
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	latitude_min: REAL;
+	///Latitude: sign (either 'N' or 'S')
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	latitude_sign: STRING;
+	///Longitude: degrees (0-180)
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	longitude_deg: USINT;
+	///Longitude: minutes (0.0-59.99999)
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	longitude_min: REAL;
+	///Longitude: sign (either 'E' or 'W')
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	longitude_sign: STRING;
+	///True if a position fix was accomplished, False if not
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	positionFix: BOOL;
+	///Number of satellites used
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	satellitesUsed: USINT;
+	///Horizontal dilution of position
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	horizontalDilutionOfPosition: REAL;
+	///Mean altitude above sea level in meters
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	meanSeaLevelAltitude: REAL;
+	///Geoid separation in meters
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	geoidSeparation: REAL;
+	///Checksum send by the time server
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	checksum: USINT;
+	///Checksum calculated by the PLC
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	calculatedChecksum: USINT;
+	///Statuses of the state machine
+	statuses: ServicesTimingSerialInfoStatuses;
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[statuses.portHealthStatus( isGood := NOT(comError) );
+statuses.transmissionHealthStatus( isGood := NOT(serialTimeout) );
+statuses.checksumHealthStatus( isGood := checksum = calculatedChecksum );
+statuses.healthStatus( isGood := statuses.portHealthStatus.good AND (statuses.transmissionHealthStatus.good AND statuses.checksumHealthStatus.good) );
+]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

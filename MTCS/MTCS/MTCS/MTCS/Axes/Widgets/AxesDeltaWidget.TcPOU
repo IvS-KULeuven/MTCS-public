@@ -1,0 +1,46 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="AxesDeltaWidget" Id="{6164db39-9c8b-4d56-9617-0c4d44b51b25}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK AxesDeltaWidget
+VAR_INPUT
+    radians : LREAL;
+END_VAR
+VAR_OUTPUT
+    dms : DegreesMinutesSeconds;
+    degrees : LREAL;
+    dmsString : STRING;    
+END_VAR
+VAR
+    _secondsTruncated : LREAL;
+    _dmsFormat : STRING := '%d° %.2d$' %04.1f"';
+    _formatString : FB_FormatString;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[
+degrees := RAD_TO_DEG(radians);
+
+dms.positive:= radians > 0;
+dms.degrees := TRUNC(ABS(degrees));
+dms.minutes := TRUNC( (ABS(degrees) - dms.degrees) * 60.0 );
+dms.seconds := ((ABS(degrees) - dms.degrees) * 60.0 - dms.minutes) * 60.0;
+
+
+
+_secondsTruncated := (LTRUNC(dms.seconds * 10.0) / 10.0 );
+_formatString(
+    sFormat := _dmsFormat,
+    arg1 := F_DINT(dms.degrees),
+    arg2 := F_DINT(dms.minutes),
+    arg3 := F_LREAL(_secondsTruncated),
+    sOut => dmsString);
+
+IF dms.positive THEN
+    dmsString := CONCAT('+', dmsString);
+ELSE
+    dmsString := CONCAT('-', dmsString);
+END_IF
+    ]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

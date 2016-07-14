@@ -1,0 +1,42 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.2">
+  <POU Name="TelemetryRelativeHumiditiesWidget" Id="{0e603c46-6a54-40de-a666-5d3dc09f0222}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK TelemetryRelativeHumiditiesWidget 
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+    ref : TelemetryRelativeHumidities;
+END_VAR
+VAR
+    actualStatus : StatusWidget;
+    // temperatures
+    topAir                  : MeasurementWidget('Top air', '%.1f %%');
+    insideTube              : MeasurementWidget('Inside tube', '%.2f %%');
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[actualStatus(text := ref.actualStatus, color := HealthToColor(ref.statuses.healthStatus));
+
+_update(ref.topAir, topAir);
+_update(ref.insideTube, insideTube);]]></ST>
+    </Implementation>
+    <Method Name="_update" Id="{f37938e7-b740-4d5b-89fa-2881c80f8af4}">
+      <Declaration><![CDATA[METHOD _update : BOOL
+VAR_INPUT
+END_VAR
+VAR_IN_OUT
+    ref : RelativeHumidityMeasurement;
+    widget : MeasurementWidget;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[widget(
+    value        := ref.average.percent.value, 
+    actualStatus := ref.actualStatus,
+    healthStatus := ref.statuses.healthStatus);]]></ST>
+      </Implementation>
+    </Method>
+  </POU>
+</TcPlcObject>

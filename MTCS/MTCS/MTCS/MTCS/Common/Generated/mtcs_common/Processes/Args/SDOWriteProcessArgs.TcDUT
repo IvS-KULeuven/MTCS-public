@@ -1,0 +1,22 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="SDOWriteProcessArgs" Id="{f3d8eb92-55c0-49ea-9969-9738181624a3}">
+    <Declaration><![CDATA[TYPE SDOWriteProcessArgs :
+STRUCT
+	///SDO Index
+	index: UINT;
+	///SDO SubIndex
+	subindex: USINT;
+	///Number of bytes to be written
+	noOfBytes: UDINT;
+	///Value to be written if noOfBytes is 1
+	value1Byte: USINT;
+	///Value to be written if noOfBytes is 2
+	value2Bytes: UINT;
+	///Value to be written if noOfBytes is 4
+	value4Bytes: UDINT;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

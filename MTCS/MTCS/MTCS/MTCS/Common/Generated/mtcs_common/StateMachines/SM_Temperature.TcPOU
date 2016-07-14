@@ -1,0 +1,39 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="SM_Temperature" Id="{e7ce80a3-362a-475a-bbc4-191de367b2df}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK SM_Temperature
+VAR_INPUT
+	///New temperature in degrees Celsius
+	{attribute 'OPC.UA.DA' := '0'}
+	newCelsiusValue: LREAL;
+END_VAR
+VAR_OUTPUT
+	///Current status description
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	actualStatus: STRING;
+	///Temperature in degrees Celsius
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	celsius: QuantityValue;
+	///Temperature in Kelvin
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	kelvin: QuantityValue;
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[celsius(
+    value := newCelsiusValue,
+    unit := Units.DEGREES_CELSIUS);
+kelvin(
+    value := newCelsiusValue + 273.15,
+    unit := Units.KELVIN);
+]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

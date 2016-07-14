@@ -1,0 +1,73 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.2">
+  <POU Name="M1AxialSupportWidget" Id="{c6d4b610-17cd-4c40-85b8-c644b3e491db}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK M1AxialSupportWidget
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+    ref : M1AxialSupport;
+END_VAR
+VAR
+	actualStatus  : StatusWidget;
+    
+    regulatorPressure      : MeasurementWidget('Axial pressure @ regulator'     , '%.2f bar');
+    mirrorPressure         : MeasurementWidget('Axial pressure @ mirror cell'   , '%.2f bar');
+    mirrorSouthForce       : MeasurementWidget('Axial force @ South (SO)'       , '%.2f daN');
+    mirrorNorthEastForce   : MeasurementWidget('Axial force @ North-East (NE)'  , '%.2f daN');
+    mirrorNorthWestForce   : MeasurementWidget('Axial force @ North-West (NW)'  , '%.2f daN');
+    mirrorAverageForce     : MeasurementWidget('Axial force Average'            , '%.2f daN');
+    
+    changeToAutoButtonDeactivated : BOOL;
+    changeToManualButtonDeactivated : BOOL;
+    
+    operatingStatus : StatusWidget; 
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[actualStatus(text  := ref.actualStatus, 
+             color := HealthBusyToColor(healthStatus := ref.statuses.healthStatus,
+                                        busyStatus   := ref.statuses.busyStatus));
+
+regulatorPressure( value        := ref.regulatorPressure.average.bar.value, 
+                   actualStatus := ref.regulatorPressure.actualStatus, 
+                   healthStatus := ref.regulatorPressure.statuses.healthStatus);
+mirrorPressure( value        := ref.mirrorPressure.average.bar.value, 
+                actualStatus := ref.mirrorPressure.actualStatus, 
+                healthStatus := ref.mirrorPressure.statuses.healthStatus);
+                
+mirrorSouthForce( 
+    value        := ref.mirrorSouthForce.average.decaNewton.value, 
+    actualStatus := ref.mirrorSouthForce.actualStatus, 
+    healthStatus := ref.mirrorSouthForce.statuses.healthStatus);
+mirrorNorthEastForce( 
+    value        := ref.mirrorNorthEastForce.average.decaNewton.value, 
+    actualStatus := ref.mirrorNorthEastForce.actualStatus, 
+    healthStatus := ref.mirrorNorthEastForce.statuses.healthStatus);
+mirrorNorthWestForce( 
+    value        := ref.mirrorNorthWestForce.average.decaNewton.value, 
+    actualStatus := ref.mirrorNorthWestForce.actualStatus, 
+    healthStatus := ref.mirrorNorthWestForce.statuses.healthStatus);
+mirrorAverageForce( 
+    value        := ref.mirrorAverageForce.average.decaNewton.value, 
+    actualStatus := ref.mirrorAverageForce.actualStatus, 
+    healthStatus := ref.mirrorAverageForce.statuses.healthStatus);
+    
+changeToAutoButtonDeactivated := ref.processes.changePressureSetpointState.statuses.enabledStatus.disabled
+                                 OR ref.statuses.pressureSetpointStatus.auto;
+changeToManualButtonDeactivated := ref.processes.changePressureSetpointState.statuses.enabledStatus.disabled
+                                   OR ref.statuses.pressureSetpointStatus.manual;
+                                   
+IF ref.statuses.pressureSetpointStatus.auto THEN
+    operatingStatus(text := 'Automatic');
+    operatingStatus.color.bg := Colors.GREEN;
+    operatingStatus.color.fg := Colors.WHITE;
+ELSIF ref.statuses.pressureSetpointStatus.manual THEN
+    operatingStatus(text := 'Fixed');
+    operatingStatus.color.bg := Colors.ORANGE;
+    operatingStatus.color.fg := Colors.WHITE;
+END_IF]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

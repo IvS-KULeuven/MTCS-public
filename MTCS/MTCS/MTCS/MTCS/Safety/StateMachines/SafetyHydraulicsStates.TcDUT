@@ -1,0 +1,16 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.5">
+  <DUT Name="SafetyHydraulicsStates" Id="{6a5381ea-7ca2-4c5f-8871-79d18b29bd71}">
+    <Declaration><![CDATA[TYPE SafetyHydraulicsStates :
+(
+	Error := 0,
+	PumpsOff := 1,
+	PumpsStarting := 2,
+	WaitingForPressure := 3,
+	PressureOK := 4,
+    PumpsStopping := 5
+);
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

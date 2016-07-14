@@ -1,0 +1,15 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="CoverStatuses" Id="{3333b983-c3ba-4dec-94a5-027e8d2d4bce}">
+    <Declaration><![CDATA[TYPE CoverStatuses :
+STRUCT
+	initializationStatus: InitializationStatus;
+	apertureStatus: ApertureStatus;
+	healthStatus: HealthStatus;
+	busyStatus: BusyStatus;
+	operatingStatus: OperatingStatus;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

@@ -1,0 +1,54 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.2">
+  <POU Name="MeasurementToStatus" Id="{0f33e00c-75a3-4621-8486-00307a572056}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK MeasurementToStatus
+VAR_INPUT
+    overrange : BOOL;
+    underrange: BOOL;
+    error : BOOL;
+END_VAR
+VAR_OUTPUT
+    actualStatus : STRING;
+END_VAR
+VAR_IN_OUT
+    alarmStatus : HiHiLoLoAlarmStatus;
+    enabledStatus : EnabledStatus;
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[// update the display and actualStatus
+IF enabledStatus.enabled THEN
+    IF overrange THEN
+        actualStatus := 'Overrange';
+    ELSIF underrange THEN
+        actualStatus := 'Underrange';
+    ELSIF error THEN
+        actualStatus := 'Error';
+    ELSE
+        // update actualStatus:
+        IF alarmStatus.disabled THEN
+            actualStatus := 'Valid';
+        ELSIF alarmStatus.ok THEN
+            actualStatus := 'Valid and within range';
+        ELSIF alarmStatus.hi THEN
+            actualStatus := 'High!';
+        ELSIF alarmStatus.hiHi THEN
+            actualStatus := 'Critically high!';
+        ELSIF alarmStatus.lo THEN
+            actualStatus := 'Low!';
+        ELSIF alarmStatus.loLo THEN
+            actualStatus := 'Critically low!';
+        ELSE
+            actualStatus := 'UNKNOWN';
+        END_IF
+    END_IF
+ELSIF enabledStatus.disabled THEN
+    actualStatus := 'Disabled';
+ELSE
+    actualStatus := 'UNKNOWN';
+END_IF]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

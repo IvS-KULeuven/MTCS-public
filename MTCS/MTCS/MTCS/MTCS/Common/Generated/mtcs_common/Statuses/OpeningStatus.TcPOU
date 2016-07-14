@@ -1,0 +1,39 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="OpeningStatus" Id="{912bc7e4-9f07-4bd3-8932-90f1acdbd676}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK OpeningStatus
+VAR_INPUT
+	///Super state (TRUE if the super state is active, or if there is no super state)
+	superState: BOOL := TRUE;
+	///TRUE if opening
+	isOpening: BOOL;
+	///TRUE if closing
+	isClosing: BOOL;
+END_VAR
+VAR_OUTPUT
+	///Opening
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	opening: BOOL;
+	///Closing
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	closing: BOOL;
+	///Standing still
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	standstill: BOOL;
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[standstill := (NOT(isClosing OR isOpening)) AND superState;
+opening := (isOpening AND (NOT(isClosing))) AND superState;
+closing := (isClosing AND (NOT(isOpening))) AND superState;
+]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

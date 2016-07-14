@@ -1,0 +1,73 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="SM_AxesFeedback" Id="{07d82e27-6da1-42c6-99f5-842cb85df23d}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK SM_AxesFeedback
+VAR_INPUT
+	///True if the feedback is valid, false if not
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	isValid: BOOL;
+	///True if the feedback is too low to calculate, false if not
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	isTooLow: BOOL;
+	///The alpha coordinate (Right Ascention)
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	alpha: AngularPosition;
+	///The delta coordinate (Declination)
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	delta: AngularPosition;
+	///The measured AZI position, corrected by TPoint, and normalized to [0..2*PI]
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	aziPos: AngularPosition;
+	///The measured ELE position, corrected by TPoint, normalized to [-PI..PI]
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	elePos: AngularPosition;
+	///The measured ROC position, normalized to [-PI..PI]
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	rocPos: AngularPosition;
+	///The measured RON position, normalized to [-PI..PI]
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	ronPos: AngularPosition;
+	///The measured position of the currently active rotator (ROC or RON), normalized to [-PI..PI]
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	rotPos: AngularPosition;
+	///The active rotator offset, to North
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	rotOffset: AngularPosition;
+	///The cassegrain rotator offset, to North
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	rocOffset: AngularPosition;
+	///The nasmyth rotator offset, to North
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	ronOffset: AngularPosition;
+END_VAR
+VAR_OUTPUT
+	///Current status description
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	actualStatus: STRING;
+	///Statuses of the state machine
+	statuses: AxesFeedbackStatuses;
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[statuses.healthStatus( isGood := isValid );
+]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

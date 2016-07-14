@@ -1,0 +1,97 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="SM_CoverPanel" Id="{930effd0-d233-4510-83da-9607900ebdab}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK SM_CoverPanel
+VAR_INPUT
+	///Externally read error signal
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	encoderErrorSignal AT %I*: BOOL;
+END_VAR
+VAR_OUTPUT
+	///Current status description
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	actualStatus: STRING;
+	///Statuses of the state machine
+	statuses: CoverPanelStatuses;
+	///Parts of the state machine
+	parts: CoverPanelParts;
+	///Processes of the state machine
+	processes: CoverPanelProcesses;
+END_VAR
+VAR_IN_OUT
+	///INITIALIZED or INITIALIZING or ...
+	{attribute 'OPC.UA.DA' := '0'}
+	initializationStatus: InitializationStatus;
+	///TECH or OBSERVER or ...
+	{attribute 'OPC.UA.DA' := '0'}
+	operatorStatus: OperatorStatus;
+	///MANUAL or AUTO or NONE
+	{attribute 'OPC.UA.DA' := '0'}
+	operatingStatus: OperatingStatus;
+	///Configuration of the panel
+	{attribute 'OPC.UA.DA' := '0'}
+	config: CoverPanelConfig;
+	///Configuration of the cover
+	{attribute 'OPC.UA.DA' := '0'}
+	coverConfig: CoverConfig;
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[parts.axis(
+    isEnabled := operatorStatus.tech AND (operatingStatus.manual AND initializationStatus.initialized),
+    standstillTolerance := config.standstillTolerance);
+parts.motorRelay( isEnabled := parts.axis.isEnabled );
+statuses.busyStatus( isBusy := parts.axis.statuses.busyStatus.busy OR parts.motorRelay.statuses.busyStatus.busy );
+statuses.apertureStatus(
+    isOpen := (ABS(config.openPosition - parts.axis.actPos.degrees.value)) < config.openTolerance,
+    isClosed := (ABS(config.closedPosition - parts.axis.actPos.degrees.value)) < config.closedTolerance);
+statuses.healthStatus(
+    isGood := parts.axis.statuses.healthStatus.isGood AND (NOT(encoderErrorSignal)),
+    hasWarning := parts.axis.statuses.healthStatus.hasWarning);
+statuses.openingStatus(
+    isOpening := parts.axis.statuses.motionStatus.backward,
+    isClosing := parts.axis.statuses.motionStatus.forward);
+processes.startOpening( isEnabled := operatorStatus.tech AND (operatingStatus.manual AND initializationStatus.initialized) );
+processes.startClosing( isEnabled := operatorStatus.tech AND (operatingStatus.manual AND initializationStatus.initialized) );
+]]></ST>
+    </Implementation>
+    <Method Name="startOpening" Id="{2673dd6a-a8db-40bc-927d-7380818f2891}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD startOpening : RequestResults
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[startOpening := THIS^.processes.startOpening.request();
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="startClosing" Id="{54a0e9e1-9326-4500-ad33-a47d2133416d}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD startClosing : RequestResults
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[startClosing := THIS^.processes.startClosing.request();
+]]></ST>
+      </Implementation>
+    </Method>
+  </POU>
+</TcPlcObject>

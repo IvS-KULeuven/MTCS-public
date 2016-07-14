@@ -1,0 +1,84 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="McMoveRelativeProcess" Id="{64ee3223-4de8-406c-a8a2-29d66c557b63}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK McMoveRelativeProcess EXTENDS BaseMcProcess
+VAR_INPUT
+	///Arguments to be set, before writing do_request TRUE
+	{attribute 'OPC.UA.DA' := '1'}
+	set: McMoveRelativeProcessArgs;
+END_VAR
+VAR_OUTPUT
+	///Arguments in use by the process, if do_request was accepted
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	get: McMoveRelativeProcessArgs;
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[IF do_request THEN
+    do_request_result := request(
+    distance := set.distance,
+    maxVelocity := set.maxVelocity);
+    do_request := FALSE;
+END_IF;
+SUPER^();
+]]></ST>
+    </Implementation>
+    <Method Name="start" Id="{07956503-9c1b-4a42-a6f3-bc1fd84b5638}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD start
+VAR_INPUT
+	///Distance to move
+	distance: LREAL;
+	///Maximum velocity
+	maxVelocity: LREAL;
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[THIS^.get.distance := distance;
+THIS^.get.maxVelocity := maxVelocity;
+THIS^.statuses.busyStatus( isBusy := TRUE );
+THIS^.statuses.healthStatus( isGood := TRUE );
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="request" Id="{f3098436-746a-463b-b50e-1567f1f69ffd}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD request : RequestResults
+VAR_INPUT
+	///Distance to move
+	distance: LREAL;
+	///Maximum velocity
+	maxVelocity: LREAL;
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF THIS^.statuses.enabledStatus.enabled THEN
+    THIS^.start(
+        distance := distance,
+        maxVelocity := maxVelocity);
+    request := RequestResults.ACCEPTED;
+ELSE
+    request := RequestResults.REJECTED;
+END_IF;
+]]></ST>
+      </Implementation>
+    </Method>
+  </POU>
+</TcPlcObject>

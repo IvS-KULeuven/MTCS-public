@@ -1,0 +1,47 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="InitializationStatus" Id="{b1d3b2bc-dd11-411d-944b-626e316650ba}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK InitializationStatus
+VAR_INPUT
+	///Super state (TRUE if the super state is active, or if there is no super state)
+	superState: BOOL := TRUE;
+	///Enum!
+	state: InitializationStates;
+END_VAR
+VAR_OUTPUT
+	///Shutdown
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	shutdown: BOOL;
+	///Initializing
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	initializing: BOOL;
+	///Initializing failed
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	initializingFailed: BOOL;
+	///Initialized
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	initialized: BOOL;
+	///Locked
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	locked: BOOL;
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[initialized := (state = InitializationStates.INITIALIZED) AND superState;
+locked := (state = InitializationStates.LOCKED) AND superState;
+initializing := (state = InitializationStates.INITIALIZING) AND superState;
+initializingFailed := (state = InitializationStates.INITIALIZING_FAILED) AND superState;
+shutdown := (state = InitializationStates.SHUTDOWN) AND superState;
+]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

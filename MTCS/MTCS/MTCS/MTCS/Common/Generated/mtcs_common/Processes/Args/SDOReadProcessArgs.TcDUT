@@ -1,0 +1,16 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="SDOReadProcessArgs" Id="{f970cd1d-8fb3-4975-965f-41c8fa2c11cb}">
+    <Declaration><![CDATA[TYPE SDOReadProcessArgs :
+STRUCT
+	///SDO Index
+	index: UINT;
+	///SDO SubIndex
+	subindex: USINT;
+	///Number of bytes to be read
+	noOfBytes: UDINT;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

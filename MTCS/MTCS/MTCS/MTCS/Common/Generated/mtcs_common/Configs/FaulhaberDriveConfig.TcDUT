@@ -1,0 +1,38 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="FaulhaberDriveConfig" Id="{80cdc092-8e5a-4c84-b77d-cc50d5d5b6ae}">
+    <Declaration><![CDATA[TYPE FaulhaberDriveConfig :
+STRUCT
+	///Send the complete config to the drive during initialization
+	sendAtInitialization: BOOL;
+	///The CANopen bus NetId, as configured via TwinCAT, e.g. '172.16.2.131.2.1'
+	CANopenBusNetId: STRING;
+	///The CANopen node port number, as configured via TwinCAT, e.g. 1005
+	CANopenNodePort: UINT;
+	///0x6060.0: Operating mode changeover
+	modesOfOperation: USINT;
+	///0x607E.0: Direction of rotation
+	polarity: USINT;
+	///0x607F.0: Maximum velocity, in rpm
+	maxProfileVelocity: UDINT;
+	///0x2310.1: Lower limit switch configuration
+	negativeLimitSwitch: USINT;
+	///0x2310.2: Upper limit switch configuration
+	positiveLimitSwitch: USINT;
+	///0x2310.3: Homing switch configuration
+	homingSwitch: USINT;
+	///0x2310.5: Limit switch positive edge
+	limitSwitchPolarity: USINT;
+	///0x2333.1: Continuous current limit, in milliamps
+	continuousCurrentLimit: UINT;
+	///0x2333.2: Peak current limit, in milliamps
+	peakCurrentLimit: UINT;
+	///0x2331.1: Proportional term (gain) of the velocity control mode
+	velocityControlProportionalTerm: UINT;
+	///0x2331.2: Integral term (gain) of the velocity control mode
+	velocityControlIntegralTerm: UINT;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

@@ -1,0 +1,104 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="AxesQuickStopHelper" Id="{9589beb6-0678-4d27-b895-90cd917563ac}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK AxesQuickStopHelper
+VAR_INPUT
+    deceleration : LREAL;
+    jerk : LREAL;
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+    setpointGenerator : AxesExternalSetpointGenerator;
+    quickStop     : AxesStopProcess;
+    virtual : AngularAxis;
+    physical : AngularAxis;
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[IF quickStop.isBusy() THEN
+    
+    IF NOT quickStop.isStarted() THEN
+        quickStop.state := 0;
+        quickStop.setStarted();
+	END_IF
+    
+    // two cases are possible:
+    //  1) the external setpoint generator is enabled
+    //     --> 1.a) synchronize the virtual with the physical axis
+    //         1.b) stop tracking
+    //         1.c) stop the virtual axis (even if it was not moving)
+    //  2) the external setpoint generator is disabled
+    //     --> 2.a) stop both the physical axis and the virtual axis (even if they were not moving)'
+    //  
+    //  Either case, if they fail to stop, we power off the axes
+    
+    CASE quickStop.state OF
+        0:
+            quickStop.setActualStatus('Now stopping'); 
+            IF physical.axis_ref.Status.ExtSetPointGenEnabled THEN
+                // case 1.a) synchronize the virtual with the physical axis
+                virtual.processes.setPosition.start(value := physical.axis_ref.NcToPlc.ActPos);
+                quickStop.state := 1;
+            ELSE
+                // case 2.a) stop both the physical axis and the virtual axis (even if they were not moving)
+                physical.processes.stopParametrized.start(deceleration := deceleration, jerk := jerk);
+                virtual.processes.stopParametrized.start(deceleration := deceleration, jerk := jerk); // not needed in fact, but it's better to make sure it is stopped too
+                quickStop.state := 3;
+			END_IF
+        1:
+            IF virtual.processes.setPosition.isIdle() THEN
+                // regardless of whether the stopping worked or not go to the next step
+                // 1.b) stop tracking
+                setpointGenerator.stopTracking();
+                // 1.c) stop the virtual axis (even if it was not moving)
+                virtual.processes.stopParametrized.start(deceleration := deceleration, jerk := jerk);
+                quickStop.state := 2;
+			END_IF
+        2:
+            IF virtual.processes.stopParametrized.isIdle() THEN
+                IF virtual.processes.stopParametrized.isGood() THEN
+                    quickStop.state := 1000;
+                ELSE
+                    quickStop.setActualStatus('Could not stop the virtual axis');
+                    quickStop.state := 999;
+                END_IF
+            END_IF
+        3:
+            IF      physical.processes.stopParametrized.isIdle()
+                AND virtual.processes.stopParametrized.isIdle() 
+            THEN
+                IF     physical.processes.stopParametrized.isGood()
+                   AND virtual.processes.stopParametrized.isGood() 
+                THEN
+                    quickStop.state := 1000;
+                ELSE
+                    quickStop.setActualStatus('Could not stop the physical and virtual axes');
+                    quickStop.state := 999;
+                END_IF
+			END_IF
+        1000:
+            // ok done
+            quickStop.setFinished();
+            quickStop.setGood();
+            quickStop.setActualStatus('Stopped');
+        999:
+            // error!
+            // try to power off the motors
+            quickStop.setBad();
+            quickStop.state := 9991;
+        9991:
+            physical.processes.power.start(enable := FALSE);
+            virtual.processes.power.start(enable := FALSE);
+        9992:
+            // still in error, nothing to do
+            quickStop.setFinished();
+            
+    END_CASE
+    
+END_IF]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

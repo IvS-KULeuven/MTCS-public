@@ -1,0 +1,69 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.2">
+  <POU Name="ReadXmlProcessWidget" Id="{8b834f0e-77be-41a3-946d-0b9b67999af9}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK ReadXmlProcessWidget
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+	fgColor : DWORD;
+	bgColor : DWORD;
+	description : STRING;
+END_VAR
+VAR_IN_OUT
+	process : ReadXmlProcess;
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[IF process.statuses.healthStatus.good THEN
+
+	IF process.statuses.busyStatus.idle THEN
+		fgColor := Colors.BLACK;
+		bgColor := Colors.GREEN;
+		description := 'Idle';
+	ELSIF process.statuses.busyStatus.busy THEN
+		fgColor := Colors.WHITE;
+		bgColor := Colors.BLUE;
+		description := 'Reading file...';
+	ELSE
+		fgColor := Colors.WHITE;
+		bgColor := Colors.BLACK;
+		description := '';
+	END_IF;
+
+ELSIF process.statuses.healthStatus.bad THEN
+	
+	fgColor := Colors.WHITE;
+	bgColor := Colors.RED;
+		
+	IF process.statuses.busyStatus.idle THEN
+		IF process.errorId = 0 THEN
+			description := 'Error';
+		ELSIF process.errorId = 1804 THEN
+			description := 'Dirs/files not found';
+		ELSE
+			description := CONCAT(CONCAT('Error (', UDINT_TO_STRING(process.errorId)), ')');
+		END_IF
+	ELSIF process.statuses.busyStatus.busy THEN
+		IF process.errorId = 0 THEN
+			description := 'Busy and error';
+		ELSE
+			description := CONCAT(CONCAT('Busy and error (', UDINT_TO_STRING(process.errorId)), ')');
+		END_IF
+	ELSE
+		IF process.errorId = 0 THEN
+			description := 'Error';
+		ELSE
+			description := CONCAT(CONCAT('Error (', UDINT_TO_STRING(process.errorId)), ')');
+		END_IF
+	END_IF;
+
+ELSE
+	fgColor := Colors.WHITE;
+	bgColor := Colors.BLACK;
+	description := '';
+END_IF;]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

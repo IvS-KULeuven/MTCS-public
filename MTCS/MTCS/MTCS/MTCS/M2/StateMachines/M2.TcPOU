@@ -1,0 +1,931 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="M2" Id="{0a7c5be7-7e56-4782-84fb-d4cc0e6a236d}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK M2 EXTENDS SM_M2
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR
+
+	_initializingTon : TON;
+	_autoPowerOffTimerTon : TON;	
+
+    _initializingCurrentAction : INT;
+    _powerOnState : INT;
+	_powerOnTon : TON;
+    _powerOffState : INT;
+	_powerOffTon : TON;
+    _onFirstStartCurrentAction : INT;
+    _verifyFixedPositionsState : INT;
+    _doThermalFocusState : INT;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[_update();
+
+_onFirstStart();
+_initializing();
+_changingOperatingState();
+_locking();
+_unlocking();
+_powerOn();
+_powerOff();
+_abort();
+_moveSteps();
+_moveAbsolute();
+_moveRelative();
+_doThermalFocusForStationPosition();
+_doThermalFocusForStationName();
+_doThermalFocus();
+_verifyFixedPositions();
+
+_update();]]></ST>
+    </Implementation>
+    <Method Name="_doThermalFocusForStationName" Id="{06c71ecd-17b5-4107-b0fb-96c6236456ce}">
+      <Declaration><![CDATA[METHOD _doThermalFocusForStationName
+VAR_INPUT
+END_VAR
+VAR
+    newPositionMillimeters : LREAL;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF processes.doThermalFocusForStationName.isBusy() THEN
+    
+    IF NOT processes.doThermalFocusForStationName.isStarted() THEN
+        
+        processes.doThermalFocusForStationPosition.start(
+                station := M3NameToPositionId(
+                                name   := processes.doThermalFocusForStationName.get.station,
+                                config := m3KnownPositionsConfig )
+        );
+        
+        processes.doThermalFocusForStationName.setStarted();
+    END_IF
+        
+    processes.doThermalFocusForStationName.setActualStatus( processes.doThermalFocusForStationPosition.actualStatus );
+    
+    IF processes.doThermalFocusForStationPosition.isIdle() THEN
+        
+        IF processes.doThermalFocusForStationPosition.isGood() THEN
+            processes.doThermalFocusForStationName.setGood();
+        ELSE
+            processes.doThermalFocusForStationName.setBad();
+        END_IF
+        
+        processes.doThermalFocusForStationName.setFinished();
+    END_IF
+
+    
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_verifyFixedPositions" Id="{0d2bcad1-d9ad-4f7d-8e6e-e1c6aaf58e3c}">
+      <Declaration><![CDATA[METHOD _verifyFixedPositions
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF processes.verifyFixedPositions.isBusy() THEN
+    
+    IF NOT processes.verifyFixedPositions.isStarted() THEN
+        
+        _verifyFixedPositionsState := 0;
+        
+        processes.verifyFixedPositions.setStarted();
+	END_IF
+    
+    
+    CASE _verifyFixedPositionsState OF
+        
+        0:
+            processes.verifyFixedPositions.setActualStatus('Powering ON');
+            processes.powerOn.start();
+            _verifyFixedPositionsState := 1;
+        1:
+            processes.verifyFixedPositions.setActualStatus('Waiting for power');
+            IF processes.powerOn.isIdle() THEN
+                
+                IF processes.powerOn.isGood() THEN
+                    _verifyFixedPositionsState := 2;
+                ELSE
+                    processes.verifyFixedPositions.setActualStatus('Could no power On');
+                    processes.verifyFixedPositions.setBad();
+                    processes.verifyFixedPositions.setFinished();
+				END_IF
+            
+			END_IF
+        2:
+            processes.verifyFixedPositions.setActualStatus('Verifying X');
+            
+            IF ABS(parts.x.position.average.millimeters.value - config.fixedXPosition) > config.fixedXPositionTolerance THEN
+                processes.moveAbsolute.start(axis := M2Axes.X, config.fixedXPosition);
+                _verifyFixedPositionsState := 3;
+            ELSE
+                // skip X
+                 _verifyFixedPositionsState := 4;
+            END_IF
+        3:
+            processes.verifyFixedPositions.setActualStatus('Moving X');
+            IF processes.moveAbsolute.isIdle() THEN
+                // even if this axis failed, try to move the other axes
+                _verifyFixedPositionsState := 4;
+                IF NOT processes.moveAbsolute.isGood() THEN
+                    processes.verifyFixedPositions.setActualStatus('Moving X failed');
+                    processes.verifyFixedPositions.setBad();
+				END_IF
+			END_IF
+        4:
+            processes.verifyFixedPositions.setActualStatus('Verifying Y');
+            
+            IF ABS(parts.y.position.average.millimeters.value - config.fixedYPosition) > config.fixedYPositionTolerance THEN
+                processes.moveAbsolute.start(axis := M2Axes.Y, config.fixedYPosition);
+                _verifyFixedPositionsState := 5;
+            ELSE
+                // skip Y
+                 _verifyFixedPositionsState := 6;
+            END_IF
+        5:
+            processes.verifyFixedPositions.setActualStatus('Moving Y');
+            IF processes.moveAbsolute.isIdle() THEN
+                // even if this axis failed, try to move the other axes
+                _verifyFixedPositionsState := 6;
+                IF NOT processes.moveAbsolute.isGood() THEN
+                    processes.verifyFixedPositions.setActualStatus('Moving Y failed');
+                    processes.verifyFixedPositions.setBad();
+				END_IF
+			END_IF
+        6:
+            processes.verifyFixedPositions.setActualStatus('Verifying Tilt X');
+            
+            IF ABS(parts.tiltX.position.average.millimeters.value - config.fixedTiltXPosition) > config.fixedTiltXPositionTolerance THEN
+                processes.moveAbsolute.start(axis := M2Axes.TILTX, config.fixedTiltXPosition);
+                _verifyFixedPositionsState := 7;
+            ELSE
+                // skip Tilt X
+                 _verifyFixedPositionsState := 8;
+            END_IF
+        7:
+            processes.verifyFixedPositions.setActualStatus('Moving Tilt X');
+            IF processes.moveAbsolute.isIdle() THEN
+                // even if this axis failed, try to move the other axes
+                _verifyFixedPositionsState := 8;
+                IF NOT processes.moveAbsolute.isGood() THEN
+                    processes.verifyFixedPositions.setActualStatus('Moving Tilt X failed');
+                    processes.verifyFixedPositions.setBad();
+				END_IF
+			END_IF
+        8:
+            processes.verifyFixedPositions.setActualStatus('Verifying Tilt Y');
+            
+            IF ABS(parts.tiltY.position.average.millimeters.value - config.fixedTiltYPosition) > config.fixedTiltYPositionTolerance THEN
+                processes.moveAbsolute.start(axis := M2Axes.TILTY, config.fixedTiltYPosition);
+                _verifyFixedPositionsState := 9;
+            ELSE
+                // skip Y
+                _verifyFixedPositionsState := 10;
+            END_IF
+        9:
+            processes.verifyFixedPositions.setActualStatus('Moving Tilt Y');
+            IF processes.moveAbsolute.isIdle() THEN
+                IF processes.moveAbsolute.isGood() THEN
+                    _verifyFixedPositionsState := 10;
+                ELSE
+                    processes.verifyFixedPositions.setActualStatus('Moving Tilt Y failed');
+                    processes.verifyFixedPositions.setBad();
+                    _verifyFixedPositionsState := 10;
+				END_IF
+			END_IF
+        10:
+            IF processes.verifyFixedPositions.isGood() THEN
+                _verifyFixedPositionsState := 1000;
+            ELSE
+                _verifyFixedPositionsState := 999;
+            END_IF
+        999:
+            // one or more axes failed
+            processes.verifyFixedPositions.setActualStatus('Could not set axes');
+            processes.verifyFixedPositions.setBad(); // not neccessary in principle, it was already set bad
+            processes.verifyFixedPositions.setFinished();
+        1000:
+            // all went well
+            processes.verifyFixedPositions.setActualStatus('Done');
+            processes.verifyFixedPositions.setGood();
+            processes.verifyFixedPositions.setFinished();
+    
+	END_CASE
+    
+    
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_update" Id="{311fc978-6d36-4b12-8094-7a7668458fba}">
+      <Declaration><![CDATA[METHOD _update
+VAR_INPUT
+END_VAR
+VAR
+    address : WORD;
+    axisString1 : STRING;
+    axisString2 : STRING;
+    _formatString : FB_FormatString;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[SUPER^(
+	operatorStatus := SUPER^.operatorStatus,
+	io := io,
+	actualFocalStation := actualFocalStation,
+    m3KnownPositionsConfig := m3KnownPositionsConfig,
+	temperatures := temperatures);
+
+// calculate the address of the currently selected axis
+address := 0;
+address.0 := parts.multiplexer.parts.A.digitalOutput;
+address.1 := parts.multiplexer.parts.B.digitalOutput;
+address.2 := parts.multiplexer.parts.C.digitalOutput;
+
+// update the selected axis and its name
+selectedAxis := M2AddressToAxis(address);
+selectedAxisName := M2AxisToString(selectedAxis);
+
+// update the thermal focus values
+thermalFocusCassegrain(newMillimetersValue := M2ComputeThermalFocus(config := config.thermalFocus.cassegrain, temperatures := temperatures));
+thermalFocusNasmythA(newMillimetersValue := M2ComputeThermalFocus(config := config.thermalFocus.nasmythA, temperatures := temperatures));
+thermalFocusNasmythB(newMillimetersValue := M2ComputeThermalFocus(config := config.thermalFocus.nasmythB, temperatures := temperatures));
+thermalFocusNasmythC(newMillimetersValue := M2ComputeThermalFocus(config := config.thermalFocus.nasmythC, temperatures := temperatures));
+thermalFocusNasmythD(newMillimetersValue := M2ComputeThermalFocus(config := config.thermalFocus.nasmythD, temperatures := temperatures));
+thermalFocusActualFocalStation(newMillimetersValue := M2ComputeThermalFocusFromId(positionId := actualFocalStation, config := config.thermalFocus, temperatures := temperatures));
+
+// do the automatic power off logic only if the power is on and if we're in auto mode
+IF parts.powerRelay.digitalOutput AND statuses.operatingStatus.auto THEN
+    
+    // update the timer for automatic power off
+    IF statuses.busyStatus.busy THEN
+        // as long as M2 is busy, don't count down
+        _autoPowerOffTimerTon(IN := FALSE);
+        _autoPowerOffTimerTon(IN := TRUE, PT := LREAL_TO_TIME(config.powerOffTimeout)*1000);
+    ELSE
+        _autoPowerOffTimerTon(IN := TRUE, PT := LREAL_TO_TIME(config.powerOffTimeout)*1000);
+	END_IF
+    // calculate the time until automatic power off
+    powerOffTimer := config.powerOffTimeout - TIME_TO_LREAL(_autoPowerOffTimerTon.ET) / 1000.0;
+    // if allowed and needed, power off automatically
+    IF     processes.powerOff.statuses.enabledStatus.enabled 
+       AND powerOffTimer < 0.001 THEN
+        processes.powerOff.request();
+    END_IF
+ELSE
+    powerOffTimer := 0.0;
+END_IF
+
+
+IF statuses.initializationStatus.initialized THEN
+    IF statuses.healthStatus.bad THEN
+        actualStatus := 'ERROR';
+    ELSIF statuses.healthStatus.good OR statuses.healthStatus.warning THEN
+        IF statuses.operatingStatus.manual THEN
+            actualStatus := 'MANUAL';
+        ELSIF statuses.operatingStatus.auto THEN
+            IF statuses.busyStatus.busy THEN
+                axisString1 := CONCAT('Moving ', M2AxisToString(processes.moveRelative.get.axis));
+                
+                IF processes.moveRelative.isBusy() THEN
+                    _formatString(sFormat := ' %.3f mm', 
+                        arg1    := F_LREAL(processes.moveRelative.get.position),
+                        sOut    => axisString2);
+                    actualStatus := CONCAT(axisString1, axisString2);
+                ELSIF processes.moveAbsolute.isBusy() THEN
+                    _formatString(sFormat := ' to %.3f mm', 
+                        arg1    := F_LREAL(processes.moveAbsolute.get.position),
+                        sOut    => axisString2);
+                    actualStatus := CONCAT(axisString1, axisString2);
+                ELSIF processes.moveAbsolute.isBusy() THEN
+                    actualStatus := axisString1;
+				END_IF
+                actualStatus := 'BUSY';
+            ELSIF statuses.busyStatus.idle THEN
+                IF statuses.healthStatus.good THEN
+                    _formatString(sFormat := 'Z = %.3f mm', 
+                        arg1    := F_LREAL(parts.z.position.average.millimeters.value),
+                        sOut    => actualStatus);
+                ELSE
+                    IF parts.movePositionProcedure.state = M2MoveProcedureStates.ABORTED OR parts.moveStepsProcedure.state = M2MoveProcedureStates.ABORTED THEN
+                        actualStatus := 'Aborted';
+					END_IF
+                    
+				END_IF
+            ELSE
+                actualStatus := 'UNKNOWN';
+			END_IF
+        ELSE
+            actualStatus := 'UNKNOWN';
+		END_IF
+    ELSE
+        actualStatus := 'UNKNOWN';
+	END_IF
+ELSE
+    actualStatus := InitializationStatusToString(statuses.initializationStatus);
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_moveAbsolute" Id="{3be8be4e-9d81-4c7f-88ef-1e6ec98b4774}">
+      <Declaration><![CDATA[METHOD _moveAbsolute
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF processes.moveAbsolute.isBusy() THEN
+    
+    IF NOT processes.moveAbsolute.isStarted() THEN
+        parts.movePositionProcedure.start(
+            axis := processes.moveAbsolute.get.axis,
+            position := processes.moveAbsolute.get.position * 1000);  // convert from mm to um!
+            
+        processes.moveAbsolute.setStarted();
+	END_IF
+    
+    IF parts.movePositionProcedure.statuses.busyStatus.idle THEN
+        
+        IF parts.movePositionProcedure.statuses.healthStatus.good THEN
+            processes.moveAbsolute.setGood();
+        ELSE
+            processes.moveAbsolute.setBad();
+		END_IF
+        
+        processes.moveAbsolute.setFinished();
+	END_IF
+    
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_locking" Id="{400c730e-9d83-4b52-9936-f74d038002fb}">
+      <Declaration><![CDATA[METHOD _locking
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF processes.lock.statuses.busyStatus.busy THEN
+	statuses.initializationStatus(state := InitializationStates.LOCKED);
+	
+	// done
+	processes.lock.setGood();
+	processes.lock.setFinished();
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_unlocking" Id="{42c083bd-c8ea-4e0e-9226-2aee375c821f}">
+      <Declaration><![CDATA[METHOD _unlocking
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF processes.unlock.statuses.busyStatus.busy THEN
+	statuses.initializationStatus(state := InitializationStates.INITIALIZED);
+	
+	// done
+	processes.unlock.setGood();
+	processes.unlock.setFinished();
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_onFirstStart" Id="{466334b8-d1d4-4416-8340-453220235fc0}">
+      <Declaration><![CDATA[METHOD _onFirstStart
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[CASE _onFirstStartCurrentAction OF
+    0:
+        // start loading the config from XML file
+        parts.configManager.processes.load.start(parts.configManager.processes.load.set.filePath);
+        _onFirstStartCurrentAction := 1;
+    1:
+        // wait until the config has been loaded
+        IF parts.configManager.processes.load.statuses.busyStatus.idle THEN
+            IF parts.configManager.processes.load.statuses.healthStatus.good THEN
+                _onFirstStartCurrentAction := 2;
+            ELSE
+                _onFirstStartCurrentAction := 999;
+            END_IF
+        END_IF
+    2:
+        // now start activating the config
+        parts.configManager.processes.activate.start();
+        _onFirstStartCurrentAction := 3;
+    3:
+        // wait until the config has been activated
+        IF parts.configManager.processes.activate.statuses.busyStatus.idle THEN
+            IF parts.configManager.processes.activate.statuses.healthStatus.good THEN
+                _onFirstStartCurrentAction := 4;
+            ELSE
+                _onFirstStartCurrentAction := 999;
+            END_IF
+        END_IF
+    4:
+        // nothing to do, done!
+        ;
+    999:
+        // error, but nothing we can do about it now!
+        ;
+
+END_CASE]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_moveRelative" Id="{4eac5b32-c83c-4bab-9d68-f749fa4fae5e}">
+      <Declaration><![CDATA[METHOD _moveRelative
+VAR_INPUT
+END_VAR
+VAR
+    actualPositionMillimeters : LREAL;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF processes.moveRelative.isBusy() THEN
+    
+    IF NOT processes.moveRelative.isStarted() THEN
+        
+        CASE processes.moveRelative.get.axis OF
+            M2Axes.X:
+                actualPositionMillimeters := parts.x.position.average.millimeters.value;
+            M2Axes.Y:
+                actualPositionMillimeters := parts.y.position.average.millimeters.value;
+            M2Axes.Z:
+                actualPositionMillimeters := parts.z.position.average.millimeters.value;
+            M2Axes.TILTX:
+                actualPositionMillimeters := parts.tiltX.position.average.millimeters.value;
+            M2Axes.TILTY:
+                actualPositionMillimeters := parts.tiltY.position.average.millimeters.value;
+		END_CASE
+    
+    
+        parts.movePositionProcedure.start(
+            axis := processes.moveRelative.get.axis,
+            position := (processes.moveRelative.get.position + actualPositionMillimeters) * 1000);  // convert from mm to um!
+            
+        processes.moveRelative.setStarted();
+	END_IF
+    
+    IF parts.movePositionProcedure.statuses.busyStatus.idle THEN
+        
+        IF parts.movePositionProcedure.statuses.healthStatus.good THEN
+            processes.moveRelative.setGood();
+        ELSE
+            processes.moveRelative.setBad();
+		END_IF
+        
+        processes.moveRelative.setFinished();
+	END_IF
+    
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_powerOff" Id="{5ff48ef7-6e2c-4485-b70a-92c62e46d82d}">
+      <Declaration><![CDATA[METHOD _powerOff
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF processes.powerOff.isBusy() THEN
+    
+	CASE _powerOffState OF 
+		0:
+			// start disabling the drive
+			parts.multiplexer.parts.driveEnable.processes.setEnabled.start(enabled := FALSE);
+			_powerOffState := 1;
+		1:
+			// wait until the drive is disabled
+			IF parts.multiplexer.parts.driveEnable.statuses.busyStatus.idle THEN
+				_powerOffState := 2;
+			END_IF
+		2:
+			// turn off the power of the M2 field electronics
+			parts.powerRelay.processes.setEnabled.start(enabled := FALSE);
+			_powerOffState := 3;
+		3:
+			// wait until the power is off
+			IF parts.powerRelay.statuses.busyStatus.idle THEN
+				_powerOffState := 4;
+			END_IF
+		4:
+			// start the timer
+			_powerOffTon(IN := FALSE);
+        	_powerOffTon(IN := TRUE,
+             			PT := LREAL_TO_TIME(config.waitAfterpowerOff) * 1000); 
+			_powerOffState := 5;
+		5:
+			// wait until the time has elapsed
+			_powerOffTon(IN := TRUE);
+			IF _powerOffTon.Q THEN
+				_powerOffState := 6;
+			END_IF
+		6:
+			// all done
+			processes.powerOff.setGood();
+			processes.powerOff.setFinished();
+			_powerOffState := 0;
+	END_CASE
+	
+ELSE
+	_powerOffState := 0;
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_powerOn" Id="{705b7e90-552e-4f5e-92dc-eea16fc97016}">
+      <Declaration><![CDATA[METHOD _powerOn
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF processes.powerOn.isBusy() THEN
+    
+	CASE _powerOnState OF 
+		0:
+			// reset the automatic powerOff timer
+			_autoPowerOffTimerTon(IN := FALSE);
+			_autoPowerOffTimerTon(IN := TRUE, PT := LREAL_TO_TIME(config.powerOffTimeout)*1000);
+            
+			// check if we need to power on the electronics, or not
+			IF parts.powerRelay.digitalOutput AND parts.multiplexer.parts.driveEnable.digitalOutput THEN
+				// OK, already powered on
+				_powerOnState := 7;
+			ELSE
+				_powerOnState := 1;
+			END_IF
+		1:
+			// turn on the power of the M2 field electronics
+			parts.powerRelay.processes.setEnabled.start(enabled := TRUE);
+			_powerOnState := 2;
+		2:
+			// wait until the power is on
+			IF parts.powerRelay.statuses.busyStatus.idle THEN
+				_powerOnState := 3;
+			END_IF
+		3:
+			// start the timer
+			_powerOnTon(IN := FALSE);
+        	_powerOnTon(IN := TRUE,
+             			PT := LREAL_TO_TIME(config.waitAfterPowerOn) * 1000); 
+			_powerOnState := 4;
+		4:
+			// wait until the time has elapsed
+			_powerOnTon(IN := TRUE);
+			IF _powerOnTon.Q THEN
+				_powerOnState := 5;
+			END_IF
+		5:
+			// start enabling the drive
+			parts.multiplexer.parts.driveEnable.processes.setEnabled.start(enabled := TRUE);
+			_powerOnState := 6;
+		6:
+			// wait until the drive is enabled
+			IF parts.multiplexer.parts.driveEnable.statuses.busyStatus.idle THEN
+				_powerOnState := 7;
+			END_IF
+		7:
+			// all done
+			processes.powerOn.setGood();
+			processes.powerOn.setFinished();
+			_powerOnState := 0;
+	END_CASE
+	
+ELSE
+	_powerOnState := 0;
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="FB_init" Id="{90199888-d09e-4a69-8849-7235b7783ea3}">
+      <Declaration><![CDATA[METHOD FB_init : BOOL
+VAR_INPUT
+	bInitRetains : BOOL; // if TRUE, the retain variables are initialized (warm start / cold start)
+	bInCopyCode : BOOL;  // if TRUE, the instance afterwards gets moved into the copy code (online change)
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[parts.configManager.configure(
+    editableConfigAddress       := ADR(editableConfig),
+    activeConfigAddress         := ADR(config),
+    configLength                := SIZEOF(editableConfig),
+    editableConfigSymbolName    := GLOBAL.config.M2_EDITABLE_CONFIG_SYMBOL_NAME,
+    activeConfigSymbolName      := GLOBAL.config.M2_ACTIVE_CONFIG_SYMBOL_NAME,
+    configFilePath              := GLOBAL.config.M2_CONFIG_FILE_PATH);]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_abort" Id="{a7480106-a948-4379-8ce2-dee9349cc47a}">
+      <Declaration><![CDATA[METHOD _abort
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF processes.abort.isBusy() THEN
+    
+    IF NOT processes.abort.isStarted() THEN
+        
+        IF parts.movePositionProcedure.statuses.busyStatus.busy THEN
+            parts.movePositionProcedure.abort();
+        ELSIF 
+            parts.moveStepsProcedure.statuses.busyStatus.busy THEN
+            parts.moveStepsProcedure.abort();
+		END_IF
+        processes.abort.setStarted();
+	END_IF
+    
+    IF parts.movePositionProcedure.statuses.busyStatus.idle AND parts.moveStepsProcedure.statuses.busyStatus.idle THEN
+        
+        IF parts.movePositionProcedure.statuses.healthStatus.good AND parts.moveStepsProcedure.statuses.healthStatus.good THEN
+            processes.abort.setGood();
+        ELSE
+            processes.abort.setBad();
+		END_IF
+        
+        processes.abort.setFinished();
+	END_IF
+    
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_moveSteps" Id="{afdbf51c-5a9f-48df-aac7-346bde827435}">
+      <Declaration><![CDATA[METHOD _moveSteps
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF processes.moveSteps.isBusy() THEN
+    
+    IF NOT processes.moveSteps.isStarted() THEN
+        parts.moveStepsProcedure.start(
+            axis := processes.moveSteps.get.axis,
+            steps := processes.moveSteps.get.steps,
+            cw := processes.moveSteps.get.cw,
+            fast := processes.moveSteps.get.fast);
+            
+        processes.moveSteps.setStarted();
+	END_IF
+    
+    IF parts.moveStepsProcedure.statuses.busyStatus.idle THEN
+        
+        IF parts.moveStepsProcedure.statuses.healthStatus.good THEN
+            processes.moveSteps.setGood();
+        ELSE
+            processes.moveSteps.setBad();
+		END_IF
+        
+        processes.moveSteps.setFinished();
+	END_IF
+    
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_initializing" Id="{c75a6fc9-3173-43ba-aa18-c75a20225987}">
+      <Declaration><![CDATA[METHOD _initializing
+VAR_INPUT
+END_VAR
+VAR
+    
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF processes.initialize.statuses.busyStatus.busy THEN
+	
+	// start up the initialization
+	IF NOT processes.initialize.statuses.startedStatus.started THEN
+        // we're now initializing
+        statuses.initializationStatus(state := InitializationStates.INITIALIZING);
+        _initializingCurrentAction := 0;
+		// OK we're started now
+		processes.initialize.setStarted();
+	END_IF;
+    
+    // process the actions
+    CASE _initializingCurrentAction OF
+        
+        0:
+            // start loading the config from XML file
+            parts.configManager.processes.load.start(parts.configManager.processes.load.set.filePath);
+            _initializingCurrentAction := 1;
+        1:
+            // wait until the config has been loaded
+            IF parts.configManager.processes.load.statuses.busyStatus.idle THEN
+                IF parts.configManager.processes.load.statuses.healthStatus.good THEN
+                    _initializingCurrentAction := 2;
+                ELSE
+                    _initializingCurrentAction := 999;
+                END_IF
+            END_IF
+        2:
+            // now start activating the config
+            parts.configManager.processes.activate.start();
+            _initializingCurrentAction := 3;
+        3:
+            // wait until the config has been activated
+            IF parts.configManager.processes.activate.statuses.busyStatus.idle THEN
+                IF parts.configManager.processes.activate.statuses.healthStatus.good THEN
+                    _initializingCurrentAction := 4;
+                ELSE
+                    _initializingCurrentAction := 999;
+                END_IF
+            END_IF
+        4:
+            // make sure the drive is not released!
+            parts.multiplexer.parts.release.processes.setEnabled.start(enabled := FALSE);
+            _initializingCurrentAction := 5;
+        5:
+            // wait for the brake to be on
+            IF parts.multiplexer.parts.release.processes.setEnabled.isIdle() THEN
+                IF parts.multiplexer.parts.release.processes.setEnabled.isGood() THEN
+                    _initializingCurrentAction := 6;
+                ELSE
+                    _initializingCurrentAction := 999;
+				END_IF
+			END_IF
+        6:
+            // power on the M2 electronics for a brief moment, to be able to read the positions
+            processes.powerOn.start();
+            _initializingCurrentAction := 7;
+        7:
+            // wait until M2 electronics are powered ON
+            IF processes.powerOn.isIdle() THEN
+                IF processes.powerOn.isGood() THEN
+                    // there's no harm in leaving the power on until the power timeout expires. 
+                    // so we don' t have to turn it off manually
+                    _initializingCurrentAction := 8;
+                ELSE
+                    _initializingCurrentAction := 999;
+                END_IF
+            END_IF
+        8:
+            // now wait for a brief moment before doing anything else, to allow the moving average to stabilize
+            // note that after each movement of the mirror, there is also a waiting time (configurable!) to stabilize the moving average every time
+            _initializingTon(IN := FALSE);
+            _initializingTon(IN := TRUE, PT := T#2S);  // in principle 1 second is ok, but we take 2 since initialization is (should be) done very rarily
+            _initializingCurrentAction := 9;
+        9:
+            // wait for the timer to expire
+            _initializingTon(IN := TRUE);
+            IF _initializingTon.Q THEN
+                _initializingCurrentAction := 10;
+			END_IF
+        10:
+            // now check the X, Y, TiltX, TiltY positions
+            processes.verifyFixedPositions.start();
+            _initializingCurrentAction := 11;
+        11:
+            // wait until the X, Y, TiltX, TiltY positions are verified
+            IF processes.verifyFixedPositions.isIdle() THEN
+                IF processes.verifyFixedPositions.isGood() THEN
+                    _initializingCurrentAction := 1000;
+                ELSE
+                    _initializingCurrentAction := 999;
+                END_IF
+            END_IF
+        999:
+            // there has been an error!
+            statuses.initializationStatus(state := InitializationStates.INITIALIZING_FAILED);
+            // done
+            processes.initialize.setBad();
+            processes.initialize.setFinished();
+        1000:
+            // all done!
+            statuses.initializationStatus(state := InitializationStates.INITIALIZED);
+            processes.initialize.setGood();
+            processes.initialize.setFinished();
+	END_CASE
+    
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_doThermalFocusForStationPosition" Id="{d9912046-5f30-4a1c-ae15-1f3832498031}">
+      <Declaration><![CDATA[METHOD _doThermalFocusForStationPosition
+VAR_INPUT
+END_VAR
+VAR
+    newPositionMillimeters : LREAL;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF processes.doThermalFocusForStationPosition.isBusy() THEN
+    
+
+    IF NOT processes.doThermalFocusForStationPosition.isStarted() THEN
+        _doThermalFocusState := 0;
+        processes.doThermalFocusForStationPosition.setStarted();
+	END_IF
+
+
+    CASE _doThermalFocusState OF
+        
+        0:
+            // check if a focal station is active
+            IF processes.doThermalFocusForStationPosition.get.station = M3PositionIDs.UNKNOWN THEN
+                _doThermalFocusState := 999;
+                processes.doThermalFocusForStationPosition.setActualStatus('Unknown station');
+            ELSE
+                _doThermalFocusState := 1;
+			END_IF
+        1:
+            // start moving Z
+            processes.moveAbsolute.start(
+                axis     := M2Axes.Z,
+                position := M2ComputeThermalFocusFromId(
+                                positionId   := processes.doThermalFocusForStationPosition.get.station,
+                                config       := config.thermalFocus,
+                                temperatures := temperatures ));
+            processes.doThermalFocusForStationPosition.setActualStatus(processes.moveAbsolute.actualStatus);
+            _doThermalFocusState := 2;
+        2:
+            // wait for the moveAbsolute to finish
+            processes.doThermalFocusForStationPosition.setActualStatus(processes.moveAbsolute.actualStatus);
+            IF processes.moveAbsolute.isIdle() THEN
+                IF processes.moveAbsolute.isGood() THEN
+                    _doThermalFocusState := 3;
+                ELSE
+                    _doThermalFocusState := 999;
+                END_IF
+            END_IF 
+        3:
+            // verify the fixed positions if needed
+            IF config.verifyFixedPositinsOnThermalFocus THEN
+                processes.verifyFixedPositions.start();
+                processes.doThermalFocusForStationPosition.setActualStatus(processes.verifyFixedPositions.actualStatus);
+                _doThermalFocusState := 4;
+            ELSE
+                // skip to 5
+                _doThermalFocusState := 5;
+			END_IF
+        4:
+            // wait for the fixed positions verification to finish
+            processes.doThermalFocusForStationPosition.setActualStatus(processes.verifyFixedPositions.actualStatus);
+            IF processes.verifyFixedPositions.isIdle() THEN
+                IF processes.verifyFixedPositions.isGood() THEN
+                    _doThermalFocusState := 5;
+                ELSE
+                    _doThermalFocusState := 999;
+                END_IF
+            END_IF 
+        5:
+            // all done!
+            _doThermalFocusState := 1000;
+        999:
+            processes.doThermalFocusForStationPosition.setBad();
+            processes.doThermalFocusForStationPosition.setFinished();
+        1000:
+            processes.doThermalFocusForStationPosition.setActualStatus('Done');
+            processes.doThermalFocusForStationPosition.setGood();
+            processes.doThermalFocusForStationPosition.setFinished();
+            
+    END_CASE
+        
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_doThermalFocus" Id="{ecf0ccc6-4d01-441f-a6d1-7d9620344216}">
+      <Declaration><![CDATA[METHOD _doThermalFocus
+VAR_INPUT
+END_VAR
+VAR
+    newPositionMillimeters : LREAL;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF processes.doThermalFocus.isBusy() THEN
+    
+    IF NOT processes.doThermalFocus.isStarted() THEN
+        
+        processes.doThermalFocusForStationPosition.start(station := actualFocalStation);
+        
+        processes.doThermalFocus.setStarted();
+    END_IF
+    
+    processes.doThermalFocus.setActualStatus( processes.doThermalFocusForStationPosition.actualStatus );
+    
+    IF processes.doThermalFocusForStationPosition.isIdle() THEN
+        
+        IF processes.doThermalFocusForStationPosition.isGood() THEN
+            processes.doThermalFocus.setGood();
+        ELSE
+            processes.doThermalFocus.setBad();
+        END_IF
+        
+        processes.doThermalFocus.setFinished();
+    END_IF
+
+    
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_changingOperatingState" Id="{fcdcf06e-a700-450f-a4ff-e686d1466646}">
+      <Declaration><![CDATA[METHOD _changingOperatingState
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF SUPER^.processes.changeOperatingState.statuses.busyStatus.busy THEN
+	SUPER^.processes.changeOperatingState.setStarted();
+	SUPER^.statuses.operatingStatus(state := SUPER^.processes.changeOperatingState.get.state);
+	SUPER^.processes.changeOperatingState.setFinished();
+END_IF
+]]></ST>
+      </Implementation>
+    </Method>
+  </POU>
+</TcPlcObject>

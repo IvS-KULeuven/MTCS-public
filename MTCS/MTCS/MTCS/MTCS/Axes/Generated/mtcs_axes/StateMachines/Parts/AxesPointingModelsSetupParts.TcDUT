@@ -1,0 +1,20 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="AxesPointingModelsSetupParts" Id="{9cfadd76-9da3-415a-805f-21f0941364f3}">
+    <Declaration><![CDATA[TYPE AxesPointingModelsSetupParts :
+STRUCT
+	model0: AxesPointingModelSetup;
+	model1: AxesPointingModelSetup;
+	model2: AxesPointingModelSetup;
+	model3: AxesPointingModelSetup;
+	model4: AxesPointingModelSetup;
+	model5: AxesPointingModelSetup;
+	model6: AxesPointingModelSetup;
+	model7: AxesPointingModelSetup;
+	model8: AxesPointingModelSetup;
+	model9: AxesPointingModelSetup;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

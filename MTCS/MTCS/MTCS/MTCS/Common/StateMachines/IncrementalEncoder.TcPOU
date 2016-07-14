@@ -1,0 +1,197 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.5">
+  <POU Name="IncrementalEncoder" Id="{c8024613-3b0b-4a08-afac-43ac73eb5f8d}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK IncrementalEncoder EXTENDS SM_IncrementalEncoder
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR
+    _adsAddr AT %I* : AMSADDR;
+    _adsNetIdStr : STRING;
+    _sdoWrite : FB_EcCoeSdoWrite;
+    _sdoWriteValue : BOOL;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[SUPER^();
+
+THIS^.latchCValid           := status.0;
+THIS^.latchExternValid      := status.1;
+THIS^.setCounterDone        := status.2;
+THIS^.counterUnderflow      := status.3;
+THIS^.counterOverflow       := status.4;
+THIS^.statusOfInputStatus   := status.5;
+THIS^.openCircuit           := status.6;
+THIS^.extrapolationStall    := status.7;
+THIS^.statusOfInputA        := status.8;
+THIS^.statusOfInputB        := status.9;
+THIS^.statusOfInputC        := status.10;
+THIS^.statusOfInputGate     := status.11;
+THIS^.statusOfExternLatch   := status.12;
+THIS^.syncError             := status.13;
+
+
+_adsNetIdStr := CONCAT( BYTE_TO_STRING(_adsAddr.netId[0]),
+                 CONCAT( '.',
+                  CONCAT( BYTE_TO_STRING(_adsAddr.netId[1]), 
+                   CONCAT( '.',
+                    CONCAT( BYTE_TO_STRING(_adsAddr.netId[2]), 
+                     CONCAT( '.',
+                      CONCAT( BYTE_TO_STRING(_adsAddr.netId[3]), 
+                       CONCAT( '.',
+                        CONCAT( BYTE_TO_STRING(_adsAddr.netId[4]), 
+                         CONCAT( '.',
+                                 BYTE_TO_STRING(_adsAddr.netId[5])))))))))));
+
+_enableCounterResetC();
+_disableCounterResetC();
+
+SUPER^();]]></ST>
+    </Implementation>
+    <Method Name="updateSetCounter" Id="{02008aea-7207-4cc1-a72f-bdf75adf3356}">
+      <Declaration><![CDATA[METHOD updateSetCounter
+VAR_INPUT
+    newState : BOOL;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[setCounter := newState;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_enableCounterResetC" Id="{22c0478c-1795-499b-b360-6c6863d64876}">
+      <Declaration><![CDATA[METHOD _enableCounterResetC
+VAR_INPUT
+    
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[
+IF processes.enableCounterResetC.isBusy() THEN
+    
+    IF NOT processes.enableCounterResetC.isStarted() THEN
+        processes.enableCounterResetC._state := 0;
+        processes.enableCounterResetC.setStarted();
+	END_IF
+    
+    CASE processes.enableCounterResetC._state OF
+        0:  
+            _sdoWriteValue := TRUE;
+            _sdoWrite(sNetId     := _adsNetIdStr,
+                      nSlaveAddr := _adsAddr.port,
+                      bExecute   := FALSE);
+            _sdoWrite(sNetId     := _adsNetIdStr,
+                      nSlaveAddr := _adsAddr.port,
+                      nIndex     := 16#8000,
+                      nSubIndex  := 2,
+                      pSrcBuf    := ADR(_sdoWriteValue),
+                      cbBufLen   := SIZEOF(_sdoWriteValue),
+                      bExecute   := TRUE,
+                      tTimeout   := DEFAULT_ADS_TIMEOUT);
+            processes.enableCounterResetC._state := 1;
+        1:
+            _sdoWrite(sNetId     := _adsNetIdStr,
+                      nSlaveAddr := _adsAddr.port,
+                      bExecute   := TRUE);
+            IF _sdoWrite.bError THEN
+                processes.enableCounterResetC._state := 999;
+                processes.enableCounterResetC.setActualStatus(CONCAT('Write error ', UDINT_TO_STRING(_sdoWrite.nErrId)));
+            ELSIF NOT _sdoWrite.bBusy THEN
+                processes.enableCounterResetC._state := 1000;
+			END_IF
+            
+        999:
+            // error!
+            processes.enableCounterResetC.setBad();
+            processes.enableCounterResetC.setFinished();
+        1000:
+            // all done!
+            processes.enableCounterResetC.setActualStatus('Reset enabled');
+            processes.enableCounterResetC.setGood();
+            processes.enableCounterResetC.setFinished();
+    
+	END_CASE
+        
+
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_disableCounterResetC" Id="{24615186-dc55-4a1b-9da6-de75c43cd4c2}">
+      <Declaration><![CDATA[METHOD _disableCounterResetC
+VAR_INPUT
+    
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[
+IF processes.disableCounterResetC.isBusy() THEN
+    
+    IF NOT processes.disableCounterResetC.isStarted() THEN
+        processes.disableCounterResetC._state := 0;
+        processes.disableCounterResetC.setStarted();
+	END_IF
+    
+    CASE processes.disableCounterResetC._state OF
+        0:  
+            _sdoWriteValue := FALSE;
+            _sdoWrite(sNetId     := _adsNetIdStr,
+                      nSlaveAddr := _adsAddr.port,
+                      bExecute   := FALSE);
+            _sdoWrite(sNetId     := _adsNetIdStr,
+                      nSlaveAddr := _adsAddr.port,
+                      nIndex     := 16#8000,
+                      nSubIndex  := 2,
+                      pSrcBuf    := ADR(_sdoWriteValue),
+                      cbBufLen   := SIZEOF(_sdoWriteValue),
+                      bExecute   := TRUE,
+                      tTimeout   := DEFAULT_ADS_TIMEOUT);
+            processes.disableCounterResetC._state := 1;
+        1:
+            _sdoWrite(sNetId     := _adsNetIdStr,
+                      nSlaveAddr := _adsAddr.port,
+                      bExecute   := TRUE);
+            IF _sdoWrite.bError THEN
+                processes.disableCounterResetC._state := 999;
+                processes.disableCounterResetC.setActualStatus(CONCAT('Write error ', UDINT_TO_STRING(_sdoWrite.nErrId)));
+            ELSIF NOT _sdoWrite.bBusy THEN
+                processes.disableCounterResetC._state := 1000;
+			END_IF
+            
+        999:
+            // error!
+            processes.disableCounterResetC.setBad();
+            processes.disableCounterResetC.setFinished();
+        1000:
+            // all done!
+            processes.disableCounterResetC.setActualStatus('Reset disabled');
+            processes.disableCounterResetC.setGood();
+            processes.disableCounterResetC.setFinished();
+    
+	END_CASE
+        
+
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="updateEnableLatchC" Id="{6d759bbb-9cc0-49af-8ec1-f00f43429163}">
+      <Declaration><![CDATA[METHOD updateEnableLatchC
+VAR_INPUT
+    value : BOOL;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[enableLatchC := value;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="updateSetCounterValue" Id="{8fa453e7-c7be-42a4-8d14-cb1561a87d37}">
+      <Declaration><![CDATA[METHOD updateSetCounterValue
+VAR_INPUT
+    value : UDINT;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[setCounterValue := value;]]></ST>
+      </Implementation>
+    </Method>
+  </POU>
+</TcPlcObject>

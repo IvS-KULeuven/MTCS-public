@@ -1,0 +1,11 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="AxesFeedbackStatuses" Id="{c966efb7-4afa-4061-8924-3185e9171cfd}">
+    <Declaration><![CDATA[TYPE AxesFeedbackStatuses :
+STRUCT
+	healthStatus: HealthStatus;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

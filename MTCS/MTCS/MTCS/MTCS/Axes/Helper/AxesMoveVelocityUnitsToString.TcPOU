@@ -1,0 +1,26 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="AxesMoveVelocityUnitsToString" Id="{de0e6714-5114-4beb-9c16-71e03a39b094}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION AxesMoveVelocityUnitsToString : STRING
+VAR_INPUT
+    units : AxesMoveVelocityUnits;
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[CASE units OF
+    AxesMoveVelocityUnits.ARCSECONDS_PER_SECOND:
+        AxesMoveVelocityUnitsToString := 'arcsec / s';
+    AxesMoveVelocityUnits.DEGREES_PER_SECOND:
+        AxesMoveVelocityUnitsToString := 'deg / s';
+    AxesMoveVelocityUnits.RADIANS_PER_SECOND:
+        AxesMoveVelocityUnitsToString := 'rad / s';
+    AxesMoveVelocityUnits.ARCSECONDS_PER_MINUTE:
+        AxesMoveVelocityUnitsToString := 'arcsec / min';
+    AxesMoveVelocityUnits.ARCSECONDS_PER_HOUR:
+        AxesMoveVelocityUnitsToString := 'arcsec / hour';
+END_CASE]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

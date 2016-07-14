@@ -1,0 +1,107 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="AxesMultiPowerOnProcess" Id="{9a17945b-4724-4b17-be3c-69b1866ba4e4}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK AxesMultiPowerOnProcess EXTENDS BaseProcess
+VAR_INPUT
+	///State of the process
+	state: INT;
+	///Arguments to be set, before writing do_request TRUE
+	{attribute 'OPC.UA.DA' := '1'}
+	set: AxesMultiPowerOnProcessArgs;
+END_VAR
+VAR_OUTPUT
+	///Arguments in use by the process, if do_request was accepted
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	get: AxesMultiPowerOnProcessArgs;
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[IF do_request THEN
+    do_request_result := request(
+    azi := set.azi,
+    ele := set.ele,
+    roc := set.roc,
+    ron := set.ron,
+    fw := set.fw);
+    do_request := FALSE;
+END_IF;
+SUPER^();
+]]></ST>
+    </Implementation>
+    <Method Name="start" Id="{3c3a01ca-3a7a-4f5d-bf94-76745e89de79}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD start
+VAR_INPUT
+	///TRUE to power on AZI
+	azi: BOOL;
+	///TRUE to power on ELE
+	ele: BOOL;
+	///TRUE to power on ROC
+	roc: BOOL;
+	///TRUE to power on RON
+	ron: BOOL;
+	///TRUE to power on FW
+	fw: BOOL;
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[THIS^.get.azi := azi;
+THIS^.get.ele := ele;
+THIS^.get.roc := roc;
+THIS^.get.ron := ron;
+THIS^.get.fw := fw;
+THIS^.statuses.busyStatus( isBusy := TRUE );
+THIS^.statuses.healthStatus( isGood := TRUE );
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="request" Id="{cc6e7bf0-58d4-467a-8d4c-a64b381265f0}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD request : RequestResults
+VAR_INPUT
+	///TRUE to power on AZI
+	azi: BOOL;
+	///TRUE to power on ELE
+	ele: BOOL;
+	///TRUE to power on ROC
+	roc: BOOL;
+	///TRUE to power on RON
+	ron: BOOL;
+	///TRUE to power on FW
+	fw: BOOL;
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF THIS^.statuses.enabledStatus.enabled THEN
+    THIS^.start(
+        azi := azi,
+        ele := ele,
+        roc := roc,
+        ron := ron,
+        fw := fw);
+    request := RequestResults.ACCEPTED;
+ELSE
+    request := RequestResults.REJECTED;
+END_IF;
+]]></ST>
+      </Implementation>
+    </Method>
+  </POU>
+</TcPlcObject>

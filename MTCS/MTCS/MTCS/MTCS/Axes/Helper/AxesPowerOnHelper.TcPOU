@@ -1,0 +1,172 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="AxesPowerOnHelper" Id="{639ed2aa-ec23-4c64-8aee-145668df2781}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK AxesPowerOnHelper
+VAR_INPUT
+    id : AxesIds;
+    pAblAxis : POINTER TO AngularAxis := 0; (* NULL if no anti-backlash axis is available !!!*)
+    pAblDriveChannel : POINTER TO AX52XXDriveChannel := 0; (* NULL if no anti-backlash axis is available !!!*)
+    pAblSetpointGenerator : POINTER TO AxesTorqueSetpointGenerator := 0; (* NULL if no anti-backlash axis is available !!!*)
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+    setpointGenerator : AxesExternalSetpointGenerator;
+    powerOn : AxesPowerOnProcess;
+    reset : Process;
+    stop     : AxesStopProcess;
+    virtual : AngularAxis;
+    physical : AngularAxis;
+    targetStart : AngularPosition;
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[IF powerOn.isBusy() THEN
+    
+    IF NOT powerOn.isStarted() THEN
+        powerOn.state := 0;
+        powerOn.setStarted();
+	END_IF
+    
+    CASE powerOn.state OF
+        0:
+            powerOn.setActualStatus('Starting from unpowered status');
+            // first make sure the axes are powered off
+            virtual.processes.power.start(enable := FALSE);
+            physical.processes.power.start(enable := FALSE);        
+            powerOn.state := 1;
+        1:
+            IF      virtual.processes.power.isIdle() 
+                AND physical.processes.power.isIdle() THEN
+                
+                IF      virtual.processes.power.isGood() 
+                   AND  physical.processes.power.isGood() THEN
+                    // ok, all axes are disabled
+                    powerOn.state := 2;
+                ELSE
+                    powerOn.setActualStatus('Could not power off the axes!');
+                    powerOn.state := 999;
+                END_IF
+            END_IF
+        2:
+            powerOn.setActualStatus('Resetting');
+            // now we reset the axis first
+            reset.start();
+            powerOn.state := 3;
+        3:
+            IF reset.isIdle() THEN
+                IF reset.isGood() THEN
+                    powerOn.state := 4;
+                ELSE
+                    powerOn.setActualStatus('Could not reset the axis!');
+                    powerOn.state := 999;
+				END_IF
+			END_IF
+        4:
+            // now synchronize the virtual axes with the physical axes 
+            virtual.processes.setPosition.start(value := physical.axis_ref.NcToPlc.ActPos);
+            
+            // also synchronize the setpoint generator with the physical axes
+            setpointGenerator.synchronize();
+            
+            powerOn.state := 5;
+        5:
+            IF  virtual.processes.setPosition.isIdle() THEN
+                IF virtual.processes.setPosition.isGood() THEN
+                    powerOn.state := 6;
+                ELSE
+                    powerOn.setActualStatus('Could not synchronize the virtual and physical axes');
+                    powerOn.state := 999;
+				END_IF
+            END_IF
+        6:
+            powerOn.setActualStatus('Powering on');
+            // now power on the axes
+            virtual.processes.power.start(enable := TRUE);
+            physical.processes.power.start(enable := TRUE);
+            powerOn.state := 7;
+        7:
+            IF      virtual.processes.power.isIdle() 
+                AND physical.processes.power.isIdle() THEN
+                
+                IF      virtual.processes.power.isGood() 
+                   AND  physical.processes.power.isGood() THEN
+                    // ok, all axes are powered on
+                    powerOn.state := 8;
+                ELSE
+                    powerOn.setActualStatus('Could not power on the axes!');
+                    powerOn.state := 999;
+                END_IF
+            END_IF
+        8:
+            // now we enable the external setpoint generator
+            powerOn.setActualStatus('Enabling external setpoint generator');
+            physical.processes.enableExtSetGen.start();
+            powerOn.state := 9;
+        9:
+            // wait for the external setpoint generator to be enabled
+            IF physical.processes.enableExtSetGen.isIdle() (* AND ... *) THEN
+                IF physical.processes.enableExtSetGen.isGood() THEN
+                    powerOn.state := 10;
+                ELSE
+                    powerOn.state := 999;
+                    powerOn.setActualStatus('Could not enable the external setpoint generator');
+                END_IF
+            END_IF
+        10:
+            // synchronize the targetStart position
+            targetStart(newDegreesValue := physical.axis_ref.PlcToNc.ExtSetPos);
+            // now we can turn on the Anti-backlash axis if needed!
+            IF hasAblAxis() THEN
+                pAblSetpointGenerator^.start();
+                pAblAxis^.processes.power.start(enable := TRUE);
+                powerOn.state := 11;
+            ELSE
+                // skip the next step
+                powerOn.state := 12;
+			END_IF
+        11:
+            IF pAblAxis^.processes.power.isIdle() THEN
+                IF  pAblAxis^.processes.power.isGood() THEN
+                    // ok, all axes are powered on
+                    powerOn.state := 12;
+                ELSE
+                    powerOn.setActualStatus('Could not power on the anti-backlash axis!');
+                    powerOn.state := 999;
+                END_IF
+            END_IF
+        12:
+            // all done!
+            powerOn.state := 1000;
+        999:
+            // error!
+            powerOn.setBad();
+            powerOn.setFinished();
+            // stop all axes
+            stop.start();
+            IF hasAblAxis() THEN
+                // remove the ABL torque
+                pAblSetpointGenerator^.stop();
+			END_IF
+        1000:
+            // ok done
+            powerOn.setFinished();
+            powerOn.setGood();
+            powerOn.setActualStatus('Powered on');
+    END_CASE
+    
+END_IF]]></ST>
+    </Implementation>
+    <Method Name="hasAblAxis" Id="{5ff74349-a64d-4ef7-a5ab-1b4114dd774a}">
+      <Declaration><![CDATA[METHOD hasAblAxis : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[hasAblAxis := (pAblAxis <> 0) AND (pAblDriveChannel <> 0) AND (pAblSetpointGenerator <> 0);]]></ST>
+      </Implementation>
+    </Method>
+  </POU>
+</TcPlcObject>

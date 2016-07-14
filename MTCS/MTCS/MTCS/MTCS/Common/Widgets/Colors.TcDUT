@@ -1,0 +1,18 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.5">
+  <DUT Name="Colors" Id="{3fd38157-386f-4dd1-abcb-ae31ce359a74}">
+    <Declaration><![CDATA[TYPE Colors :
+(
+	GREEN := 16#FF00FF00,
+	RED := 16#FFFF0000,
+	ORANGE := 16#FFFF802D,
+	GRAY := 16#FFD3D3D3,
+	DARK_GRAY := 16#FF949494,
+	BLACK := 16#FF000000,
+	WHITE := 16#FFFFFFFF,
+	BLUE := 16#FF0000FF
+) DWORD;
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

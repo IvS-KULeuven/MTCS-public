@@ -1,0 +1,42 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="AxesRotationConfig" Id="{33730877-d191-4054-bcbc-c62c8514faeb}">
+    <Declaration><![CDATA[TYPE AxesRotationConfig :
+STRUCT
+	///Offset in degrees, of the absolute motor encoder, w.r.t. zero
+	motorEncoderOffset: LREAL;
+	///How many degrees should the moveOutOfLimitSwitch process try to move?
+	moveOutOfLimitSwitchDistance: LREAL;
+	///Which input (0-7) represents the positive limit switch?
+	positiveLimitSwitchInput: SINT;
+	///Which input (0-7) represents the negative limit switch?
+	negativeLimitSwitchInput: SINT;
+	///Limit the minimum position of the axis to this value in degrees, of the virtual axis
+	minPositionLimitVirtualAxis: LREAL;
+	///Limit the maximum position of the axis to this value in degrees, of the virtual axis
+	maxPositionLimitVirtualAxis: LREAL;
+	///Limit the minimum position of the axis to this value in degrees, of the physical axis
+	minPositionLimitPhysicalAxis: LREAL;
+	///Limit the maximum position of the axis to this value in degrees, of the physical axis
+	maxPositionLimitPhysicalAxis: LREAL;
+	///Limit the velocity of the axis to this value in degrees/sec
+	velocityLimit: LREAL;
+	///Limit the acceleration (or deceleration) of the axis to this value in degrees/sec^2
+	accelerationLimit: LREAL;
+	///The minimum position setpoint of the axis in degrees
+	minPositionSetpoint: LREAL;
+	///The maximum position setpoint of the axis in degrees
+	maxPositionSetpoint: LREAL;
+	///The maximum velocity setpoint of the axis in degrees/sec
+	maxVelocitySetpoint: LREAL;
+	///The maximum acceleration setpoint of the axis in degrees/sec^2
+	maxAccelerationSetpoint: LREAL;
+	///Quick stop deceleration, in degrees/sec2
+	quickStopDeceleration: LREAL;
+	///Quick stop jerk, in degrees/sec3
+	quickStopJerk: LREAL;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

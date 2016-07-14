@@ -1,0 +1,54 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="AxesTarget" Id="{7764b87a-6ed2-47ba-8697-28fa1bafcef8}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK AxesTarget EXTENDS SM_AxesTarget
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[SUPER^();]]></ST>
+    </Implementation>
+    <Method Name="updateAziEle" Id="{f221940d-bd5e-491e-adfc-a61bcafd9144}">
+      <Declaration><![CDATA[METHOD updateAziEle
+VAR_INPUT
+	input : TmcAzElFull; // units: see SLALIB AltAz
+    deltaAzi : LREAL := 0; // arcseconds
+    deltaEle : LREAL := 0; // arcseconds
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// formulas: see SLALIB documentation: slaAltaz 
+
+(* Natural units are used throughout. The arguments ha, dec, phi, az, el AND zd are in
+radians. The velocities and accelerations assume constant declination and constant
+rate of change of hour angle (as for tracking a star); the units of azd, eld and pad
+are radians per radian of HA, while the units of azdd, eldd and padd are radians per
+radian of HA squared. To convert into practical degree- and second-based units:
+ angles * 360/2pi                          --> degrees
+ velocities *(2pi/86400) * (360/2pi)       --> degree/sec
+ accelerations * (2pi/86400)^2 * (360/2pi) --> degree/sec/sec
+*)
+
+aziPointingModelOffset(newDegreesValue := ARCSEC_TO_DEG(deltaAzi));
+elePointingModelOffset(newDegreesValue := ARCSEC_TO_DEG(deltaEle));
+
+aziPos(newDegreesValue := RAD_TO_DEG(input.az) + aziPointingModelOffset.degrees.value);
+aziVelo(newDegreesPerSecondValue := RAD_TO_DEG(input.azd  * (2*PI/86400.0)));
+aziAcc(newDegreesPerSquareSecondValue := RAD_TO_DEG(input.azdd * (2*PI/86400.0) * (2*PI/86400.0)));
+
+elePos(newDegreesValue := RAD_TO_DEG(input.el) + elePointingModelOffset.degrees.value);
+eleVelo(newDegreesPerSecondValue := RAD_TO_DEG(input.eld  * (2*PI/86400.0)));
+eleAcc(newDegreesPerSquareSecondValue := RAD_TO_DEG(input.eldd * (2*PI/86400.0) * (2*PI/86400.0)));
+
+paPos(newDegreesValue := RAD_TO_DEG(input.pa));
+paVelo(newDegreesPerSecondValue := RAD_TO_DEG(input.pad  * (2*PI/86400.0)));
+paAcc(newDegreesPerSquareSecondValue := RAD_TO_DEG(input.padd * (2*PI/86400.0) * (2*PI/86400.0)));
+]]></ST>
+      </Implementation>
+    </Method>
+  </POU>
+</TcPlcObject>

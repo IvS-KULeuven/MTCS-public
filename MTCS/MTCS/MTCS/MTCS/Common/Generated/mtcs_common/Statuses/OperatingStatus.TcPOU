@@ -1,0 +1,32 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="OperatingStatus" Id="{bdb3d02a-530c-4c52-adf9-2124ef0dc105}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK OperatingStatus
+VAR_INPUT
+	///Super state (TRUE if the super state is active, or if there is no super state)
+	superState: BOOL := TRUE;
+	///Enum!
+	state: OperatingStates;
+END_VAR
+VAR_OUTPUT
+	///Auto
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	auto: BOOL;
+	///Manual
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	manual: BOOL;
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[auto := (state = OperatingStates.AUTO) AND superState;
+manual := (state = OperatingStates.MANUAL) AND superState;
+]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

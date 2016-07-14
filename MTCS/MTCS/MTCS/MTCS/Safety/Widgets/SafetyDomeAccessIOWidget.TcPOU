@@ -1,0 +1,37 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.5">
+  <POU Name="SafetyDomeAccessIOWidget" Id="{ef5d6a27-d33c-43e0-b840-5ddce8a6f9b1}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK SafetyDomeAccessIOWidget
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR
+	actualStatus : StatusWidget;
+    
+	COU : EtherCatDeviceWidget;
+	DI1 : EtherCatDeviceWidget;
+	DI2 : EtherCatDeviceWidget;
+	DO1 : EtherCatDeviceWidget;
+	SI1 : EtherCatDeviceWidget;
+	RE1 : EtherCatDeviceWidget;
+	RE2 : EtherCatDeviceWidget;
+END_VAR
+VAR_IN_OUT
+	ref : SafetyDomeAccessIO;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[actualStatus(text  := ref.actualStatus,
+             color := HealthToColor(ref.statuses.healthStatus));
+
+COU(device := ref.parts.COU);
+DI1(device := ref.parts.DI1);
+DI2(device := ref.parts.DI2);
+DO1(device := ref.parts.DO1);
+SI1(device := ref.parts.SI1);
+RE1(device := ref.parts.RE1);
+RE2(device := ref.parts.RE2);]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

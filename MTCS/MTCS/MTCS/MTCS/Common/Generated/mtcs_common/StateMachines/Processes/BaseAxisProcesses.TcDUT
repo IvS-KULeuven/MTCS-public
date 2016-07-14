@@ -1,0 +1,48 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="BaseAxisProcesses" Id="{8e3154e0-38f6-4f8e-ba8f-d2abdcd94243}">
+    <Declaration><![CDATA[TYPE BaseAxisProcesses :
+STRUCT
+	///Move absolute
+	moveAbsolute: McMoveAbsoluteProcess;
+	///Move relative
+	moveRelative: McMoveRelativeProcess;
+	///Move at a constant velocity
+	moveVelocity: McMoveVelocityProcess;
+	///Reset any errors
+	reset: McProcess;
+	///Stop any movement
+	stop: McProcess;
+	///Stop any movement
+	stopParametrized: McStopProcess;
+	///Power on/off the axis
+	power: McPowerProcess;
+	///Couple to master axis
+	gearIn: McProcess;
+	///Decouple from master axis
+	gearOut: McProcess;
+	///Start initializing the axis
+	initialize: Process;
+	///Set the axis position
+	setPosition: McSetPositionProcess;
+	///Enable the external setpoint generator
+	enableExtSetGen: McProcess;
+	///Disable the external setpoint generator
+	disableExtSetGen: McProcess;
+	///Force the calibration (homing) flag to TRUE
+	forceCalibration: McProcess;
+	///Reset the calibration (homing) flag to FALSE
+	resetCalibration: McProcess;
+	///Read a numerical parameter
+	readParameter: McReadParameter;
+	///Read a boolean parameter
+	readBoolParameter: McReadBoolParameter;
+	///Write a numerical parameter
+	writeParameter: McWriteParameter;
+	///Write a boolean parameter
+	writeBoolParameter: McWriteBoolParameter;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

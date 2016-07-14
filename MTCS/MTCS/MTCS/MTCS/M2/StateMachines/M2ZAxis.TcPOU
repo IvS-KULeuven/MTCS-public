@@ -1,0 +1,28 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.5">
+  <POU Name="M2ZAxis" Id="{6b25142e-62d7-4319-a71b-5d850976d3b1}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK M2ZAxis EXTENDS SM_M2ZAxis
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR
+    _lastCounterValue : UDINT;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[
+// the encoder has no noise, so there's no need for an average
+position.noOfSamples := 1;
+
+IF powered AND NOT (parts.encoder.dataError OR parts.encoder.frameError OR parts.encoder.powerFailure OR parts.encoder.syncError) THEN
+    _lastCounterValue := SUPER^.parts.encoder.counterValue;
+ELSE
+   SUPER^.parts.encoder.counterValue := _lastCounterValue;
+END_IF
+
+SUPER^(config := SUPER^.config, axisConfig := SUPER^.axisConfig);
+]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

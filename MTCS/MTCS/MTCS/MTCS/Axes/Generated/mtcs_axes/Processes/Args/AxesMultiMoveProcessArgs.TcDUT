@@ -1,0 +1,34 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="AxesMultiMoveProcessArgs" Id="{90942a13-12e9-461d-b18d-5739e24ce064}">
+    <Declaration><![CDATA[TYPE AxesMultiMoveProcessArgs :
+STRUCT
+	///Units of the 'azi', 'ele', 'roc' and 'ron' arguments (RADIANS, DEGREES, ARCSECONDS, ...)
+	units: AxesMoveUnits;
+	///Angle to move the azimuth axis
+	azi: LREAL;
+	///Angle to move the elevation axis
+	ele: LREAL;
+	///Angle to move the currently active rotator (incompatible with 'roc' and 'ron' args)
+	rot: LREAL;
+	///Angle to move the cassegrain rotation axis (incompatible with 'rot' arg)
+	roc: LREAL;
+	///Angle to move the nasmyth rotation axis (incompatible with 'rot' arg)
+	ron: LREAL;
+	///True to move the azimuth axis, false to leave it untouched
+	doAzi: BOOL;
+	///True to move the elevation axis, false to leave it untouched
+	doEle: BOOL;
+	///True to move the currently active rotator, false to leave it untouched
+	doRot: BOOL;
+	///True to move the cassegrain rotation axis, false to leave it untouched
+	doRoc: BOOL;
+	///True to move the nasmyth rotation axis, false to leave it untouched
+	doRon: BOOL;
+	///Only in case of relative movement during tracking: If possible, go to the position where there is most travel (if the telescope is tracking). If false, it will go there the quickest way possible.
+	preferMostTravel: BOOL := FALSE;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

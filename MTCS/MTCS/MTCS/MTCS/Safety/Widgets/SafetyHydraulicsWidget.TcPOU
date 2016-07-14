@@ -1,0 +1,24 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.5">
+  <POU Name="SafetyHydraulicsWidget" Id="{24a9a5c7-1b79-4fb0-a50a-1c0050de5a46}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK SafetyHydraulicsWidget
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+	actualStatus : StatusWidget;
+END_VAR
+VAR_IN_OUT
+	ref : SafetyHydraulics;
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[
+actualStatus(text  := ref.actualStatus,
+             color := HealthBusyToColor(healthStatus := ref.statuses.healthStatus, busyStatus := ref.statuses.busyStatus));
+
+]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

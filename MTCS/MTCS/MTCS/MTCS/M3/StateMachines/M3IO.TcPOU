@@ -1,0 +1,21 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.2">
+  <POU Name="M3IO" Id="{d2eb1c04-ac54-45c4-9062-d9fdf96add18}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK M3IO EXTENDS SM_M3IO
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR
+    _testVar : INT;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[SUPER^();
+
+// do stuff
+
+//SUPER^();]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

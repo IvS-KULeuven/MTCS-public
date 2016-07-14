@@ -1,0 +1,39 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="SM_LinearPosition" Id="{253a4665-5a02-4994-882d-4360a5fc4d05}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK SM_LinearPosition
+VAR_INPUT
+	///New position value in millimeters
+	{attribute 'OPC.UA.DA' := '0'}
+	newMillimetersValue: LREAL;
+END_VAR
+VAR_OUTPUT
+	///Current status description
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	actualStatus: STRING;
+	///Linear position in millimeters
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	millimeters: QuantityValue;
+	///Linear position in micrometers
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	micrometers: QuantityValue;
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[millimeters(
+    value := newMillimetersValue,
+    unit := Units.MILLIMETER);
+micrometers(
+    value := newMillimetersValue * 1000.0,
+    unit := Units.MICROMETER);
+]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

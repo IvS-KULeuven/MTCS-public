@@ -1,0 +1,14 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="M1AxialSupportProcesses" Id="{b6c52f62-182d-4719-a5ad-0bf1ba501067}">
+    <Declaration><![CDATA[TYPE M1AxialSupportProcesses :
+STRUCT
+	///Change a pressure setpoint, in Bar
+	changePressureSetpoint: ChangeSetpointProcess;
+	///Change the operating state of the pressure setpoint only
+	changePressureSetpointState: ChangeOperatingStateProcess;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

@@ -1,0 +1,56 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="AxesTargetWidget" Id="{e9a10ad1-1c42-436d-97a2-0ba8b387620d}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK AxesTargetWidget
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+	actualStatus : StatusWidget;
+    alpha : AxesAlphaWidget;
+    delta : AxesDeltaWidget;
+    aziPos : AxesAngleWidget;
+    elePos : AxesAngleWidget;
+    paPos : AxesAngleWidget;
+    
+    alphaString : STRING;
+    deltaString : STRING;
+    aziString : STRING;
+    eleString : STRING;
+    paString : STRING;
+END_VAR
+VAR_IN_OUT
+    ref : AxesTarget;
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[actualStatus(text  := ref.actualStatus,
+             color := HealthToColor(healthStatus := ref.statuses.healthStatus));
+                                        
+alpha(radians := ref.alpha.radians.value);
+delta(radians := ref.delta.radians.value);
+
+
+
+
+aziPos(degrees := ref.aziPos.degrees.value, showPlus := FALSE, showMinus := TRUE);
+elePos(degrees := ref.elePos.degrees.value, showPlus := TRUE, showMinus := TRUE);
+paPos(degrees := ref.paPos.degrees.value, showPlus := TRUE, showMinus := TRUE);
+
+IF ref.isGiven THEN
+    alphaString := alpha.hmsString;
+    deltaString := delta.dmsString;
+    aziString := aziPos.dmsString;
+    eleString := elePos.dmsString;
+    paString := paPos.dmsString;
+ELSE
+    alphaString := '';
+    deltaString := '';
+    aziString := '';
+    eleString := '';
+    paString := '';
+END_IF]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

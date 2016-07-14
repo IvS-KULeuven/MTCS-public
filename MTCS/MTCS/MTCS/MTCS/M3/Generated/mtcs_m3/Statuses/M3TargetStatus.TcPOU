@@ -1,0 +1,37 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="M3TargetStatus" Id="{2d01a95c-455b-4fdc-878e-0aba38690155}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK M3TargetStatus
+VAR_INPUT
+	///Super state (TRUE if the super state is active, or if there is no super state)
+	superState: BOOL := TRUE;
+	///Enum!
+	state: M3TargetStates;
+END_VAR
+VAR_OUTPUT
+	///No target given
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	noTargetGiven: BOOL;
+	///Known position
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	knownPosition: BOOL;
+	///Undefined
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	newPosition: BOOL;
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[newPosition := (state = M3TargetStates.NEW_POSITION) AND superState;
+noTargetGiven := (state = M3TargetStates.NO_TARGET_GIVEN) AND superState;
+knownPosition := (state = M3TargetStates.KNOWN_POSITION) AND superState;
+]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

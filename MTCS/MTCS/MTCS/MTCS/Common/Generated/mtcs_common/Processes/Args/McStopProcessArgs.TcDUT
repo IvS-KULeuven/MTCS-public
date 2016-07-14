@@ -1,0 +1,14 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="McStopProcessArgs" Id="{1fcf2ec2-b483-493e-be96-942333e1f3dd}">
+    <Declaration><![CDATA[TYPE McStopProcessArgs :
+STRUCT
+	///Deceleration (use 0 for default). If non zero, then also jerk must be non zero!
+	deceleration: LREAL;
+	///Jerk (use 0 for default). If non zero, then also deceleration must be non zero!
+	jerk: LREAL;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

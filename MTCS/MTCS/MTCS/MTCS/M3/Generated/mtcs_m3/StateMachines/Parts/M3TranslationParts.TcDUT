@@ -1,0 +1,18 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="M3TranslationParts" Id="{aa922c22-f5b8-4008-8dc6-d384d0e1c573}">
+    <Declaration><![CDATA[TYPE M3TranslationParts :
+STRUCT
+	///Motor axis
+	motorAxis: LinearAxis;
+	///Motor drive
+	motorDrive: FaulhaberDrive;
+	///The goto procedure
+	gotoProcedure: M3TranslationGotoProcedure;
+	///The homing procedure
+	homingProcedure: M3TranslationHomingProcedure;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

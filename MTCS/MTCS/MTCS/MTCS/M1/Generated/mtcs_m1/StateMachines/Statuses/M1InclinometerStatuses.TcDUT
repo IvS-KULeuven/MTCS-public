@@ -1,0 +1,12 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="M1InclinometerStatuses" Id="{bca11058-39d2-4374-9a7a-a9677c5e02b3}">
+    <Declaration><![CDATA[TYPE M1InclinometerStatuses :
+STRUCT
+	///Is the inclinometer elevation trustworthy?
+	healthStatus: HealthStatus;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

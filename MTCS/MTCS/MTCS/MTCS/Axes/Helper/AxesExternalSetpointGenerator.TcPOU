@@ -1,0 +1,255 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="AxesExternalSetpointGenerator" Id="{64b573ef-fb15-4c47-8660-483eb3221c03}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK AxesExternalSetpointGenerator
+VAR_INPUT
+    dcTime : LINT;
+	targetPos  : LREAL; // degrees
+	targetVelo : LREAL; // degrees/sec
+	targetAcc  : LREAL; // degrees/sec2
+	trackingStart : LREAL; // degrees
+    velocityLimit : LREAL; // degrees/sec
+    accelerationLimit : LREAL; // degrees/sec2
+    minTrackingPositionSetpoint : LREAL;// degrees
+    maxTrackingPositionSetpoint : LREAL;// degrees
+    minVirtualPositionSetpoint : LREAL;// degrees
+    maxVirtualPositionSetpoint : LREAL;// degrees
+END_VAR
+VAR_OUTPUT
+    limitReached : BOOL;
+END_VAR
+VAR_IN_OUT
+    tracking : BOOL;
+	virtual : AXIS_REF;  // degrees
+	physical : AXIS_REF; // degrees
+END_VAR
+VAR
+    _requestSynchronize : BOOL;  
+    _requestStartTracking : BOOL;  
+    _requestStopTracking : BOOL;  
+    _requestSetPosition : BOOL;
+    _requestSetPositionValue : LREAL;
+
+    previousSetPos : LREAL; // degrees
+    previousSetVelo : LREAL; // degrees/sec
+    previousSetAcc : LREAL; // degrees/sec2
+
+    deltaTime : LREAL; // seconds
+    
+    nextSetPosMax : LREAL;
+    nextSetPosMin : LREAL;
+    
+    nextSetVeloMax : LREAL;
+    nextSetVeloMin : LREAL;
+    
+    nextSetAccMax : LREAL;
+    nextSetAccMin : LREAL;
+    
+    
+    lastReceivedDcTime : LINT;
+    cycle : INT;
+    secondsAfterNewUpdate : LREAL;
+    MAX_NUMBER_OF_CYCLES : INT;
+    
+    minPositionSetpoint : LREAL;
+    maxPositionSetpoint : LREAL;
+    
+END_VAR
+
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[
+// calculate which cycle we are after receiving new updates from the slalib task
+IF cycle > MAX_NUMBER_OF_CYCLES THEN 
+    cycle := 0; // should not be happening, don't extrapolate
+ELSIF  dcTime > lastReceivedDcTime THEN
+    // OK we received new values from the slalib task!
+    lastReceivedDcTime := dcTime;
+    cycle := 0;
+ELSE
+    cycle := cycle + 1;
+END_IF 
+
+secondsAfterNewUpdate := cycle * TIME_TO_LREAL(GLOBAL.config.PLC_FAST_TASK_TIME) / 1000.0;  // TIME_TO_LREAL returns milliseconds!
+
+
+IF _requestSynchronize THEN    
+    physical.PlcToNc.ExtSetPos := physical.NcToPlc.ActPos;
+    physical.PlcToNc.ExtSetVelo := 0.0;
+    physical.PlcToNc.ExtSetAcc := 0.0;
+    
+    previousSetPos := physical.PlcToNc.ExtSetPos;
+    previousSetVelo := physical.PlcToNc.ExtSetVelo;
+    previousSetAcc := physical.PlcToNc.ExtSetAcc;
+    
+    _requestSynchronize := FALSE;
+ELSIF _requestSetPosition THEN
+    physical.PlcToNc.ExtSetPos := _requestSetPositionValue;
+    physical.PlcToNc.ExtSetVelo := 0.0;
+    physical.PlcToNc.ExtSetAcc := 0.0;
+    
+    previousSetPos := _requestSetPositionValue;
+    previousSetVelo := 0.0;
+    previousSetAcc := 0.0;
+    
+    _requestSetPosition := FALSE;      
+
+ELSIF _requestStartTracking THEN
+    tracking := TRUE;
+    _requestStartTracking := FALSE;
+ELSIF _requestStopTracking THEN
+    tracking := FALSE;
+    _requestStopTracking := FALSE;
+ELSE
+    
+    
+    // we expect MAX_VELOCITY and MAX_ACCELERATION to be positive values!
+    velocityLimit := ABS(velocityLimit);
+    accelerationLimit := ABS(accelerationLimit);
+    
+    previousSetPos := physical.PlcToNc.ExtSetPos;
+    previousSetVelo := physical.PlcToNc.ExtSetVelo;
+    previousSetAcc := physical.PlcToNc.ExtSetAcc;
+    
+    IF tracking THEN
+        
+        physical.PlcToNc.ExtSetPos  := virtual.NcToPlc.SetPos  + targetPos - trackingStart;
+        physical.PlcToNc.ExtSetVelo := virtual.NcToPlc.SetVelo + targetVelo; 
+        physical.PlcToNc.ExtSetAcc  := virtual.NcToPlc.SetAcc  + targetAcc;
+        
+        // The PLC FAST task runs faster than the C++ Slalib task.
+        // As a result, the targetPos/targetVelo/targetAcc are updated at a slower rate than the axis setpoints,
+        // which means that the axes setpoints versus time look like a "stair" instead of a smooth curve.
+        // Therefore, we extrapolate the position setpoint, based on the velocity of the axes
+        // The residual position errors are neglegible 
+        
+        IF cycle > 0 THEN
+            // p(t) = p0 + v*t + (a*t^2)/2
+            physical.PlcToNc.ExtSetPos := physical.PlcToNc.ExtSetPos 
+                                          + targetVelo * secondsAfterNewUpdate
+                                          + targetAcc * secondsAfterNewUpdate*secondsAfterNewUpdate / 2.0; 
+        END_IF
+        
+        minPositionSetpoint := minTrackingPositionSetpoint;
+        maxPositionSetpoint := maxTrackingPositionSetpoint;
+        
+    ELSE
+        
+        physical.PlcToNc.ExtSetPos  := virtual.NcToPlc.SetPos;
+        physical.PlcToNc.ExtSetVelo := virtual.NcToPlc.SetVelo; 
+        physical.PlcToNc.ExtSetAcc  := virtual.NcToPlc.SetAcc;
+        
+        minPositionSetpoint := minVirtualPositionSetpoint;
+        maxPositionSetpoint := maxVirtualPositionSetpoint;
+    END_IF
+    
+    
+    // check if the position limit is reached
+    //=======================================================================================
+    // we can still go a bit over it, because otherwise the axis would stop very abruptly.
+    limitReached := (physical.PlcToNc.ExtSetPos < minPositionSetpoint) OR (physical.PlcToNc.ExtSetPos > maxPositionSetpoint);
+    IF limitReached THEN
+        physical.PlcToNc.ExtSetPos := LIMIT(minPositionSetpoint, physical.PlcToNc.ExtSetPos, maxPositionSetpoint);
+	END_IF
+    
+    
+    
+    // Limit the setpoint trajectory!!!!
+    //=======================================================================================
+    
+    deltaTime := TIME_TO_LREAL(GLOBAL.config.PLC_FAST_TASK_TIME) / 1000.0;
+    
+    // calculate the min/max acceleration for the next setpoint
+    nextSetAccMax := accelerationLimit;  // we don't take jerk into account
+    nextSetAccMin := -accelerationLimit; // we don't take jerk into account:
+    
+    // calculate the min/max velocity for the next setpoint
+    nextSetVeloMax := LIMIT(-velocityLimit, previousSetVelo + nextSetAccMax * deltaTime, velocityLimit);
+    nextSetVeloMin := LIMIT(-velocityLimit, previousSetVelo + nextSetAccMin * deltaTime, velocityLimit);
+    
+    // calculate the next min/max position
+    nextSetPosMax := previousSetPos + nextSetVeloMax * deltaTime;
+    nextSetPosMin := previousSetPos + nextSetVeloMin * deltaTime;
+    
+    // now update the setpoint generator values
+    physical.PlcToNc.ExtSetPos  := LIMIT(nextSetPosMin  , physical.PlcToNc.ExtSetPos  , nextSetPosMax);
+    physical.PlcToNc.ExtSetVelo := LIMIT(nextSetVeloMin , physical.PlcToNc.ExtSetVelo , nextSetVeloMax);
+    physical.PlcToNc.ExtSetAcc  := LIMIT(nextSetAccMin  , physical.PlcToNc.ExtSetAcc  , nextSetAccMax);
+    
+    // Set the direction
+    //===================
+    IF physical.PlcToNc.ExtSetPos > physical.NcToPlc.ActPos THEN
+        physical.PlcToNc.ExtSetDirection := 1;
+    ELSIF physical.PlcToNc.ExtSetPos < physical.NcToPlc.ActPos THEN
+        physical.PlcToNc.ExtSetDirection := -1;
+    ELSE
+        physical.PlcToNc.ExtSetDirection := 0;
+    END_IF
+    (*
+    IF physical.PlcToNc.ExtSetVelo > 0 THEN
+        physical.PlcToNc.ExtSetDirection := 1;
+    ELSIF physical.PlcToNc.ExtSetVelo < 0 THEN
+        physical.PlcToNc.ExtSetDirection := -1;
+    ELSE
+        physical.PlcToNc.ExtSetDirection := 0;
+    END_IF
+    *)
+
+END_IF
+
+]]></ST>
+    </Implementation>
+    <Method Name="stopTracking" Id="{19bf17fa-3194-4076-a998-9ba40c44198b}">
+      <Declaration><![CDATA[METHOD stopTracking : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[_requestStopTracking := TRUE;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="FB_init" Id="{5dc9db92-fbd8-4113-855f-bf21a4edc882}">
+      <Declaration><![CDATA[METHOD FB_init : BOOL
+VAR_INPUT
+	bInitRetains : BOOL; // if TRUE, the retain variables are initialized (warm start / cold start)
+	bInCopyCode : BOOL;  // if TRUE, the instance afterwards gets moved into the copy code (online change)
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF TIME_TO_LREAL(GLOBAL.config.PLC_FAST_TASK_TIME) > 0 THEN  // watch for division by zero
+    MAX_NUMBER_OF_CYCLES := LREAL_TO_INT( TIME_TO_LREAL(GLOBAL.config.SLALIB_TASK_TIME) / TIME_TO_LREAL(GLOBAL.config.PLC_FAST_TASK_TIME) );
+END_IF
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="startTracking" Id="{5fe95503-88c5-4589-af87-7d34ac5e82c7}">
+      <Declaration><![CDATA[METHOD startTracking : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[_requestStartTracking := TRUE;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="setPosition" Id="{89c35818-2152-4fab-ae2b-b0677fb07b0c}">
+      <Declaration><![CDATA[METHOD setPosition
+VAR_INPUT
+    value : LREAL;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[_requestSetPosition := TRUE;
+_requestSetPositionValue := value;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="synchronize" Id="{a2d13a18-07e2-4f5d-9fcb-be03251cd2a8}">
+      <Declaration><![CDATA[METHOD synchronize
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[_requestSynchronize := TRUE;]]></ST>
+      </Implementation>
+    </Method>
+  </POU>
+</TcPlcObject>

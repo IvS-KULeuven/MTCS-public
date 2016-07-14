@@ -1,0 +1,2404 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="Axes" Id="{0f0c0508-2645-412d-a995-3d26686ac40e}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK Axes EXTENDS SM_Axes
+VAR_INPUT
+    
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR
+    _onFirstStartCurrentAction : INT;
+    
+	doPointingTon : TON;
+	_relativePointingTon : TON;
+	_relativePointOldAz: LREAL;
+	_relativePointOldEl: LREAL;
+    
+    _relativePointDeltaAzi : LREAL;
+    _relativePointDeltaEle : LREAL;
+    
+    _errorMonitoringTon : TON;
+    _slipMonitoringEdgeDetection : R_TRIG;
+    _personHasEnteredMonitoringEdgeDetection : R_TRIG;
+    
+    _aziStoMonitoringEdgeDetection : F_TRIG;
+    _eleStoMonitoringEdgeDetection : F_TRIG;
+    _rocStoMonitoringEdgeDetection : F_TRIG;
+    _ronStoMonitoringEdgeDetection : F_TRIG;
+    
+    _limitsReachedEdgeDetection : R_TRIG;
+    
+    _aziStoCounter : INT;
+    _eleStoCounter : INT;
+    _rocStoCounter : INT;
+    _ronStoCounter : INT;
+    
+	_trackingStartAzi : LREAL;  // degrees!
+	_trackingStartEle : LREAL;  // degrees!
+	_trackingStartRot : LREAL;  // degrees!
+    
+    _tpointCalculations : AxesTPointCalculations;
+    _tpointFeedbackCalculations : AxesTPointCalculations;
+    
+    _aziPointingMoveCalculator : AxesMoveAbsoluteCalculator;
+    _elePointingMoveCalculator : AxesMoveAbsoluteCalculator;
+    _rocPointingMoveCalculator : AxesMoveAbsoluteCalculator;
+    _ronPointingMoveCalculator : AxesMoveAbsoluteCalculator;
+    
+    _pointRocRequested : BOOL;
+    _pointRonRequested : BOOL;
+    _pointRocOffset : LREAL;
+    _pointRonOffset : LREAL;
+    
+    _aziMoveRelativeCalculator : AxesMoveRelativeCalculator;
+    _eleMoveRelativeCalculator : AxesMoveRelativeCalculator;
+    _rocMoveRelativeCalculator : AxesMoveRelativeCalculator;
+    _ronMoveRelativeCalculator : AxesMoveRelativeCalculator;
+    
+	_alphaVelocityStartTimeS: LREAL; // seconds
+    
+	{attribute 'OPC.UA.DA' := '0'}
+    _slalibSmoothener : AxesSlalibSmoothener;
+    
+	{attribute 'OPC.UA.DA' := '0'}
+    _actualKnownPositionConfig : AxesKnownPositionConfig;
+    
+    _setTargetTon : TON;
+    
+    
+    _isPoweredOffByPersonInDome_azi : BOOL;
+    _isPoweredOffByPersonInDome_ele : BOOL;
+    _isPoweredOffByPersonInDome_roc : BOOL;
+    _isPoweredOffByPersonInDome_ron : BOOL;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[_update();
+
+
+_onFirstStart();
+_initializing();
+_resetting();
+_changingOperatingState();
+_locking();
+_unlocking();
+_setAlphaDeltaVelocity();
+_applyAlphaDeltaVelocity();
+
+_enablePointingModel();
+_disablePointingModel();
+
+_doHoming();
+_setTarget();
+_point();
+_powerOn();
+_powerOff();
+_moveAbsolute();
+_moveRelative();
+_stop();
+_quickStop();
+
+// call the _callOnce method, which contains logic
+// that may only be called once per task cycle!
+_callOnce();
+
+_pointRelative();
+
+_slipMonitoring();
+_errorMonitoring();
+_stoMonitoring();
+_limitMonitoring();
+_domeAccessMonitoring();
+_moveKnownPosition();
+
+_update();]]></ST>
+    </Implementation>
+    <Method Name="_limitMonitoring" Id="{0539eacd-abec-4b24-b8b0-8e51e96b0c50}">
+      <Declaration><![CDATA[METHOD _limitMonitoring
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[_limitsReachedEdgeDetection(CLK :=    
+       (parts.azi.statuses.poweredStatus.enabled AND parts.azi.setPosLimitReached)
+    OR (parts.ele.statuses.poweredStatus.enabled AND parts.ele.setPosLimitReached)
+    OR (parts.roc.statuses.poweredStatus.enabled AND parts.roc.setPosLimitReached)
+    OR (parts.ron.statuses.poweredStatus.enabled AND parts.ron.setPosLimitReached));
+    
+IF _limitsReachedEdgeDetection.Q THEN
+    isLimitsReached := TRUE;
+    processes.stop.start();
+END_IF
+
+
+// reset the isLimitsFlag with the following commands:
+IF     processes.point.isBusy() 
+    OR processes.doHoming.isBusy()
+    OR processes.moveAbsolute.isBusy()
+    OR processes.moveKnownPosition.isBusy()
+    OR processes.powerOff.isBusy()
+    OR processes.powerOn.isBusy()
+    OR processes.reset.isBusy() THEN
+    isLimitsReached := FALSE;
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_powerOff" Id="{0a294ad7-3835-42b5-a5ed-42344e4011a8}">
+      <Declaration><![CDATA[METHOD _powerOff
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF processes.powerOff.isBusy() THEN
+    
+    IF NOT processes.powerOff.isStarted() THEN
+        processes.powerOff.state := 0;
+        processes.powerOff.setStarted();
+	END_IF
+    
+    CASE processes.powerOff.state OF
+        0:
+            processes.powerOff.setActualStatus('Powering off the axes');
+            // now power off the axes
+            parts.azi.processes.powerOff.start();
+            parts.ele.processes.powerOff.start();
+            parts.roc.processes.powerOff.start();
+            parts.ron.processes.powerOff.start();
+            processes.powerOff.state := 1;
+        1:
+            IF      parts.azi.processes.powerOff.isIdle() 
+                AND parts.ele.processes.powerOff.isIdle()  
+                AND parts.roc.processes.powerOff.isIdle()  
+                AND parts.ron.processes.powerOff.isIdle() THEN
+                
+                IF      parts.azi.processes.powerOff.isGood() 
+                   AND  parts.ele.processes.powerOff.isGood() 
+                   AND  parts.roc.processes.powerOff.isGood() 
+                   AND  parts.ron.processes.powerOff.isGood() THEN
+                    // ok, all axes are powered off
+                    processes.powerOff.state := 1000;
+                ELSE
+                    processes.powerOff.setActualStatus('Could not power off the axes!');
+                    processes.powerOff.state := 999;
+                END_IF
+            END_IF
+        999:
+            // error!
+            processes.powerOff.setBad();
+            processes.powerOff.setFinished();
+            // stop all axes
+            processes.stop.start();
+        1000:
+            processes.powerOff.setActualStatus('Powered off');
+            // ok done
+            processes.powerOff.setFinished();
+            processes.powerOff.setGood();
+		
+    END_CASE
+    
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_enablePointingModel" Id="{0ae8d029-0a90-46f9-b243-c2980cbcd9f8}">
+      <Declaration><![CDATA[METHOD _enablePointingModel
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF processes.enablePointingModel.isBusy() THEN
+    
+    IF processes.enablePointingModel.get.name = '' THEN
+        processes.enablePointingModel.setActualStatus('Invalid model name');
+    ELSIF processes.enablePointingModel.get.name = parts.tpoint.parts.model0.config.name THEN
+        activePointingModel := parts.tpoint.parts.model0.config;
+        activePointingModelNumber := 0;
+        isPointingModelActive := TRUE;
+    ELSIF processes.enablePointingModel.get.name = parts.tpoint.parts.model1.config.name THEN
+        activePointingModel := parts.tpoint.parts.model1.config;
+        activePointingModelNumber := 1;
+        isPointingModelActive := TRUE;
+    ELSIF processes.enablePointingModel.get.name = parts.tpoint.parts.model2.config.name THEN
+        activePointingModel := parts.tpoint.parts.model2.config;
+        activePointingModelNumber := 2;
+        isPointingModelActive := TRUE;
+    ELSIF processes.enablePointingModel.get.name = parts.tpoint.parts.model3.config.name THEN
+        activePointingModel := parts.tpoint.parts.model3.config;
+        activePointingModelNumber := 3;
+        isPointingModelActive := TRUE;
+    ELSIF processes.enablePointingModel.get.name = parts.tpoint.parts.model4.config.name THEN
+        activePointingModel := parts.tpoint.parts.model4.config;
+        activePointingModelNumber := 4;
+        isPointingModelActive := TRUE;
+    ELSIF processes.enablePointingModel.get.name = parts.tpoint.parts.model5.config.name THEN
+        activePointingModel := parts.tpoint.parts.model5.config;
+        activePointingModelNumber := 5;
+        isPointingModelActive := TRUE;
+    ELSIF processes.enablePointingModel.get.name = parts.tpoint.parts.model6.config.name THEN
+        activePointingModel := parts.tpoint.parts.model6.config;
+        activePointingModelNumber := 6;
+        isPointingModelActive := TRUE;
+    ELSIF processes.enablePointingModel.get.name = parts.tpoint.parts.model7.config.name THEN
+        activePointingModel := parts.tpoint.parts.model7.config;
+        activePointingModelNumber := 7;
+        isPointingModelActive := TRUE;
+    ELSIF processes.enablePointingModel.get.name = parts.tpoint.parts.model8.config.name THEN
+        activePointingModel := parts.tpoint.parts.model8.config;
+        activePointingModelNumber := 8;
+        isPointingModelActive := TRUE;
+    ELSIF processes.enablePointingModel.get.name = parts.tpoint.parts.model9.config.name THEN
+        activePointingModel := parts.tpoint.parts.model9.config;
+        activePointingModelNumber := 9;
+        isPointingModelActive := TRUE;
+    ELSE
+        processes.enablePointingModel.setActualStatus(CONCAT('Model ', CONCAT( processes.enablePointingModel.get.name, '$' not found')));
+	END_IF
+
+    IF isPointingModelActive THEN
+        processes.enablePointingModel.setActualStatus(CONCAT('Loaded model ', CONCAT( processes.enablePointingModel.get.name, '$'')));
+        processes.enablePointingModel.setGood();
+    ELSE
+        processes.enablePointingModel.setBad();
+	END_IF
+    
+    _update_activePointingModel();
+    
+    
+    processes.enablePointingModel.setFinished();
+    
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_disablePointingModel" Id="{1462528b-9a4a-42f7-99e5-70515e05606e}">
+      <Declaration><![CDATA[METHOD _disablePointingModel
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF processes.disablePointingModel.isBusy() THEN
+    
+    isPointingModelActive := FALSE;
+    activePointingModelNumber := -1;
+    processes.disablePointingModel.setActualStatus('No model loaded');
+    processes.disablePointingModel.setGood();
+    processes.disablePointingModel.setFinished();
+    
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_setAlphaDeltaVelocity" Id="{18534d23-eef6-4efe-ae41-bfdacf40c4da}">
+      <Declaration><![CDATA[METHOD _setAlphaDeltaVelocity
+VAR_INPUT
+END_VAR
+VAR
+    alphaVeloDegPerSec : LREAL;
+    deltaVeloDegPerSec : LREAL;
+    alphaVeloArcsecPerSec : LREAL;
+    deltaVeloArcsecPerSec : LREAL;
+    alphaVeloArcsecPerHour : LREAL;
+    deltaVeloArcsecPerHour : LREAL;
+    msg : STRING;
+    _formatStr : FB_FormatString;
+END_VAR]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF processes.setAlphaDeltaVelocity.isBusy() THEN
+
+    alphaVeloDegPerSec := AxesMoveVelocityUnitsToDegPerSec(units := processes.setAlphaDeltaVelocity.get.units, value := processes.setAlphaDeltaVelocity.get.alphaVelocity);
+    deltaVeloDegPerSec := AxesMoveVelocityUnitsToDegPerSec(units := processes.setAlphaDeltaVelocity.get.units, value := processes.setAlphaDeltaVelocity.get.deltaVelocity);
+    
+    target.alphaVelocity(newDegreesPerSecondValue := alphaVeloDegPerSec);
+    target.deltaVelocity(newDegreesPerSecondValue := deltaVeloDegPerSec);
+    
+    _alphaVelocityStartTimeS := GLOBAL.config.TIME_NOW_S;
+    
+    alphaVeloArcsecPerSec := DEG_TO_ARCSEC(alphaVeloDegPerSec);
+    deltaVeloArcsecPerSec := DEG_TO_ARCSEC(deltaVeloDegPerSec);
+    
+    IF ABS(alphaVeloArcsecPerSec) < 0.0000000001 AND ABS(deltaVeloArcsecPerSec) < 0.0000000001 THEN
+        msg := 'Stopped';
+    ELSIF ABS(alphaVeloArcsecPerSec) < 0.005 OR ABS(deltaVeloArcsecPerSec) < 0.005 THEN 
+        alphaVeloArcsecPerHour := alphaVeloArcsecPerSec * 3600.0;
+        deltaVeloArcsecPerHour := deltaVeloArcsecPerSec * 3600.0;
+        _formatStr(
+            sFormat := 'Move alpha=%.3f"/h delta=%.3f"/h', 
+            arg1 := F_LREAL(alphaVeloArcsecPerHour),
+            arg2 := F_LREAL(alphaVeloArcsecPerHour), 
+            sOut => msg);
+    ELSIF alphaVeloArcsecPerSec < 0.1 OR deltaVeloArcsecPerSec < 0.1 THEN 
+        _formatStr(
+            sFormat := 'Move alpha=%.5f"/s delta=%.5f"/s', 
+            arg1 := F_LREAL(alphaVeloArcsecPerSec),
+            arg2 := F_LREAL(deltaVeloArcsecPerSec), 
+            sOut => msg);
+    ELSE
+        _formatStr(
+            sFormat := 'Move alpha=%.3f"/s delta=%.3f"/s', 
+            arg1 := F_LREAL(alphaVeloArcsecPerSec),
+            arg2 := F_LREAL(deltaVeloArcsecPerSec), 
+            sOut => msg);
+	END_IF
+    
+    
+    processes.setAlphaDeltaVelocity.setActualStatus(msg);
+    processes.setAlphaDeltaVelocity.setGood();
+    processes.setAlphaDeltaVelocity.setFinished();
+    
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_applyAlphaDeltaVelocity" Id="{28eac4dd-7646-4516-a0c7-a22c690164b7}">
+      <Declaration><![CDATA[METHOD _applyAlphaDeltaVelocity
+VAR_INPUT
+END_VAR
+VAR
+END_VAR]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[
+IF target.alphaVelocity.degreesPerSecond.value <> 0 THEN
+    target.alphaTravelled(newDegreesValue := target.alphaTravelled.degrees.value + TIME_TO_LREAL(GLOBAL.config.PLC_FAST_TASK_TIME) / 1000.0 * target.alphaVelocity.degreesPerSecond.value);    
+END_IF
+IF target.deltaVelocity.degreesPerSecond.value <> 0 THEN
+    target.deltaTravelled(newDegreesValue := target.deltaTravelled.degrees.value + TIME_TO_LREAL(GLOBAL.config.PLC_FAST_TASK_TIME) / 1000.0 * target.deltaVelocity.degreesPerSecond.value);    
+END_IF
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_resetting" Id="{3b848a9a-f0d5-4bb7-aa9c-e5bce8065334}">
+      <Declaration><![CDATA[METHOD _resetting
+VAR_INPUT
+END_VAR
+VAR
+    
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF processes.reset.statuses.busyStatus.busy THEN
+	
+	// start up the initialization
+	IF NOT processes.reset.statuses.startedStatus.started THEN
+        processes.reset._state := 0;
+		// OK we're started now
+		processes.reset.setStarted();
+	END_IF;
+    
+    // process the actions
+    CASE processes.reset._state OF
+        
+        0:
+            // reset all processes so that they are green again
+            processes.changeOperatingState.resetIfIdle();
+            processes.disablePointingModel.resetIfIdle();
+            processes.doHoming.resetIfIdle();
+            processes.enablePointingModel.resetIfIdle();
+            processes.lock.resetIfIdle();
+            processes.initialize.resetIfIdle();
+            processes.moveAbsolute.resetIfIdle();
+            processes.moveKnownPosition.resetIfIdle();
+            processes.moveRelative.resetIfIdle();
+            processes.point.resetIfIdle();
+            processes.pointRelative.resetIfIdle();
+            processes.powerOff.resetIfIdle();
+            processes.powerOn.resetIfIdle();
+            processes.quickStop.resetIfIdle();
+            processes.setAlphaDeltaVelocity.resetIfIdle();
+            processes.setTarget.resetIfIdle();
+            processes.stop.resetIfIdle();
+            processes.unlock.resetIfIdle();
+            
+            processes.reset.setActualStatus('Loading the configs from XML files');
+            parts.configManager.processes.load.start(parts.configManager.processes.load.set.filePath);
+            processes.reset._state := 1;
+        1:
+            IF parts.configManager.processes.load.statuses.busyStatus.idle THEN
+                IF parts.configManager.processes.load.statuses.healthStatus.good THEN
+                    processes.reset._state := 2;
+                ELSE
+                    processes.reset.setActualStatus('Failed to load the config');
+                    processes.reset._state := 999;
+                END_IF
+            END_IF
+        2:
+            processes.reset.setActualStatus('Activating the config');
+            parts.configManager.processes.activate.start();
+            processes.reset._state := 3;
+        3:
+            // wait until the config has been activated
+            IF parts.configManager.processes.activate.statuses.busyStatus.idle THEN
+                IF parts.configManager.processes.activate.statuses.healthStatus.good THEN
+                    processes.reset._state := 4;
+                ELSE
+                    processes.reset.setActualStatus('Failed to activate the config');
+                    processes.reset._state := 999;
+                END_IF
+            END_IF
+        4:
+            // start loading the TPoint models from XML file
+            parts.tpoint.parts.model0.parts.configManager.processes.load.start(parts.tpoint.parts.model0.parts.configManager.processes.load.set.filePath);
+            parts.tpoint.parts.model1.parts.configManager.processes.load.start(parts.tpoint.parts.model1.parts.configManager.processes.load.set.filePath);
+            parts.tpoint.parts.model2.parts.configManager.processes.load.start(parts.tpoint.parts.model2.parts.configManager.processes.load.set.filePath);
+            parts.tpoint.parts.model3.parts.configManager.processes.load.start(parts.tpoint.parts.model3.parts.configManager.processes.load.set.filePath);
+            parts.tpoint.parts.model4.parts.configManager.processes.load.start(parts.tpoint.parts.model4.parts.configManager.processes.load.set.filePath);
+            parts.tpoint.parts.model5.parts.configManager.processes.load.start(parts.tpoint.parts.model5.parts.configManager.processes.load.set.filePath);
+            parts.tpoint.parts.model6.parts.configManager.processes.load.start(parts.tpoint.parts.model6.parts.configManager.processes.load.set.filePath);
+            parts.tpoint.parts.model7.parts.configManager.processes.load.start(parts.tpoint.parts.model7.parts.configManager.processes.load.set.filePath);
+            parts.tpoint.parts.model8.parts.configManager.processes.load.start(parts.tpoint.parts.model8.parts.configManager.processes.load.set.filePath);
+            parts.tpoint.parts.model9.parts.configManager.processes.load.start(parts.tpoint.parts.model9.parts.configManager.processes.load.set.filePath);
+            processes.reset._state := 5;
+        5:
+            // wait until the configs have been loaded
+            IF     parts.tpoint.parts.model0.parts.configManager.processes.load.statuses.busyStatus.idle
+               AND parts.tpoint.parts.model1.parts.configManager.processes.load.statuses.busyStatus.idle 
+               AND parts.tpoint.parts.model2.parts.configManager.processes.load.statuses.busyStatus.idle 
+               AND parts.tpoint.parts.model3.parts.configManager.processes.load.statuses.busyStatus.idle 
+               AND parts.tpoint.parts.model4.parts.configManager.processes.load.statuses.busyStatus.idle 
+               AND parts.tpoint.parts.model5.parts.configManager.processes.load.statuses.busyStatus.idle 
+               AND parts.tpoint.parts.model6.parts.configManager.processes.load.statuses.busyStatus.idle 
+               AND parts.tpoint.parts.model7.parts.configManager.processes.load.statuses.busyStatus.idle 
+               AND parts.tpoint.parts.model8.parts.configManager.processes.load.statuses.busyStatus.idle 
+               AND parts.tpoint.parts.model9.parts.configManager.processes.load.statuses.busyStatus.idle 
+            THEN
+                // some files may have failed to load, because not all models may be present
+                processes.reset._state := 6;
+            END_IF
+        6:
+            // now start activating the configs
+            parts.tpoint.parts.model0.parts.configManager.processes.activate.start();
+            parts.tpoint.parts.model1.parts.configManager.processes.activate.start();
+            parts.tpoint.parts.model2.parts.configManager.processes.activate.start();
+            parts.tpoint.parts.model3.parts.configManager.processes.activate.start();
+            parts.tpoint.parts.model4.parts.configManager.processes.activate.start();
+            parts.tpoint.parts.model5.parts.configManager.processes.activate.start();
+            parts.tpoint.parts.model6.parts.configManager.processes.activate.start();
+            parts.tpoint.parts.model7.parts.configManager.processes.activate.start();
+            parts.tpoint.parts.model8.parts.configManager.processes.activate.start();
+            parts.tpoint.parts.model9.parts.configManager.processes.activate.start();
+            processes.reset._state := 7;
+        7:
+            // wait until the configs have been activated
+            IF      parts.tpoint.parts.model0.parts.configManager.processes.activate.statuses.busyStatus.idle 
+                AND parts.tpoint.parts.model1.parts.configManager.processes.activate.statuses.busyStatus.idle 
+                AND parts.tpoint.parts.model2.parts.configManager.processes.activate.statuses.busyStatus.idle 
+                AND parts.tpoint.parts.model3.parts.configManager.processes.activate.statuses.busyStatus.idle 
+                AND parts.tpoint.parts.model4.parts.configManager.processes.activate.statuses.busyStatus.idle 
+                AND parts.tpoint.parts.model5.parts.configManager.processes.activate.statuses.busyStatus.idle 
+                AND parts.tpoint.parts.model6.parts.configManager.processes.activate.statuses.busyStatus.idle 
+                AND parts.tpoint.parts.model7.parts.configManager.processes.activate.statuses.busyStatus.idle 
+                AND parts.tpoint.parts.model8.parts.configManager.processes.activate.statuses.busyStatus.idle 
+                AND parts.tpoint.parts.model9.parts.configManager.processes.activate.statuses.busyStatus.idle 
+            THEN
+                processes.reset._state := 8;
+            END_IF
+        8:
+            processes.reset.setActualStatus('Resetting the axes');
+            parts.azi.processes.reset.start();
+            parts.ele.processes.reset.start();
+            parts.roc.processes.reset.start();
+            parts.ron.processes.reset.start();
+            processes.reset._state := 9;
+            //parts.fwAxis.processes.reset.start();TODO!!
+        9:
+            IF      parts.azi.processes.reset.isIdle() 
+                AND parts.ele.processes.reset.isIdle() 
+                AND parts.roc.processes.reset.isIdle() 
+                AND parts.ron.processes.reset.isIdle() 
+                // parts.fwAxis.processes.reset.start()
+            THEN
+                IF      parts.azi.processes.reset.isGood()  
+                    AND parts.ele.processes.reset.isGood() 
+                    AND parts.roc.processes.reset.isGood() 
+                    AND parts.ron.processes.reset.isGood() 
+                    //AND parts.fwAxis.processes.reset.isGood() 
+                THEN
+                    processes.reset._state := 10;
+                ELSE
+                    processes.reset.setActualStatus('Failed to reset the axes');
+                    processes.reset._state := 999;
+                END_IF
+			END_IF  
+        10:
+            // just finish!
+            processes.reset._state := 1000;
+        999:
+            // done
+            processes.reset.setBad();
+            processes.reset.setFinished();
+        1000:
+            // all done!
+            processes.reset.setActualStatus('Reset done');
+            processes.reset.setGood();
+            processes.reset.setFinished();
+	END_CASE
+    
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="FB_init" Id="{3ce4537a-0147-4982-975a-599421111b3d}">
+      <Declaration><![CDATA[METHOD FB_init : BOOL
+VAR_INPUT
+	bInitRetains : BOOL; // if TRUE, the retain variables are initialized (warm start / cold start)
+	bInCopyCode : BOOL;  // if TRUE, the instance afterwards gets moved into the copy code (online change)
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[parts.configManager.configure(
+    editableConfigAddress       := ADR(editableConfig),
+    activeConfigAddress         := ADR(config),
+    configLength                := SIZEOF(editableConfig),
+    editableConfigSymbolName    := GLOBAL.config.AXES_EDITABLE_CONFIG_SYMBOL_NAME,
+    activeConfigSymbolName      := GLOBAL.config.AXES_ACTIVE_CONFIG_SYMBOL_NAME,
+    configFilePath              := GLOBAL.config.AXES_CONFIG_FILE_PATH);
+	
+// put the epoch at its default value
+toCppAxes.epoch := 2000.0;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="startTracking" Id="{4ac79bca-d4bd-4c8f-892d-ed993639ab7b}">
+      <Declaration><![CDATA[METHOD startTracking
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[
+// do the tpoint calculations
+_tpointCalculations(
+    azi     := fromCppAxes.object.observedFull.az,
+    ele     := fromCppAxes.object.observedFull.el,
+    model   := activePointingModel,
+    active  := isPointingModelActive);
+    
+// update the target (target is in degrees!!!)
+
+// update the target (target is in degrees!!!)
+target.updateAziEle(
+        input    := fromCppAxes.object.observedFull, // radians
+        deltaAzi := _tpointCalculations.deltaAzi,  // arcseconds
+        deltaEle := _tpointCalculations.deltaEle); // arcseconds
+
+// store the azi/ele/rot when starting to track
+_trackingStartAzi := target.aziPos.degrees.value;
+_trackingStartEle := target.elePos.degrees.value;
+_trackingStartRot := target.paPos.degrees.value;
+
+// set the shared tracking flag
+isTracking := TRUE;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_onFirstStart" Id="{5ce2288c-f73b-4faa-849e-26c80129c5e9}">
+      <Declaration><![CDATA[METHOD _onFirstStart
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[CASE _onFirstStartCurrentAction OF
+    0:
+        // start loading the config from XML file
+        parts.configManager.processes.load.start(parts.configManager.processes.load.set.filePath);
+        _onFirstStartCurrentAction := 1;
+    1:
+        // wait until the config has been loaded
+        IF parts.configManager.processes.load.statuses.busyStatus.idle THEN
+            IF parts.configManager.processes.load.statuses.healthStatus.good THEN
+                _onFirstStartCurrentAction := 2;
+            ELSE
+                _onFirstStartCurrentAction := 999;
+            END_IF
+        END_IF
+    2:
+        // now start activating the config
+        parts.configManager.processes.activate.start();
+        _onFirstStartCurrentAction := 3;
+    3:
+        // wait until the config has been activated
+        IF parts.configManager.processes.activate.statuses.busyStatus.idle THEN
+            IF parts.configManager.processes.activate.statuses.healthStatus.good THEN
+                _onFirstStartCurrentAction := 4;
+            ELSE
+                _onFirstStartCurrentAction := 999;
+            END_IF
+        END_IF
+    4:
+        // set the internal pointers
+        parts.io.parts.aziDrive.parts.channelA.setInternalAxisRef(pointerToAxisRef := ADR(parts.azi.parts.physicalAxis.axis_ref));
+        parts.io.parts.aziDrive.parts.channelB.setInternalAxisRef(pointerToAxisRef := ADR(parts.roc.parts.physicalAxis.axis_ref));
+        parts.io.parts.ablDrive.parts.channelA.setInternalAxisRef(pointerToAxisRef := ADR(parts.azi.parts.ablAxis.axis_ref));
+        parts.io.parts.ablDrive.parts.channelB.setInternalAxisRef(pointerToAxisRef := ADR(parts.ron.parts.physicalAxis.axis_ref));
+        parts.io.parts.eleDrive.parts.channelA.setInternalAxisRef(pointerToAxisRef := ADR(parts.ele.parts.physicalAxis.axis_ref));
+        //parts.eleDrive.parts.channelB.setInternalAxisRef(pointerToAxisRef := ADR(parts.fwAxis.parts.physicalAxis.axis_ref)); // TODO: uncomment
+        
+        _onFirstStartCurrentAction := 5;
+    5:
+        // nothing to do, done!
+        ;
+    999:
+        // error, but nothing we can do about it now!
+        ;
+
+END_CASE]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_stop" Id="{6066d6ee-20d7-4346-bb5c-549f9052864a}">
+      <Declaration><![CDATA[METHOD _stop
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF processes.stop.isBusy() THEN
+    
+    IF NOT processes.stop.isStarted() THEN
+        processes.stop.state := 0;
+        processes.stop.setStarted();
+	END_IF
+    
+    CASE processes.stop.state OF
+        0:
+            processes.stop.setActualStatus('Now stopping'); 
+            
+            stopTracking();
+            
+            IF parts.azi.statuses.poweredStatus.enabled THEN
+                parts.azi.processes.stop.start();
+			END_IF
+            IF parts.ele.statuses.poweredStatus.enabled THEN
+                parts.ele.processes.stop.start();
+			END_IF
+            IF parts.roc.statuses.poweredStatus.enabled THEN
+                parts.roc.processes.stop.start();
+			END_IF
+            IF parts.ron.statuses.poweredStatus.enabled THEN
+                parts.ron.processes.stop.start();
+			END_IF
+            processes.stop.state := 1;
+        1:
+            IF     (parts.azi.processes.stop.isIdle() OR parts.azi.statuses.poweredStatus.disabled)
+               AND (parts.ele.processes.stop.isIdle() OR parts.ele.statuses.poweredStatus.disabled)
+               AND (parts.roc.processes.stop.isIdle() OR parts.roc.statuses.poweredStatus.disabled)
+               AND (parts.ron.processes.stop.isIdle() OR parts.ron.statuses.poweredStatus.disabled)
+            THEN
+                   
+                IF     (parts.azi.processes.stop.isGood() OR parts.azi.statuses.poweredStatus.disabled)
+                   AND (parts.ele.processes.stop.isGood() OR parts.ele.statuses.poweredStatus.disabled)
+                   AND (parts.roc.processes.stop.isGood() OR parts.roc.statuses.poweredStatus.disabled)
+                   AND (parts.ron.processes.stop.isGood() OR parts.ron.statuses.poweredStatus.disabled)
+                THEN
+                    processes.stop.state := 1000;
+                ELSE
+                    processes.stop.setActualStatus('One or more axes failed');
+                    processes.stop.state := 999;
+                END_IF
+			END_IF
+        999:
+            // error!
+            processes.stop.setBad();
+            processes.stop.setFinished();
+        1000:
+            // ok done
+            processes.stop.setFinished();
+            processes.stop.setGood();
+            processes.stop.setActualStatus('Stopped');
+            
+		
+		
+    END_CASE
+    
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_setTarget" Id="{63aa7650-723a-43ba-9874-9be0f2657e3d}">
+      <Declaration><![CDATA[METHOD _setTarget
+VAR_INPUT
+END_VAR
+VAR
+    alphaDeg : LREAL;
+    deltaDeg : LREAL;
+    muAlphaDegPerYear : LREAL;
+    muDeltaDegPerYear : LREAL;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF processes.setTarget.isBusy() THEN
+    
+    IF NOT processes.setTarget.isStarted() THEN
+        
+        processes.setTarget._state := 0;
+        processes.setTarget.setActualStatus('Setting new target');
+        processes.setTarget.setStarted();
+        
+	END_IF
+    
+    CASE processes.setTarget._state OF
+        0:
+            // convert the input arguments into one units
+            alphaDeg := AxesAlphaUnitsToDeg(
+                    units := processes.setTarget.get.alphaUnits,
+                    value := processes.setTarget.get.alpha);
+            deltaDeg := AxesDeltaUnitsToDeg(
+                    units := processes.setTarget.get.deltaUnits,
+                    value := processes.setTarget.get.delta); 
+            muAlphaDegPerYear := AxesMuUnitsToDegPerYear(
+                    units := processes.setTarget.get.muUnits,
+                    value := processes.setTarget.get.muAlpha);
+            muDeltaDegPerYear := AxesMuUnitsToDegPerYear(
+                    units := processes.setTarget.get.muUnits,
+                    value := processes.setTarget.get.muDelta);
+            
+                                           
+            // copy the values to the C++ task
+            toCppAxes.object.rc := DEG_TO_RAD(alphaDeg);
+            toCppAxes.object.dc := DEG_TO_RAD(deltaDeg);
+            toCppAxes.object.pr := DEG_TO_RAD(muAlphaDegPerYear);
+            toCppAxes.object.pd := DEG_TO_RAD(muDeltaDegPerYear);
+            toCppAxes.object.px := processes.setTarget.get.parallax;
+            toCppAxes.object.rv := processes.setTarget.get.radialVelocity;
+            toCppAxes.epoch     := processes.setTarget.get.epoch;
+            
+            // copy the values to the target struct
+            target.alpha(newDegreesValue := alphaDeg);
+            target.delta(newDegreesValue := deltaDeg);
+            target.muAlpha := DEG_TO_ARCSEC(muAlphaDegPerYear);
+            target.muDelta := DEG_TO_ARCSEC(muDeltaDegPerYear);
+            target.parallax := processes.setTarget.get.parallax;
+            target.radialVelocity := processes.setTarget.get.radialVelocity;
+            target.epoch := processes.setTarget.get.epoch;
+            
+            // store the original alpha/delta
+            target.alphaStart(newDegreesValue := alphaDeg);
+            target.deltaStart(newDegreesValue := deltaDeg);
+            
+            // reset the travelled alpha/delta due to the alpha/delta velocity
+            target.alphaTravelled(newDegreesValue := 0.0);
+            target.deltaTravelled(newDegreesValue := 0.0);
+            
+            // reset the offsets
+            target.alphaOffsetted(newDegreesValue := 0.0);
+            target.deltaOffsetted(newDegreesValue := 0.0);
+            
+            // reset the alpha/delta velocity
+            target.alphaVelocity(newDegreesPerSecondValue := 0.0);
+            target.deltaVelocity(newDegreesPerSecondValue := 0.0);
+            
+            // now we meed to wait for the C++ task to process the new target
+            _setTargetTon(IN := FALSE);
+            _setTargetTon(IN := TRUE, PT := GLOBAL.config.SLALIB_TASK_TIME + 2*GLOBAL.config.PLC_FAST_TASK_TIME);
+            processes.setTarget._state := 1;
+        1:
+            processes.setTarget.setActualStatus('Waiting until the target is set');
+            _setTargetTon(IN := TRUE);
+            
+            IF _setTargetTon.Q THEN
+                IF fromCppAxes.error = TmcAxesErrors.AXES_NO_ERROR THEN
+                    processes.setTarget.setActualStatus('Taget was set');
+                    processes.setTarget._state := 1000;
+                ELSE
+                    processes.setTarget._state := 999;
+                    processes.setTarget.setActualStatus(TmcAxesErrorsToString(fromCppAxes.error));
+			    END_IF
+			END_IF
+        999:
+            processes.setTarget.setFinished();
+            processes.setTarget.setBad();
+        1000:
+            processes.setTarget.setFinished();
+            processes.setTarget.setGood();
+    
+    
+	END_CASE
+    
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_unlocking" Id="{65af290a-3beb-402a-8c24-8cf364868a56}">
+      <Declaration><![CDATA[METHOD _unlocking
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF processes.unlock.statuses.busyStatus.busy THEN
+	statuses.initializationStatus(state := InitializationStates.INITIALIZED);
+	
+	// done
+	processes.unlock.setGood();
+	processes.unlock.setFinished();
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_stoMonitoring" Id="{6eba464d-63b9-4802-ac20-899b62d15183}">
+      <Declaration><![CDATA[METHOD _stoMonitoring : RequestResults
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[_aziStoMonitoringEdgeDetection(CLK := motionBlocking.telescopeAzimuthReleaseOK);
+_eleStoMonitoringEdgeDetection(CLK := motionBlocking.telescopeElevationReleaseOK);
+_rocStoMonitoringEdgeDetection(CLK := motionBlocking.telescopeRotationReleaseOK);
+_ronStoMonitoringEdgeDetection(CLK := motionBlocking.telescopeRotationReleaseOK);
+
+IF _aziStoMonitoringEdgeDetection.Q THEN
+    _aziStoCounter := _aziStoCounter + 1;
+    parts.azi.processes.quickStop.start();
+    stopTracking();
+END_IF
+
+IF _eleStoMonitoringEdgeDetection.Q THEN
+    _eleStoCounter := _eleStoCounter + 1;
+    parts.ele.processes.quickStop.start();
+    stopTracking();
+END_IF
+
+IF _rocStoMonitoringEdgeDetection.Q THEN
+    _rocStoCounter := _rocStoCounter + 1;
+    parts.roc.processes.quickStop.start();
+    stopTracking();
+END_IF
+
+IF _ronStoMonitoringEdgeDetection.Q THEN
+    _ronStoCounter := _ronStoCounter + 1;
+    parts.ron.processes.quickStop.start();
+    stopTracking();
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_update_activePointingModel" Id="{70194326-b56a-4788-ac05-4d9bb74dfd79}">
+      <Declaration><![CDATA[METHOD _update_activePointingModel : RequestResults
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF isPointingModelActive THEN
+    CASE activePointingModelNumber OF
+        0:
+            activePointingModel := parts.tpoint.parts.model0.config;
+        1:
+            activePointingModel := parts.tpoint.parts.model1.config;
+        2:
+            activePointingModel := parts.tpoint.parts.model2.config;
+        3:
+            activePointingModel := parts.tpoint.parts.model3.config;
+        4:
+            activePointingModel := parts.tpoint.parts.model4.config;
+        5:
+            activePointingModel := parts.tpoint.parts.model5.config;
+        6:
+            activePointingModel := parts.tpoint.parts.model6.config;
+        7:
+            activePointingModel := parts.tpoint.parts.model7.config;
+        8:
+            activePointingModel := parts.tpoint.parts.model8.config;
+        9:
+            activePointingModel := parts.tpoint.parts.model9.config;
+    END_CASE
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_quickStop" Id="{7071f112-9267-4e56-a82f-219fe935604b}">
+      <Declaration><![CDATA[METHOD _quickStop
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF processes.quickStop.isBusy() THEN
+    
+    IF NOT processes.quickStop.isStarted() THEN
+        processes.quickStop.state := 0;
+        processes.quickStop.setStarted();
+	END_IF
+    
+    CASE processes.quickStop.state OF
+        0:
+            processes.quickStop.setActualStatus('Now quick stopping'); 
+            
+            stopTracking();
+            
+            parts.azi.processes.quickStop.start();
+            parts.ele.processes.quickStop.start();
+            IF parts.roc.statuses.poweredStatus.enabled THEN
+                parts.roc.processes.quickStop.start();
+			END_IF
+            IF parts.ron.statuses.poweredStatus.enabled THEN
+                parts.ron.processes.quickStop.start();
+			END_IF
+            processes.quickStop.state := 1;
+        1:
+            IF     parts.azi.processes.quickStop.isIdle()
+               AND parts.ele.processes.quickStop.isIdle()
+               AND (parts.roc.processes.quickStop.isIdle() OR parts.roc.statuses.poweredStatus.disabled)
+               AND (parts.ron.processes.quickStop.isIdle() OR parts.ron.statuses.poweredStatus.disabled)
+            THEN
+                   
+                IF     parts.azi.processes.quickStop.isGood()
+                   AND parts.ele.processes.quickStop.isGood()
+                   AND (parts.roc.processes.quickStop.isGood() OR parts.roc.statuses.poweredStatus.disabled)
+                   AND (parts.ron.processes.quickStop.isGood() OR parts.ron.statuses.poweredStatus.disabled)
+                THEN
+                    processes.quickStop.state := 1000;
+                ELSE
+                    processes.quickStop.state := 999;
+                END_IF
+			END_IF
+        999:
+            // error!
+            processes.quickStop.setBad();
+            processes.quickStop.setFinished();
+        1000:
+            // ok done
+            processes.quickStop.setFinished();
+            processes.quickStop.setGood();
+            processes.quickStop.setActualStatus('Quick stopped');
+            
+		
+		
+    END_CASE
+    
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_update_activeRotator" Id="{7763c549-cf3c-45bc-8bbb-e76fee00a08b}">
+      <Declaration><![CDATA[METHOD _update_activeRotator : RequestResults
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF isInstrumentActive THEN
+    IF activeInstrument.rocActive THEN
+        activeRotator := AxesRotatorActivity.ROC_ACTIVE;
+    ELSIF activeInstrument.ronActive THEN
+        activeRotator := AxesRotatorActivity.RON_ACTIVE;
+    ELSE
+        activeRotator := AxesRotatorActivity.NONE_ACTIVE;
+	END_IF
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="stopTracking" Id="{77d9b5e7-5174-4d59-a624-d6abb02e32e5}">
+      <Declaration><![CDATA[METHOD stopTracking : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[isTracking := FALSE;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_moveAbsolute" Id="{832f5730-1c8f-48f2-b028-d3ae07025afb}">
+      <Declaration><![CDATA[METHOD _moveAbsolute
+VAR_INPUT
+END_VAR
+VAR
+    waitingStr : STRING;
+    
+    aziRequested : BOOL;
+    eleRequested : BOOL;
+    rocRequested : BOOL;
+    ronRequested : BOOL;
+    
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF processes.moveAbsolute.isBusy() THEN
+    
+    aziRequested := processes.moveAbsolute.get.doAzi;
+    eleRequested := processes.moveAbsolute.get.doEle;
+    rocRequested := processes.moveAbsolute.get.doRoc OR (processes.moveAbsolute.get.doRot AND (activeRotator = AxesRotatorActivity.ROC_ACTIVE));
+    ronRequested := processes.moveAbsolute.get.doRon OR (processes.moveAbsolute.get.doRot AND (activeRotator = AxesRotatorActivity.RON_ACTIVE));
+    
+    
+    IF NOT processes.moveAbsolute.isStarted() THEN
+        
+        processes.moveAbsolute.waitingForAzi := FALSE;
+        processes.moveAbsolute.waitingForEle := FALSE;
+        processes.moveAbsolute.waitingForRoc := FALSE;
+        processes.moveAbsolute.waitingForRon := FALSE;
+            
+        processes.moveAbsolute.setStarted();
+        processes.moveAbsolute._state := 0;
+        
+    END_IF
+    
+    CASE processes.moveAbsolute._state OF
+        
+        0:
+            processes.moveAbsolute.setActualStatus('Stopping the telescope');
+            processes.stop.start();
+            processes.moveAbsolute._state := 1;
+        1:
+            IF processes.stop.isIdle() THEN
+                IF processes.stop.isIdle() THEN
+                    processes.moveAbsolute._state := 2;
+                ELSE
+                    processes.moveAbsolute._state := 999;
+                    processes.moveAbsolute.setActualStatus('Could not stop');
+				END_IF
+			END_IF
+        2:
+            processes.moveAbsolute.setActualStatus('Moving absolute');
+            
+            IF aziRequested THEN
+                parts.azi.processes.moveAbsolute.start(units := processes.moveAbsolute.get.units, processes.moveAbsolute.get.azi, offset := 0);
+                processes.moveAbsolute.waitingForAzi := TRUE;
+            END_IF
+            
+            IF eleRequested THEN
+                parts.ele.processes.moveAbsolute.start(units := processes.moveAbsolute.get.units, processes.moveAbsolute.get.ele, offset := 0);
+                processes.moveAbsolute.waitingForEle := TRUE;
+            END_IF
+            
+            IF processes.moveAbsolute.get.doRot THEN
+                // ROC has priority of RON (should never happen, but anyway...)
+                IF rocRequested THEN
+                    parts.roc.processes.moveAbsolute.start(units := processes.moveAbsolute.get.units, processes.moveAbsolute.get.rot, offset := 0);
+                    processes.moveAbsolute.waitingForRoc := TRUE;
+                END_IF
+                IF ronRequested THEN
+                    parts.ron.processes.moveAbsolute.start(units := processes.moveAbsolute.get.units, processes.moveAbsolute.get.rot, offset := 0);
+                    processes.moveAbsolute.waitingForRon := TRUE;
+                END_IF
+            ELSIF processes.moveAbsolute.get.doRoc THEN
+                parts.roc.processes.moveAbsolute.start(units := processes.moveAbsolute.get.units, processes.moveAbsolute.get.roc, offset := 0);
+                processes.moveAbsolute.waitingForRoc := TRUE;
+            ELSIF processes.moveAbsolute.get.doRon THEN
+                parts.ron.processes.moveAbsolute.start(units := processes.moveAbsolute.get.units, processes.moveAbsolute.get.ron, offset := 0);
+                processes.moveAbsolute.waitingForRon := TRUE;
+            END_IF
+            
+            IF  NOT (processes.moveAbsolute.waitingForAzi OR processes.moveAbsolute.waitingForEle OR processes.moveAbsolute.waitingForRoc OR processes.moveAbsolute.waitingForRon) THEN
+                processes.moveAbsolute.setActualStatus('No move requested');
+                processes.moveAbsolute._state := 1000;
+            ELSE
+                processes.moveAbsolute._state := 3;
+            END_IF
+        3:
+            
+            IF processes.moveAbsolute.waitingForAzi THEN
+                processes.moveAbsolute.waitingForAzi := parts.azi.processes.moveAbsolute.isBusy();
+            END_IF
+            IF processes.moveAbsolute.waitingForEle THEN
+                processes.moveAbsolute.waitingForEle := parts.ele.processes.moveAbsolute.isBusy();
+            END_IF
+            IF processes.moveAbsolute.waitingForRoc THEN
+                processes.moveAbsolute.waitingForRoc := parts.roc.processes.moveAbsolute.isBusy();
+            END_IF
+            IF processes.moveAbsolute.waitingForRon THEN
+                processes.moveAbsolute.waitingForRon := parts.ron.processes.moveAbsolute.isBusy();
+            END_IF
+            
+            IF processes.moveAbsolute.waitingForAzi OR processes.moveAbsolute.waitingForEle OR processes.moveAbsolute.waitingForRoc OR processes.moveAbsolute.waitingForRon THEN
+                
+                waitingStr := '';
+                IF processes.moveAbsolute.waitingForAzi THEN
+                    waitingStr := CONCAT(waitingStr, 'AZI');
+                END_IF
+                IF processes.moveAbsolute.waitingForEle THEN
+                    IF waitingStr <> '' THEN  waitingStr := CONCAT(waitingStr, ', '); END_IF
+                    waitingStr := CONCAT(waitingStr, 'ELE');
+                END_IF
+                IF processes.moveAbsolute.waitingForRoc THEN
+                    IF waitingStr <> '' THEN  waitingStr := CONCAT(waitingStr, ', '); END_IF
+                    waitingStr := CONCAT(waitingStr, 'ROC');
+                END_IF
+                IF processes.moveAbsolute.waitingForRon THEN
+                    IF waitingStr <> '' THEN  waitingStr := CONCAT(waitingStr, ', '); END_IF
+                    waitingStr := CONCAT(waitingStr, 'RON');
+                END_IF
+                
+                processes.moveAbsolute.setActualStatus(CONCAT('Waiting for ', waitingStr));
+                
+            ELSE
+                processes.moveAbsolute._state := 4;
+            END_IF
+        4:
+            // update the health status
+            IF      ((parts.azi.processes.moveAbsolute.isGood() OR NOT aziRequested))
+                AND ((parts.ele.processes.moveAbsolute.isGood() OR NOT eleRequested))
+                AND ((parts.roc.processes.moveAbsolute.isGood() OR NOT rocRequested))
+                AND ((parts.ron.processes.moveAbsolute.isGood() OR NOT ronRequested)) 
+            THEN
+                processes.moveAbsolute.setActualStatus('Move finished');
+                processes.moveAbsolute._state := 1000;
+            ELSE
+                processes.moveAbsolute._state := 999;
+                processes.moveAbsolute.setActualStatus('One or more axes failed');
+            END_IF
+        999:
+            processes.moveAbsolute.setFinished();
+            processes.moveAbsolute.setBad();
+        1000:
+            processes.moveAbsolute.setFinished();
+            processes.moveAbsolute.setGood();
+    
+	END_CASE
+        
+
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_callOnce" Id="{859e85e0-d570-4f30-859a-58b367ad0ddc}">
+      <Declaration><![CDATA[METHOD _callOnce
+VAR_INPUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// slalib returns angles within a certain range (e.g. [0..2PI]).
+// During a crossing of the edges of this range (e.g. going from 2PI to 0), 
+// we must continue to increase or decrease the value in order to not upset the tracking
+_slalibSmoothener(
+    enableSmoothening := processes.setTarget.isIdle() AND isTracking,
+    fromCppAxes       := fromCppAxes);
+
+// do the tpoint calculations
+_tpointCalculations(
+    azi     := fromCppAxes.object.observedFull.az,
+    ele     := fromCppAxes.object.observedFull.el,
+    model   := activePointingModel,
+    active  := isPointingModelActive,
+    aziSign := config.tpointAziSign,
+    eleSign := config.tpointEleSign,
+    deltaAziSign := config.tpointDeltaAziSign,
+    deltaEleSign := config.tpointDeltaEleSign,
+    oldFormulas := config.tpointOldFormulas);
+    
+// update the target (target is in degrees!!!)
+target.updateAziEle(
+        input    := fromCppAxes.object.observedFull, // radians
+        deltaAzi := _tpointCalculations.deltaAzi,  // arcseconds
+        deltaEle := _tpointCalculations.deltaEle); // arcseconds
+
+// call the logic that must be executed just once, of the axes:
+parts.azi.callOnce(
+    dcTime              := timing.fromCppTiming.utc.dcTime,
+    targetPosDeg        := target.aziPos.degrees.value, 
+    targetVeloDegPerSec := target.aziVelo.degreesPerSecond.value, 
+    targetAccDegPerSec2 := target.aziAcc.newDegreesPerSquareSecondValue, 
+    trackingStart       := _trackingStartAzi, 
+    isTracking          := isTracking,
+    modelDelta          := ARCSEC_TO_DEG(_tpointCalculations.deltaAzi) );
+    
+parts.ele.callOnce(
+    dcTime              := timing.fromCppTiming.utc.dcTime,
+    targetPosDeg        := target.elePos.degrees.value, 
+    targetVeloDegPerSec := target.eleVelo.degreesPerSecond.value, 
+    targetAccDegPerSec2 := target.eleAcc.newDegreesPerSquareSecondValue, 
+    trackingStart       := _trackingStartEle, 
+    isTracking          := isTracking,
+    modelDelta          := ARCSEC_TO_DEG(_tpointCalculations.deltaEle) );
+
+parts.roc.callOnce(
+    dcTime              := timing.fromCppTiming.utc.dcTime,
+    targetPosDeg        := target.paPos.degrees.value * config.rocPositionAngleSign, 
+    targetVeloDegPerSec := target.paVelo.degreesPerSecond.value * config.rocPositionAngleSign, 
+    targetAccDegPerSec2 := target.paAcc.newDegreesPerSquareSecondValue,  // NOT multiply by config.rocPositionAngleSign??? because acceleration independent of direction??
+    trackingStart       := _trackingStartRot * config.rocPositionAngleSign,
+    isTracking          := isTracking );
+parts.ron.callOnce(
+    dcTime              := timing.fromCppTiming.utc.dcTime,
+    targetPosDeg        := target.paPos.degrees.value * config.ronPositionAngleSign,
+    targetVeloDegPerSec := target.paVelo.degreesPerSecond.value * config.ronPositionAngleSign,
+    targetAccDegPerSec2 := target.paAcc.newDegreesPerSquareSecondValue, 
+    trackingStart       := _trackingStartRot * config.ronPositionAngleSign,
+    isTracking          := isTracking);]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_point" Id="{92f8e9de-b835-44d6-aa51-a3683ca551cd}">
+      <Declaration><![CDATA[METHOD _point
+VAR_INPUT
+END_VAR
+VAR
+    waitingStr : STRING;
+END_VAR]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF processes.point.isBusy() THEN
+    
+    IF NOT processes.point.isStarted() THEN
+        processes.point.state := 0;
+        processes.point.setStarted();
+        
+        _pointRocRequested := parts.roc.statuses.poweredStatus.enabled OR processes.point.get.doRocOffset OR activeRotator = AxesRotatorActivity.ROC_ACTIVE;
+        _pointRonRequested := parts.ron.statuses.poweredStatus.enabled OR processes.point.get.doRonOffset OR activeRotator = AxesRotatorActivity.RON_ACTIVE;
+        
+        IF _pointRocRequested THEN
+            IF processes.point.get.doRocOffset THEN
+                _pointRocOffset := processes.point.get.rocOffset;
+            ELSIF processes.point.get.doRotOffset AND activeRotator = AxesRotatorActivity.ROC_ACTIVE THEN
+                _pointRocOffset := processes.point.get.rotOffset;
+            ELSE
+                _pointRocOffset := 0.0;
+			END_IF
+		END_IF
+
+        IF _pointRonRequested THEN
+            IF processes.point.get.doRonOffset THEN
+                _pointRonOffset := processes.point.get.ronOffset;
+            ELSIF processes.point.get.doRotOffset AND activeRotator = AxesRotatorActivity.RON_ACTIVE THEN
+                _pointRonOffset := processes.point.get.ronOffset;
+            ELSE
+                _pointRonOffset := 0.0;
+			END_IF
+		END_IF
+
+	END_IF
+    
+    CASE processes.point.state OF
+        0:
+            IF    parts.azi.statuses.healthStatus.bad
+               OR parts.ele.statuses.healthStatus.bad 
+               OR (parts.roc.statuses.healthStatus.bad AND _pointRocRequested)
+               OR (parts.ron.statuses.healthStatus.bad AND _pointRonRequested) THEN
+                processes.point.state := 999;
+                processes.point.setActualStatus('One or more axes in error state!');
+            ELSIF statuses.poweredStatus.disabled THEN
+                processes.point.state := 999;
+                processes.point.setActualStatus('Power is off!');
+            ELSIF    parts.azi.parts.physicalAxis.statuses.extSetGenStatus.disabled 
+                  OR parts.ele.parts.physicalAxis.statuses.extSetGenStatus.disabled 
+                  OR (parts.ele.parts.physicalAxis.statuses.extSetGenStatus.disabled AND _pointRocRequested)
+                  OR (parts.ele.parts.physicalAxis.statuses.extSetGenStatus.disabled AND _pointRonRequested) THEN
+                processes.point.state := 999;
+                processes.point.setActualStatus('External setpoint generators disabled!');
+            ELSE
+                processes.point.state := 1;
+            END_IF
+        1:
+            processes.point.setActualStatus('Settting new target');
+            
+            processes.setTarget.start(
+                alphaUnits      := processes.point.get.alphaUnits, 
+                deltaUnits      := processes.point.get.deltaUnits,
+                alpha           := processes.point.get.alpha,
+                delta           := processes.point.get.delta,
+                muUnits         := processes.point.get.muUnits,
+                muAlpha         := processes.point.get.muAlpha,
+                muDelta         := processes.point.get.muDelta,
+                parallax        := processes.point.get.parallax,
+                radialVelocity  := processes.point.get.radialVelocity,
+                epoch           := processes.point.get.epoch);
+            
+            processes.point.state := 2;
+             
+        2:
+            IF processes.setTarget.isIdle() THEN
+                IF processes.setTarget.isGood() THEN
+                    startTracking();
+                    processes.point.state := 3;
+                ELSE
+                    processes.point.state := 999;
+                    processes.point.setActualStatus(CONCAT('Set target error: ', processes.setTarget.actualStatus));
+			    END_IF
+			END_IF
+        3:
+            processes.point.setActualStatus('Syncing the positions');
+            parts.azi.parts.virtualAxis.processes.setPosition.start(value := parts.azi.parts.physicalAxis.axis_ref.NcToPlc.ActPos); 
+            parts.ele.parts.virtualAxis.processes.setPosition.start(value := parts.ele.parts.physicalAxis.axis_ref.NcToPlc.ActPos); 
+            IF _pointRocRequested THEN
+                parts.roc.parts.virtualAxis.processes.setPosition.start(value := parts.roc.parts.physicalAxis.axis_ref.NcToPlc.ActPos); 
+            END_IF
+            IF _pointRonRequested THEN
+                parts.ron.parts.virtualAxis.processes.setPosition.start(value := parts.ron.parts.physicalAxis.axis_ref.NcToPlc.ActPos); 
+            END_IF
+            processes.point.state := 4;
+        4:
+            IF       parts.azi.parts.virtualAxis.processes.setPosition.isIdle() 
+                AND  parts.ele.parts.virtualAxis.processes.setPosition.isIdle()
+                AND  (parts.roc.parts.virtualAxis.processes.setPosition.isIdle() OR NOT _pointRocRequested)
+                AND  (parts.ron.parts.virtualAxis.processes.setPosition.isIdle() OR NOT _pointRonRequested) 
+            THEN
+                IF      parts.azi.parts.virtualAxis.processes.setPosition.isGood() 
+                    AND parts.ele.parts.virtualAxis.processes.setPosition.isGood() 
+                    AND (parts.roc.parts.virtualAxis.processes.setPosition.isGood() OR NOT _pointRocRequested)
+                    AND (parts.ron.parts.virtualAxis.processes.setPosition.isGood() OR NOT _pointRonRequested) 
+                THEN    
+                    
+                    _aziPointingMoveCalculator(
+                        targetPos    := _trackingStartAzi, 
+                        trackingVelo := target.aziVelo.degreesPerSecond.value,
+                        minPos       := config.azi.minPositionSetpoint, 
+                        maxPos       := config.azi.maxPositionSetpoint,
+                        actPos       := parts.azi.actPos.degrees.value,
+                        doMostTravel := TRUE);
+                    _elePointingMoveCalculator(
+                        targetPos    := _trackingStartEle, 
+                        trackingVelo := target.eleVelo.degreesPerSecond.value,
+                        minPos       := config.ele.minPositionSetpoint, 
+                        maxPos       := config.ele.maxPositionSetpoint,
+                        actPos       := parts.ele.actPos.degrees.value,
+                        doMostTravel := TRUE);
+                    IF _pointRocRequested THEN
+                        _rocPointingMoveCalculator(
+                            targetPos    := (_trackingStartRot + _pointRocOffset) * config.rocPositionAngleSign, 
+                            trackingVelo := target.paVelo.degreesPerSecond.value  * config.rocPositionAngleSign,
+                            minPos       := config.roc.minPositionSetpoint, 
+                            maxPos       := config.roc.maxPositionSetpoint,
+                            actPos       := parts.roc.actPos.degrees.value,
+                            doMostTravel := TRUE);
+                    END_IF
+                    IF _pointRonRequested THEN
+                        _ronPointingMoveCalculator(
+                            targetPos    := (_trackingStartRot + _pointRonOffset) * config.ronPositionAngleSign, 
+                            trackingVelo := target.paVelo.degreesPerSecond.value * config.ronPositionAngleSign,
+                            minPos       := config.ron.minPositionSetpoint, 
+                            maxPos       := config.ron.maxPositionSetpoint,
+                            actPos       := parts.ron.actPos.degrees.value,
+                            doMostTravel := TRUE);
+                    END_IF
+                    
+                    IF _aziPointingMoveCalculator.outOfRange AND _elePointingMoveCalculator.outOfRange THEN
+                        processes.point.state := 999;
+                        processes.point.setActualStatus('Azimuth and elevation out of range!');
+                    ELSIF _aziPointingMoveCalculator.outOfRange THEN
+                        processes.point.state := 999;
+                        processes.point.setActualStatus('Azimuth out of range!');
+                    ELSIF _elePointingMoveCalculator.outOfRange THEN
+                        processes.point.state := 999;
+                        processes.point.setActualStatus('Elevation out of range!');
+                    ELSIF _rocPointingMoveCalculator.outOfRange AND _pointRocRequested THEN
+                        processes.point.state := 999;
+                        processes.point.setActualStatus('Cassegrain rot. out of range!');
+                    ELSIF _ronPointingMoveCalculator.outOfRange AND _pointRonRequested THEN
+                        processes.point.state := 999;
+                        processes.point.setActualStatus('Nasmyth rot. out of range!');
+                    ELSE
+                        parts.azi.processes.moveAbsolute.start(units := AxesMoveUnits.DEGREES, value := _aziPointingMoveCalculator.adjustedPos, offset := 0);
+                        parts.ele.processes.moveAbsolute.start(units := AxesMoveUnits.DEGREES, value := _elePointingMoveCalculator.adjustedPos, offset := 0);
+                        IF parts.roc.statuses.poweredStatus.enabled THEN
+                            parts.roc.processes.moveAbsolute.start(units := AxesMoveUnits.DEGREES, value := _rocPointingMoveCalculator.adjustedPos, offset := 0);
+                        END_IF
+                        IF parts.ron.statuses.poweredStatus.enabled THEN
+                            parts.ron.processes.moveAbsolute.start(units := AxesMoveUnits.DEGREES, value := _ronPointingMoveCalculator.adjustedPos, offset := 0);
+                        END_IF
+                        processes.point.state := 5;
+					END_IF
+                ELSE
+                    processes.point.state := 999;
+                    processes.point.setActualStatus('Could not set virtual azi to physical azi position');
+                END_IF
+            END_IF
+            
+        5:
+            IF      parts.azi.processes.moveAbsolute.isIdle() 
+                AND parts.ele.processes.moveAbsolute.isIdle() 
+                AND (parts.roc.processes.moveAbsolute.isIdle() OR NOT _pointRocRequested)
+                AND (parts.ron.processes.moveAbsolute.isIdle() OR NOT _pointRonRequested)
+            THEN
+                IF      parts.azi.processes.moveAbsolute.isGood() 
+                    AND parts.ele.processes.moveAbsolute.isGood() 
+                    AND (parts.roc.processes.moveAbsolute.isGood() OR NOT _pointRocRequested)
+                    AND (parts.ron.processes.moveAbsolute.isGood() OR NOT _pointRonRequested)
+                THEN
+                    processes.point.setActualStatus('Finished moving absolute');
+                    processes.point.state := 6;
+                ELSE
+                    processes.point.setActualStatus('Axis move error');
+                    processes.point.state := 999;
+				END_IF
+            ELSE
+                waitingStr := '';
+                IF parts.azi.processes.moveAbsolute.isBusy() THEN
+                    waitingStr := CONCAT(waitingStr, 'AZI');
+				END_IF
+                IF parts.ele.processes.moveAbsolute.isBusy() THEN
+                    IF waitingStr <> '' THEN waitingStr := CONCAT(waitingStr, ', '); END_IF
+                    waitingStr := CONCAT(waitingStr, 'ELE');
+				END_IF
+                IF parts.roc.processes.moveAbsolute.isBusy() THEN
+                    IF waitingStr <> '' THEN waitingStr := CONCAT(waitingStr, ', '); END_IF
+                    waitingStr := CONCAT(waitingStr, 'ROC');
+				END_IF
+                IF parts.ron.processes.moveAbsolute.isBusy() THEN
+                    IF waitingStr <> '' THEN waitingStr := CONCAT(waitingStr, ', '); END_IF
+                    waitingStr := CONCAT(waitingStr, 'RON');
+				END_IF
+                processes.point.setActualStatus(CONCAT('Moving ', waitingStr));
+                
+            END_IF
+        6:
+            IF NOT processes.point.get.tracking THEN
+                stopTracking();
+			END_IF
+            
+            processes.point.state := 1000;
+        
+        999:
+            // error!
+            processes.point.setBad();
+            processes.point.setFinished();
+            // stop all axes!
+            processes.stop.start();
+        1000:
+            // all done!
+            processes.point.setGood();
+            processes.point.setFinished();
+    
+    
+	END_CASE
+        
+
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_isAtKnownPosition" Id="{93f727b3-dbe1-4a3b-a930-9bba15e25989}">
+      <Declaration><![CDATA[METHOD _isAtKnownPosition : BOOL
+VAR_IN_OUT
+    cfg : AxesKnownPositionConfig;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[
+IF (cfg.doAzi OR cfg.doEle OR cfg.doRoc OR cfg.doRon) AND  (cfg.name <> '') THEN
+    _isAtKnownPosition :=  
+                           ((NOT cfg.doAzi) OR ABS(cfg.azi - parts.azi.actPos.degrees.value) < config.knownPositionToleranceAzi)
+                       AND ((NOT cfg.doEle) OR ABS(cfg.ele - parts.ele.actPos.degrees.value) < config.knownPositionToleranceEle)
+                       AND ((NOT cfg.doRoc) OR ABS(cfg.roc - parts.roc.actPos.degrees.value) < config.knownPositionToleranceRoc)
+                       AND ((NOT cfg.doRon) OR ABS(cfg.ron - parts.ron.actPos.degrees.value) < config.knownPositionToleranceRon);
+ELSE
+    
+    _isAtKnownPosition :=  FALSE;
+    
+END_IF
+ ]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_domeAccessMonitoring" Id="{96c0703e-f910-498d-b88f-dfc0e83c0f93}">
+      <Declaration><![CDATA[METHOD _domeAccessMonitoring
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[_personHasEnteredMonitoringEdgeDetection(CLK := domeAccess.personHasEntered);
+
+IF _personHasEnteredMonitoringEdgeDetection.Q THEN
+    
+    IF statuses.poweredStatus.enabled THEN
+        isPoweredOffByPersonInDome := TRUE;
+        _isPoweredOffByPersonInDome_azi := parts.azi.statuses.poweredStatus.enabled;
+        _isPoweredOffByPersonInDome_ele := parts.ele.statuses.poweredStatus.enabled;
+        _isPoweredOffByPersonInDome_roc := parts.roc.statuses.poweredStatus.enabled;
+        _isPoweredOffByPersonInDome_ron := parts.ron.statuses.poweredStatus.enabled;
+        processes.powerOff.start();
+    END_IF
+    
+
+END_IF
+
+
+IF      isPoweredOffByPersonInDome 
+    AND motionBlocking.motionAllowed 
+    AND (NOT domeAccess.personHasEntered) 
+    AND processes.powerOff.isIdle()
+    AND statuses.busyStatus.idle THEN
+    
+    isPoweredOffByPersonInDome := FALSE;
+    
+    processes.powerOn.start(
+                azi := _isPoweredOffByPersonInDome_azi, 
+                ele := _isPoweredOffByPersonInDome_ele, 
+                roc := _isPoweredOffByPersonInDome_roc, 
+                ron := _isPoweredOffByPersonInDome_ron, 
+                fw := FALSE);
+
+END_IF
+
+// also reset the flag in case an attempt is made to power on or reset the telescope manually
+
+IF processes.powerOn.isBusy() OR processes.reset.isBusy() THEN
+    isPoweredOffByPersonInDome := FALSE;
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_update_localConditions" Id="{996bc1cf-d219-43ac-9f41-fb6d43a2a14e}">
+      <Declaration><![CDATA[METHOD _update_localConditions
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[toCppAxes.location.tk   := CELSIUS_TO_KELVIN(config.localConditions.configuredTemperature);
+toCppAxes.location.phpa := config.localConditions.configuredPressure;
+toCppAxes.location.rh   := config.localConditions.configuredRelativeHumidity;
+toCppAxes.location.wlfq := config.localConditions.configuredObservingWavelength;
+toCppAxes.location.tlr  := config.localConditions.troposphericLapseRate;
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_doHoming" Id="{9f153d54-6dd7-4ac1-89da-c478582851c5}">
+      <Declaration><![CDATA[METHOD _doHoming
+VAR_INPUT
+END_VAR
+
+VAR
+END_VAR]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF processes.doHoming.isBusy() THEN
+    
+    IF NOT processes.doHoming.isStarted() THEN
+        processes.doHoming.state := 0;
+        processes.doHoming.setStarted();
+	END_IF
+    
+    CASE processes.doHoming.state OF
+        0:
+            processes.doHoming.setActualStatus('Homing the axes');
+            parts.azi.processes.doHoming.start();
+            parts.ele.processes.doHoming.start();
+            processes.doHoming.state := 1;
+        1:
+            IF      parts.azi.processes.doHoming.isIdle() 
+                AND parts.ele.processes.doHoming.isIdle() THEN
+                
+                IF      parts.azi.processes.doHoming.isGood() 
+                   AND  parts.ele.processes.doHoming.isGood() THEN
+                    // ok, all axes are powered off
+                    processes.doHoming.state := 1000;
+                ELSE
+                    processes.doHoming.setActualStatus('Could not perform homing!');
+                    processes.doHoming.state := 999;
+                END_IF
+            END_IF
+        999:
+            // error!
+            processes.doHoming.setBad();
+            processes.doHoming.setFinished();
+            // stop all axes
+            processes.stop.start();
+        1000:
+            processes.doHoming.setActualStatus('Powered off');
+            // ok done
+            processes.doHoming.setFinished();
+            processes.doHoming.setGood();
+		
+    END_CASE
+    
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_moveRelative" Id="{ab210c36-8b05-413f-a278-51e4430e7b9c}">
+      <Declaration><![CDATA[METHOD _moveRelative
+VAR_INPUT
+END_VAR
+VAR
+    waitingStr : STRING;
+    aziIsGood : BOOL;
+    eleIsGood : BOOL;
+    rocIsGood : BOOL;
+    ronIsGood : BOOL;
+    
+    aziRequested : BOOL;
+    eleRequested : BOOL;
+    rocRequested : BOOL;
+    ronRequested : BOOL;
+    
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF processes.moveRelative.isBusy() THEN
+    
+    aziRequested := processes.moveRelative.get.doAzi;
+    eleRequested := processes.moveRelative.get.doEle;
+    rocRequested := processes.moveRelative.get.doRoc OR (processes.moveRelative.get.doRot AND (activeRotator = AxesRotatorActivity.ROC_ACTIVE));
+    ronRequested := processes.moveRelative.get.doRon OR (processes.moveRelative.get.doRot AND (activeRotator = AxesRotatorActivity.RON_ACTIVE));
+        
+    IF NOT processes.moveRelative.isStarted() THEN
+        
+        processes.moveRelative.setStarted();
+    
+        processes.moveRelative.setActualStatus('Moving relative');
+        
+        processes.moveRelative.waitingForAzi := FALSE;
+        processes.moveRelative.waitingForEle := FALSE;
+        processes.moveRelative.waitingForRoc := FALSE;
+        processes.moveRelative.waitingForRon := FALSE;
+        
+        
+        IF aziRequested THEN
+            _aziMoveRelativeCalculator(
+                    distance     := AxesMoveUnitsToDeg(units := processes.moveRelative.get.units, value := processes.moveRelative.get.azi), 
+                    trackingVelo := target.aziVelo.degreesPerSecond.value,
+                    minPos       := config.azi.minPositionSetpoint, 
+                    maxPos       := config.azi.maxPositionSetpoint,
+                    actPos       := parts.azi.actPos.degrees.value,
+                    doMostTravel := processes.moveRelative.get.preferMostTravel);
+            IF _aziMoveRelativeCalculator.outOfRange THEN
+                processes.moveRelative.setActualStatus('Cannot move AZI: out of range');
+                processes.moveRelative.setBad();
+                processes.moveRelative.waitingForAzi := FALSE;
+            ELSE
+                parts.azi.processes.moveRelative.start(units := AxesMoveUnits.DEGREES, _aziMoveRelativeCalculator.adjustedDistance);
+                processes.moveRelative.waitingForAzi := TRUE;
+			END_IF
+        END_IF
+        
+        IF eleRequested THEN
+            _eleMoveRelativeCalculator(
+                    distance     := AxesMoveUnitsToDeg(units := processes.moveRelative.get.units, value := processes.moveRelative.get.ele), 
+                    trackingVelo := target.eleVelo.degreesPerSecond.value,
+                    minPos       := config.ele.minPositionSetpoint, 
+                    maxPos       := config.ele.maxPositionSetpoint,
+                    actPos       := parts.ele.actPos.degrees.value,
+                    doMostTravel := processes.moveRelative.get.preferMostTravel);
+            IF _eleMoveRelativeCalculator.outOfRange THEN
+                processes.moveRelative.setActualStatus('Cannot move ELE: out of range');
+                processes.moveRelative.setFinished();
+                processes.moveRelative.waitingForEle := FALSE;
+            ELSE
+                parts.ele.processes.moveRelative.start(units := AxesMoveUnits.DEGREES, _eleMoveRelativeCalculator.adjustedDistance);
+                processes.moveRelative.waitingForEle := TRUE;
+			END_IF
+        END_IF
+        
+        IF processes.moveRelative.get.doRot THEN
+            IF rocRequested THEN
+                _rocMoveRelativeCalculator(
+                        distance     := AxesMoveUnitsToDeg(units := processes.moveRelative.get.units, processes.moveRelative.get.rot), 
+                        trackingVelo := target.paVelo.degreesPerSecond.value,
+                        minPos       := config.roc.minPositionSetpoint, 
+                        maxPos       := config.roc.maxPositionSetpoint,
+                        actPos       := parts.roc.actPos.degrees.value,
+                        doMostTravel := processes.moveRelative.get.preferMostTravel);
+                IF _rocMoveRelativeCalculator.outOfRange THEN
+                    processes.moveRelative.setActualStatus('Cannot move ROC: out of range');
+                    processes.moveRelative.setFinished();
+                    processes.moveRelative.waitingForRoc := FALSE;
+                ELSE
+                    parts.roc.processes.moveRelative.start(units := AxesMoveUnits.DEGREES, _rocMoveRelativeCalculator.adjustedDistance);
+                    processes.moveRelative.waitingForRoc := TRUE;
+                END_IF
+            END_IF
+            IF ronRequested THEN
+                _ronMoveRelativeCalculator(
+                        distance     := AxesMoveUnitsToDeg(units := processes.moveRelative.get.units, value := processes.moveRelative.get.rot), 
+                        trackingVelo := target.paVelo.degreesPerSecond.value,
+                        minPos       := config.ron.minPositionSetpoint, 
+                        maxPos       := config.ron.maxPositionSetpoint,
+                        actPos       := parts.ron.actPos.degrees.value,
+                        doMostTravel := processes.moveRelative.get.preferMostTravel);
+                IF _ronMoveRelativeCalculator.outOfRange THEN
+                    processes.moveRelative.setActualStatus('Cannot move RON: out of range');
+                    processes.moveRelative.setFinished();
+                    processes.moveRelative.waitingForRon := FALSE;
+                ELSE
+                    parts.ron.processes.moveRelative.start(units := AxesMoveUnits.DEGREES, _ronMoveRelativeCalculator.adjustedDistance);
+                    processes.moveRelative.waitingForRon := TRUE;
+                END_IF
+            END_IF
+        ELSIF processes.moveRelative.get.doRoc THEN
+            _rocMoveRelativeCalculator(
+                    distance     := AxesMoveUnitsToDeg(units := processes.moveRelative.get.units, value := processes.moveRelative.get.roc), 
+                    trackingVelo := target.paVelo.degreesPerSecond.value,
+                    minPos       := config.roc.minPositionSetpoint, 
+                    maxPos       := config.roc.maxPositionSetpoint,
+                    actPos       := parts.roc.actPos.degrees.value,
+                    doMostTravel := processes.moveRelative.get.preferMostTravel);
+            IF _rocMoveRelativeCalculator.outOfRange THEN
+                processes.moveRelative.setActualStatus('Cannot move ROC: out of range');
+                processes.moveRelative.setFinished();
+                processes.moveRelative.waitingForRoc := FALSE;
+            ELSE
+                parts.roc.processes.moveRelative.start(units := AxesMoveUnits.DEGREES, _rocMoveRelativeCalculator.adjustedDistance);
+                processes.moveRelative.waitingForRoc := TRUE;
+            END_IF
+        ELSIF processes.moveRelative.get.doRon THEN
+                _ronMoveRelativeCalculator(
+                        distance     := AxesMoveUnitsToDeg(units := processes.moveRelative.get.units, value := processes.moveRelative.get.ron), 
+                        trackingVelo := target.paVelo.degreesPerSecond.value,
+                        minPos       := config.ron.minPositionSetpoint, 
+                        maxPos       := config.ron.maxPositionSetpoint,
+                        actPos       := parts.ron.actPos.degrees.value,
+                        doMostTravel := processes.moveRelative.get.preferMostTravel);
+                IF _ronMoveRelativeCalculator.outOfRange THEN
+                    processes.moveRelative.setActualStatus('Cannot move RON: out of range');
+                    processes.moveRelative.setFinished();
+                    processes.moveRelative.waitingForRon := FALSE;
+                ELSE
+                    parts.ron.processes.moveRelative.start(units := AxesMoveUnits.DEGREES, _ronMoveRelativeCalculator.adjustedDistance);
+                    processes.moveRelative.waitingForRon := TRUE;
+                END_IF
+        END_IF
+        
+        IF processes.moveRelative.isIdle() THEN
+            processes.moveRelative.setFinished();
+            processes.moveRelative.setBad();
+        ELSIF  NOT (processes.moveRelative.waitingForAzi OR processes.moveRelative.waitingForEle OR processes.moveRelative.waitingForRoc OR processes.moveRelative.waitingForRon) THEN
+            processes.moveRelative.setActualStatus('No move requested');
+            processes.moveRelative.setFinished();
+            processes.moveRelative.setGood();
+		END_IF
+        
+    ELSE
+        parts.azi.processes.moveRelative.statuses.healthStatus(isGood := TRUE, hasWarning := FALSE);
+        
+        aziIsGood := TRUE;
+        eleIsGood := TRUE;
+        rocIsGood := TRUE;
+        ronIsGood := TRUE;
+        
+        IF processes.moveRelative.waitingForAzi THEN
+            processes.moveRelative.waitingForAzi := parts.azi.processes.moveRelative.isBusy();
+        END_IF
+        IF processes.moveRelative.waitingForEle THEN
+            processes.moveRelative.waitingForEle := parts.ele.processes.moveRelative.isBusy();
+        END_IF
+        IF processes.moveRelative.waitingForRoc THEN
+            processes.moveRelative.waitingForRoc := parts.roc.processes.moveRelative.isBusy();
+        END_IF
+        IF processes.moveRelative.waitingForRon THEN
+            processes.moveRelative.waitingForRon := parts.ron.processes.moveRelative.isBusy();
+        END_IF
+        
+        // update the health status
+        IF      ((parts.azi.processes.moveRelative.isGood() OR NOT aziRequested))
+            AND ((parts.ele.processes.moveRelative.isGood() OR NOT eleRequested))
+            AND ((parts.roc.processes.moveRelative.isGood() OR NOT rocRequested))
+            AND ((parts.ron.processes.moveRelative.isGood() OR NOT ronRequested)) THEN
+            processes.moveRelative.setGood();
+        ELSE
+            processes.moveRelative.setBad();
+		END_IF
+        
+        // update the actual status and busy status
+        IF processes.moveRelative.waitingForAzi OR processes.moveRelative.waitingForEle OR processes.moveRelative.waitingForRoc OR processes.moveRelative.waitingForRon THEN
+            
+            waitingStr := '';
+            IF processes.moveRelative.waitingForAzi THEN
+                waitingStr := CONCAT(waitingStr, 'AZI');
+            END_IF
+            IF processes.moveRelative.waitingForEle THEN
+                IF waitingStr <> '' THEN  waitingStr := CONCAT(waitingStr, ', '); END_IF
+                waitingStr := CONCAT(waitingStr, 'ELE');
+            END_IF
+            IF processes.moveRelative.waitingForRoc THEN
+                IF waitingStr <> '' THEN  waitingStr := CONCAT(waitingStr, ', '); END_IF
+                waitingStr := CONCAT(waitingStr, 'ROC');
+            END_IF
+            IF processes.moveRelative.waitingForRon THEN
+                IF waitingStr <> '' THEN  waitingStr := CONCAT(waitingStr, ', '); END_IF
+                waitingStr := CONCAT(waitingStr, 'RON');
+            END_IF
+            
+            processes.moveRelative.setActualStatus(CONCAT('Waiting for ', waitingStr));
+            
+        ELSE
+            IF processes.moveRelative.statuses.healthStatus.good THEN
+                processes.moveRelative.setActualStatus('Finished');
+            ELSE
+                processes.moveRelative.setActualStatus('Could not move one or more axes');
+			END_IF
+            processes.moveRelative.setFinished();
+		END_IF
+		
+	END_IF
+
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_changingOperatingState" Id="{ad4ce3bd-6538-4f82-88c4-e814c617ab10}">
+      <Declaration><![CDATA[METHOD _changingOperatingState
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF SUPER^.processes.changeOperatingState.statuses.busyStatus.busy THEN
+	SUPER^.processes.changeOperatingState.setStarted();
+	SUPER^.statuses.operatingStatus(state := SUPER^.processes.changeOperatingState.get.state);
+	SUPER^.processes.changeOperatingState.setFinished();
+END_IF
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_pointRelative" Id="{b43b190a-6a2f-46e4-ab69-6b8d1c0853aa}">
+      <Declaration><![CDATA[METHOD _pointRelative
+VAR_INPUT
+END_VAR
+VAR
+	deltaAzi: LREAL;
+	deltaEle: LREAL;
+END_VAR]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF processes.pointRelative.isBusy() THEN
+    
+    IF NOT processes.pointRelative.isStarted() THEN
+        processes.pointRelative._state := 0;
+        processes.pointRelative.setStarted();
+	END_IF
+    
+    CASE processes.pointRelative._state OF
+        0:
+            IF    parts.azi.statuses.healthStatus.bad
+               OR parts.ele.statuses.healthStatus.bad THEN
+                processes.pointRelative._state := 999;
+                processes.pointRelative.setActualStatus('One or more axes in error state!');
+            ELSIF statuses.poweredStatus.disabled THEN
+                processes.pointRelative._state := 999;
+                processes.pointRelative.setActualStatus('Power is off!');
+            ELSIF    parts.azi.parts.physicalAxis.statuses.extSetGenStatus.disabled 
+                  OR parts.azi.parts.physicalAxis.statuses.extSetGenStatus.disabled THEN
+                processes.pointRelative._state := 999;
+                processes.pointRelative.setActualStatus('External setpoint generator(s) are disabled!');
+            ELSE
+                processes.pointRelative._state := 1;
+            END_IF
+        1:
+            processes.pointRelative.setActualStatus('Settting new target');
+            
+            target.alphaOffsetted(newDegreesValue := target.alphaOffsetted.degrees.value 
+                                                  +  AxesAlphaUnitsToDeg(units := processes.pointRelative.get.alphaUnits, value := processes.pointRelative.get.alpha));
+            
+            target.deltaOffsetted(newDegreesValue := target.deltaOffsetted.degrees.value 
+                                                  +  AxesDeltaUnitsToDeg(units := processes.pointRelative.get.deltaUnits, value := processes.pointRelative.get.delta));
+            
+            // store the "old" az and ele, so we can get the telescope much quicker to the new target by moving relative to it ...
+            // ... *once* the new offsets have been taken into account by the C++ task!
+            _relativePointOldAz := fromCppAxes.object.observedFull.az;
+            _relativePointOldEl := fromCppAxes.object.observedFull.el;
+            
+            // now we meed to wait for the C++ task to process the new target
+            _relativePointingTon(IN := FALSE);
+            _relativePointingTon(IN := TRUE, PT := GLOBAL.config.SLALIB_TASK_TIME + 2*GLOBAL.config.PLC_FAST_TASK_TIME);
+            processes.pointRelative._state := 2;
+            
+        2:
+            _relativePointingTon(IN := TRUE);
+            IF _relativePointingTon.Q THEN
+                    
+            
+                    _relativePointDeltaAzi := RAD_TO_DEG(LMOD(fromCppAxes.object.observedFull.az - _relativePointOldAz, 2*PI));
+                    _relativePointDeltaEle := RAD_TO_DEG(LMOD(fromCppAxes.object.observedFull.el - _relativePointOldEl, 2*PI));
+                    
+                    parts.azi.parts.virtualAxis.processes.moveRelative.start(distance := _relativePointDeltaAzi, maxVelocity := config.azi.maxVelocitySetpoint);
+                    parts.ele.parts.virtualAxis.processes.moveRelative.start(distance := _relativePointDeltaEle, maxVelocity := config.ele.maxVelocitySetpoint);
+                    
+                    processes.pointRelative._state := 3;
+			END_IF
+        3:
+            IF parts.azi.parts.virtualAxis.processes.moveRelative.isIdle() AND parts.ele.parts.virtualAxis.processes.moveRelative.isIdle() THEN
+                IF parts.azi.parts.virtualAxis.processes.moveRelative.isGood() AND parts.ele.parts.virtualAxis.processes.moveRelative.isGood()  THEN
+                    processes.pointRelative.setActualStatus('Finished moving relative');
+                    processes.pointRelative._state := 1000;
+                ELSE
+                    processes.pointRelative.setActualStatus('Could not move relative: axis move error');
+                    processes.pointRelative._state := 999;
+				END_IF
+            END_IF
+        999:
+            // error!
+            processes.pointRelative.setBad();
+            processes.pointRelative.setFinished();
+            // stop all axes!
+            processes.stop.start();
+        1000:
+            // all done!
+            processes.pointRelative.setGood();
+            processes.pointRelative.setFinished();
+    
+    
+	END_CASE
+        
+
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_locking" Id="{be582975-1446-43c2-b270-05caf54c8867}">
+      <Declaration><![CDATA[METHOD _locking
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF processes.lock.statuses.busyStatus.busy THEN
+	statuses.initializationStatus(state := InitializationStates.LOCKED);
+	
+	// done
+	processes.lock.setGood();
+	processes.lock.setFinished();
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_update" Id="{c4725b04-cfa4-48b5-b0f7-095c97dec046}">
+      <Declaration><![CDATA[METHOD _update
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[SUPER^(timing := timing, motionBlocking := motionBlocking, operatorStatus := operatorStatus, activityStatus := activityStatus, isInstrumentActive := isInstrumentActive, activeInstrument := activeInstrument, domeAccess := domeAccess);
+
+
+// get the alpha/delta feedback values from the C++ task
+_tpointFeedbackCalculations(
+    azi := parts.azi.actPos.radians.value, 
+    ele := parts.ele.actPos.radians.value, 
+    active := isPointingModelActive, 
+    model := activePointingModel,
+    aziSign := config.tpointAziSign,
+    eleSign := config.tpointEleSign,
+    deltaAziSign := config.tpointDeltaAziSign,
+    deltaEleSign := config.tpointDeltaEleSign,
+    oldFormulas := config.tpointOldFormulas);
+
+feedback.alpha(newDegreesValue := RAD_TO_DEG(fromCppAxes.feedback.mean.ra));
+feedback.delta(newDegreesValue := RAD_TO_DEG(fromCppAxes.feedback.mean.dec));
+feedback.aziPos(newDegreesValue := MODABS(parts.azi.actPos.degrees.value - ARCSEC_TO_DEG(_tpointFeedbackCalculations.deltaAzi), 360)); // TEST
+feedback.elePos(newDegreesValue := LMOD(parts.ele.actPos.degrees.value   - ARCSEC_TO_DEG(_tpointFeedbackCalculations.deltaEle), 360)); // TEST
+feedback.rocPos(newDegreesValue := LMOD(parts.roc.actPos.degrees.value * config.rocPositionAngleSign, 360));
+IF feedback.rocPos.degrees.value > 180 THEN
+    feedback.rocPos(newDegreesValue := feedback.rocPos.degrees.value - 360.0); // just normalize
+END_IF
+feedback.ronPos(newDegreesValue := LMOD(parts.ron.actPos.degrees.value * config.ronPositionAngleSign, 360));
+IF feedback.ronPos.degrees.value > 180 THEN
+    feedback.ronPos(newDegreesValue := feedback.ronPos.degrees.value - 360.0); // just normalize
+END_IF
+feedback.rocOffset(newDegreesValue := feedback.rocPos.degrees.value - target.paPos.degrees.value);
+feedback.ronOffset(newDegreesValue := feedback.ronPos.degrees.value - target.paPos.degrees.value);
+IF activeRotator = AxesRotatorActivity.ROC_ACTIVE THEN
+    feedback.rotPos(newDegreesValue := feedback.rocPos.degrees.value);
+    feedback.rotOffset(newDegreesValue := feedback.rocOffset.degrees.value);
+ELSIF activeRotator = AxesRotatorActivity.RON_ACTIVE THEN
+    feedback.rotPos(newDegreesValue := feedback.ronPos.degrees.value);
+    feedback.rotOffset(newDegreesValue := feedback.ronOffset.degrees.value);
+ELSIF activeRotator = AxesRotatorActivity.NONE_ACTIVE THEN
+    feedback.rotPos(newDegreesValue := 0.0);
+    feedback.rotOffset(newDegreesValue := 0.0);
+END_IF
+
+feedback(isValid :=     parts.azi.parts.lida1.statuses.healthStatus.good 
+                    AND parts.azi.parts.lida2.statuses.healthStatus.good 
+                    AND parts.azi.parts.lida3.statuses.healthStatus.good 
+                    AND parts.azi.parts.lida4.statuses.healthStatus.good 
+                    AND parts.ele.parts.lida1.statuses.healthStatus.good 
+                    AND parts.ele.parts.lida2.statuses.healthStatus.good
+                    AND fromCppAxes.feedback.isValid, 
+          isTooLow := fromCppAxes.feedback.isTooLow);
+
+// send the new azi/ele/... feedback values to the C++ task: where is the telescope now?
+toCppAxes.feedback.az := feedback.aziPos.radians.value;
+toCppAxes.feedback.el := feedback.elePos.radians.value;
+
+// update the target
+target.alpha(newDegreesValue := target.alphaStart.degrees.value + target.alphaTravelled.degrees.value + target.alphaOffsetted.degrees.value);
+target.delta(newDegreesValue := target.deltaStart.degrees.value + target.deltaTravelled.degrees.value + target.deltaOffsetted.degrees.value);
+target(isValid := fromCppAxes.object.isValid, isGiven := isTracking, isTooLow := fromCppAxes.object.isTooLow);
+
+// copy the current target to the C++ task
+toCppAxes.object.rc := target.alpha.radians.value;
+toCppAxes.object.dc := target.delta.radians.value;
+
+
+// TODO: poweredStatus: azi and ele only??
+statuses.poweredStatus(
+        isEnabled :=    parts.azi.statuses.poweredStatus.enabled
+                     OR parts.ele.statuses.poweredStatus.enabled
+                     OR parts.roc.statuses.poweredStatus.enabled 
+                     OR parts.ron.statuses.poweredStatus.enabled);
+
+isPointing := processes.point.isBusy();
+
+_update_actualKnownPositionName();
+_update_activePointingModel();
+_update_activeRotator();
+_update_actualStatus();
+_update_localConditions();
+_update_location();
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_slipMonitoring" Id="{c711552d-da3b-499b-a921-299008acdbb1}">
+      <Declaration><![CDATA[METHOD _slipMonitoring
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[
+_slipMonitoringEdgeDetection(CLK := parts.azi.slipError OR parts.ele.slipError);
+
+IF _slipMonitoringEdgeDetection.Q THEN
+    processes.powerOff.start();
+    
+    parts.azi.parts.physicalAxis.processes.resetCalibration.start();
+    parts.ele.parts.physicalAxis.processes.resetCalibration.start();
+    
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_powerOn" Id="{cbd784bd-64d6-4d41-a65c-7a976bb42502}">
+      <Declaration><![CDATA[METHOD _powerOn
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF processes.powerOn.isBusy() THEN
+    
+    IF NOT processes.powerOn.isStarted() THEN
+        processes.powerOn.state := 0;
+        processes.powerOn.setStarted();
+	END_IF
+    
+    CASE processes.powerOn.state OF
+        0:
+            processes.powerOn.setActualStatus('Powering on the axes');
+            // now power on the axes
+            IF processes.powerOn.get.azi THEN
+                parts.azi.processes.powerOn.start();
+            END_IF
+            IF processes.powerOn.get.ele THEN
+                parts.ele.processes.powerOn.start();
+            END_IF
+            IF processes.powerOn.get.roc THEN
+                parts.roc.processes.powerOn.start();
+			END_IF
+            IF processes.powerOn.get.ron THEN
+                parts.ron.processes.powerOn.start();
+			END_IF
+            processes.powerOn.state := 1;
+        1:
+            IF      (parts.azi.processes.powerOn.isIdle() OR NOT processes.powerOn.get.azi) 
+                AND (parts.ele.processes.powerOn.isIdle() OR NOT processes.powerOn.get.ele) 
+                AND (parts.roc.processes.powerOn.isIdle() OR NOT processes.powerOn.get.roc) 
+                AND (parts.ron.processes.powerOn.isIdle() OR NOT processes.powerOn.get.ron) 
+            THEN
+                
+                IF      (parts.azi.processes.powerOn.isGood() OR NOT processes.powerOn.get.azi) 
+                    AND (parts.ele.processes.powerOn.isGood() OR NOT processes.powerOn.get.ele) 
+                    AND (parts.roc.processes.powerOn.isGood() OR NOT processes.powerOn.get.roc) 
+                    AND (parts.ron.processes.powerOn.isGood() OR NOT processes.powerOn.get.ron) 
+                THEN
+                    // ok, all axes are powered on
+                    processes.powerOn.state := 1000;
+                ELSE
+                    processes.powerOn.setActualStatus('Could not power on the axes!');
+                    processes.powerOn.state := 999;
+                END_IF
+            END_IF
+        999:
+            // error!
+            processes.powerOn.setBad();
+            processes.powerOn.setFinished();
+            // stop all axes
+            processes.stop.start();
+        1000:
+            processes.powerOn.setActualStatus('Powered on');
+            // ok done
+            processes.powerOn.setFinished();
+            processes.powerOn.setGood();
+		
+    END_CASE
+    
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_initializing" Id="{ccd45c59-ea23-4bfc-a9e5-fcd042134534}">
+      <Declaration><![CDATA[METHOD _initializing
+VAR_INPUT
+END_VAR
+VAR
+    
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF processes.initialize.statuses.busyStatus.busy THEN
+	
+	// start up the initialization
+	IF NOT processes.initialize.statuses.startedStatus.started THEN
+        // we're now initializing
+        statuses.initializationStatus(state := InitializationStates.INITIALIZING);
+        processes.initialize._state := 0;
+		// OK we're started now
+		processes.initialize.setStarted();
+	END_IF;
+    
+    // process the actions
+    CASE processes.initialize._state OF
+        
+        0:
+            processes.initialize.setActualStatus('Resetting');
+            // perform a reset
+            processes.reset.start();
+            processes.initialize._state := 1;
+        1:
+            IF processes.reset.isIdle() THEN
+                IF processes.initialize.isGood() THEN
+                    processes.initialize._state := 2;
+                ELSE
+                    processes.initialize.setActualStatus('Could not reset!');
+                    processes.initialize._state := 999;
+				END_IF
+			END_IF
+        2:
+            processes.initialize.setActualStatus('Powering ON');
+            processes.powerOn.start(azi := TRUE, ele := TRUE, roc := FALSE, ron := FALSE, fw := FALSE);
+            processes.initialize._state := 3;
+        3:
+            IF processes.powerOn.isIdle() THEN
+                IF processes.powerOn.isGood() THEN
+                    processes.initialize._state := 4;
+                ELSE
+                    processes.initialize.setActualStatus('Could not power on!');
+                    processes.initialize._state := 999;
+				END_IF
+			END_IF
+        4:
+            processes.initialize.setActualStatus('Homing');
+            processes.doHoming.start();
+            processes.initialize._state := 5;
+        5:
+            IF processes.doHoming.isIdle() THEN
+                IF processes.doHoming.isGood() THEN
+                    processes.initialize._state := 6;
+                ELSE
+                    processes.initialize.setActualStatus('Could not home axes!');
+                    processes.initialize._state := 999;
+				END_IF
+			END_IF
+        6:
+            // just finish!
+            processes.initialize._state := 1000;
+        999:
+            // there has been an error!
+            statuses.initializationStatus(state := InitializationStates.INITIALIZING_FAILED);
+            // done
+            processes.initialize.setBad();
+            processes.initialize.setFinished();
+        1000:
+            // all done!
+            processes.initialize.setActualStatus('Initialized');
+            statuses.initializationStatus(state := InitializationStates.INITIALIZED);
+            processes.initialize.setGood();
+            processes.initialize.setFinished();
+	END_CASE
+    
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_errorMonitoring" Id="{d00e571a-19ce-479b-81f9-4a327012b366}">
+      <Declaration><![CDATA[METHOD _errorMonitoring
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[
+// must not stop for small errors e.g. when one of the lidas is giving a temporary error
+_errorMonitoringTon(IN := statuses.healthStatus.bad, PT := T#15S);
+
+IF _errorMonitoringTon.Q THEN
+    stopTracking();
+END_IF
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_update_actualStatus" Id="{e36c4fe5-62ae-4e83-8d94-05fa68f174f8}">
+      <Declaration><![CDATA[METHOD _update_actualStatus
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[
+IF statuses.initializationStatus.initialized THEN
+    IF statuses.healthStatus.bad THEN
+        IF parts.azi.slipError OR parts.ele.slipError THEN
+            actualStatus := 'Slip error!';
+        ELSE    
+            actualStatus := 'ERROR';
+        END_IF
+    ELSIF statuses.healthStatus.good OR statuses.healthStatus.warning THEN
+        IF statuses.operatingStatus.manual THEN
+            actualStatus := 'MANUAL';
+        ELSIF statuses.operatingStatus.auto THEN
+            IF statuses.busyStatus.busy THEN
+                IF processes.initialize.isBusy() THEN
+                    actualStatus := processes.initialize.actualStatus;
+                ELSIF processes.point.isBusy() THEN
+                    actualStatus := processes.point.actualStatus;
+                ELSIF processes.moveAbsolute.isBusy() THEN
+                    actualStatus := processes.moveAbsolute.actualStatus;
+                ELSIF processes.moveRelative.isBusy() THEN
+                    actualStatus := processes.moveRelative.actualStatus;
+                ELSIF processes.stop.isBusy() THEN
+                    actualStatus := 'Stopping ...';
+                ELSE
+                    actualStatus := 'Busy...';
+				END_IF
+            ELSIF statuses.busyStatus.idle THEN
+                IF isPoweredOffByPersonInDome THEN
+                    actualStatus := 'Powered off (person in dome)';
+                ELSIF statuses.poweredStatus.enabled AND isLimitsReached THEN
+                    actualStatus := 'End of travel reached!';
+                ELSIF isTracking THEN
+                    actualStatus := 'Tracking ...';
+                ELSIF statuses.poweredStatus.disabled AND isAtKnownPosition THEN
+                    actualStatus := CONCAT(CONCAT('Powered OFF (parked at ', actualKnownPositionName), ')');
+                ELSIF statuses.poweredStatus.enabled AND isAtKnownPosition THEN
+                    actualStatus := CONCAT(CONCAT('Powered ON (parked at ', actualKnownPositionName), ')');
+				ELSIF statuses.healthStatus.good THEN
+                    actualStatus := 'Idle';
+                ELSE
+                    actualStatus := 'WARNING';
+				END_IF
+            ELSE
+                actualStatus := 'UNKNOWN';
+			END_IF
+        ELSE
+            actualStatus := 'UNKNOWN';
+		END_IF
+    ELSE
+        actualStatus := 'UNKNOWN';
+	END_IF
+ELSE
+    actualStatus := InitializationStatusToString(statuses.initializationStatus);
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_moveKnownPosition" Id="{f20e4348-69cd-4f99-af7d-0b305b2852a3}">
+      <Declaration><![CDATA[METHOD _moveKnownPosition : RequestResults
+VAR_INPUT
+END_VAR
+VAR
+    _config : AxesKnownPositionConfig;
+END_VAR]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF processes.moveKnownPosition.isBusy() THEN
+    
+    IF NOT processes.moveKnownPosition.isStarted() THEN
+        processes.moveKnownPosition._state := 0;
+        processes.moveKnownPosition.setStarted();
+	END_IF
+    
+    CASE processes.moveKnownPosition._state OF
+        0:
+            processes.moveKnownPosition.setActualStatus(CONCAT('Now moving to ', processes.moveKnownPosition.get.name)); 
+            
+            _config := AxesGetKnownPositionConfig(name := processes.moveKnownPosition.get.name, config := config.knownPositions);
+            
+            
+            IF _config.allowObserver THEN
+                
+                processes.moveAbsolute.start(
+                    units := AxesMoveUnits.DEGREES,
+                    azi := _config.azi,
+                    ele := _config.ele,
+                    rot := 0.0,
+                    roc := _config.roc,
+                    ron := _config.ron,
+                    doAzi := _config.doAzi AND parts.azi.statuses.poweredStatus.enabled,
+                    doEle := _config.doEle AND parts.ele.statuses.poweredStatus.enabled,
+                    doRot := FALSE,
+                    doRoc := _config.doRoc AND parts.roc.statuses.poweredStatus.enabled,
+                    doRon := _config.doRon AND parts.ron.statuses.poweredStatus.enabled,
+                    preferMostTravel := FALSE);
+                    
+                processes.moveKnownPosition._state := 1;
+            ELSE
+                processes.moveKnownPosition.setActualStatus('Not allowed by observer');
+                processes.moveKnownPosition._state := 999;
+			END_IF
+            
+        1:
+            IF processes.moveAbsolute.isIdle() THEN
+                IF processes.moveAbsolute.isGood() THEN
+                    processes.moveKnownPosition._state := 1000;
+                ELSE
+                    processes.moveKnownPosition.setActualStatus(processes.moveAbsolute.actualStatus);
+                    processes.moveKnownPosition._state := 999;
+				END_IF
+			END_IF
+            
+        999:
+            // error!
+            processes.moveKnownPosition.setBad();
+            processes.moveKnownPosition.setFinished();
+        1000:
+            // ok done
+            processes.moveKnownPosition.setActualStatus(CONCAT('Moved to ', processes.moveKnownPosition.get.name));
+            processes.moveKnownPosition.setFinished();
+            processes.moveKnownPosition.setGood();
+            
+		
+		
+    END_CASE
+    
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_update_actualKnownPositionName" Id="{fc268e05-15eb-46a4-a30a-4557c8a31bed}">
+      <Declaration><![CDATA[METHOD _update_actualKnownPositionName : RequestResults
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF _isAtKnownPosition(config.knownPositions.position0) THEN 
+    actualKnownPositionName := config.knownPositions.position0.name;
+    isAtKnownPosition := TRUE;
+ELSIF _isAtKnownPosition(config.knownPositions.position1) THEN 
+    actualKnownPositionName := config.knownPositions.position1.name;
+    isAtKnownPosition := TRUE;
+ELSIF _isAtKnownPosition(config.knownPositions.position2) THEN 
+    actualKnownPositionName := config.knownPositions.position2.name;
+    isAtKnownPosition := TRUE;
+ELSIF _isAtKnownPosition(config.knownPositions.position3) THEN 
+    actualKnownPositionName := config.knownPositions.position3.name;
+    isAtKnownPosition := TRUE;
+ELSIF _isAtKnownPosition(config.knownPositions.position4) THEN 
+    actualKnownPositionName := config.knownPositions.position4.name;
+    isAtKnownPosition := TRUE;
+ELSIF _isAtKnownPosition(config.knownPositions.position5) THEN 
+    actualKnownPositionName := config.knownPositions.position5.name;
+    isAtKnownPosition := TRUE;
+ELSIF _isAtKnownPosition(config.knownPositions.position6) THEN 
+    actualKnownPositionName := config.knownPositions.position6.name;
+    isAtKnownPosition := TRUE;
+ELSIF _isAtKnownPosition(config.knownPositions.position7) THEN 
+    actualKnownPositionName := config.knownPositions.position7.name;
+    isAtKnownPosition := TRUE;
+ELSIF _isAtKnownPosition(config.knownPositions.position8) THEN 
+    actualKnownPositionName := config.knownPositions.position8.name;
+    isAtKnownPosition := TRUE;
+ELSIF _isAtKnownPosition(config.knownPositions.position9) THEN 
+    actualKnownPositionName := config.knownPositions.position9.name;
+    isAtKnownPosition := TRUE;
+ELSIF _isAtKnownPosition(config.knownPositions.position10) THEN 
+    actualKnownPositionName := config.knownPositions.position10.name;
+    isAtKnownPosition := TRUE;
+ELSIF _isAtKnownPosition(config.knownPositions.position11) THEN 
+    actualKnownPositionName := config.knownPositions.position11.name;
+    isAtKnownPosition := TRUE;
+ELSIF _isAtKnownPosition(config.knownPositions.position12) THEN 
+    actualKnownPositionName := config.knownPositions.position12.name;
+    isAtKnownPosition := TRUE;
+ELSIF _isAtKnownPosition(config.knownPositions.position13) THEN 
+    actualKnownPositionName := config.knownPositions.position13.name;
+    isAtKnownPosition := TRUE;
+ELSIF _isAtKnownPosition(config.knownPositions.position14) THEN 
+    actualKnownPositionName := config.knownPositions.position14.name;
+    isAtKnownPosition := TRUE;
+ELSIF _isAtKnownPosition(config.knownPositions.position15) THEN 
+    actualKnownPositionName := config.knownPositions.position15.name;
+    isAtKnownPosition := TRUE;
+ELSIF _isAtKnownPosition(config.knownPositions.position16) THEN 
+    actualKnownPositionName := config.knownPositions.position16.name;
+    isAtKnownPosition := TRUE;
+ELSIF _isAtKnownPosition(config.knownPositions.position17) THEN 
+    actualKnownPositionName := config.knownPositions.position17.name;
+    isAtKnownPosition := TRUE;
+ELSIF _isAtKnownPosition(config.knownPositions.position18) THEN 
+    actualKnownPositionName := config.knownPositions.position18.name;
+    isAtKnownPosition := TRUE;
+ELSIF _isAtKnownPosition(config.knownPositions.position19) THEN 
+    actualKnownPositionName := config.knownPositions.position19.name;
+    isAtKnownPosition := TRUE;
+ELSE
+    actualKnownPositionName := '';
+    isAtKnownPosition := FALSE;
+END_IF
+ ]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_update_location" Id="{fd3bce8d-7e7b-42e7-b4a7-f316c511be03}">
+      <Declaration><![CDATA[METHOD _update_location
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[toCppAxes.location.elong := DEG_TO_RAD(config.location.longitude);
+toCppAxes.location.phi   := DEG_TO_RAD(config.location.latitude);
+toCppAxes.location.hm    := config.location.height;
+toCppAxes.location.xp    := DEG_TO_RAD_REAL(config.location.polarMotionX);
+toCppAxes.location.yp    := DEG_TO_RAD_REAL(config.location.polarMotionY);
+toCppAxes.location.dx    := DEG_TO_RAD_REAL(config.location.nutationDx);
+toCppAxes.location.dy    := DEG_TO_RAD_REAL(config.location.nutationDy);
+
+]]></ST>
+      </Implementation>
+    </Method>
+  </POU>
+</TcPlcObject>

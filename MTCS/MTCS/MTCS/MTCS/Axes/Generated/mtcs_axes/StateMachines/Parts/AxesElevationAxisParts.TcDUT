@@ -1,0 +1,20 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="AxesElevationAxisParts" Id="{24735b28-2a2a-4763-84be-17befcfe8d24}">
+    <Declaration><![CDATA[TYPE AxesElevationAxisParts :
+STRUCT
+	///The virtual axis
+	virtualAxis: AngularAxis;
+	///The (physical) ELE axis
+	physicalAxis: AngularAxis;
+	///The external (LIDA) encoder no. 1
+	lida1: IncrementalEncoder;
+	///The external (LIDA) encoder no. 2
+	lida2: IncrementalEncoder;
+	///The external absolute encoder
+	absoluteEncoder: SSIEncoder;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

@@ -1,0 +1,20 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="CoverParts" Id="{14b7fdc2-7d26-4363-9e74-e578fae9d5be}">
+    <Declaration><![CDATA[TYPE CoverParts :
+STRUCT
+	///TOP panels
+	top: CoverPanelSet;
+	///BOTTOM panels
+	bottom: CoverPanelSet;
+	///I/O modules
+	io: CoverIO;
+	///The closing/opening/... procedure
+	apertureProcedure: CoverApertureProcedure;
+	///The config manager (to load/save/activate configuration data)
+	configManager: ConfigManager;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

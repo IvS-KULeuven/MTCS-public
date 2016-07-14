@@ -1,0 +1,32 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="PoweredStatus" Id="{a319f636-a232-476e-bb98-5526862376f9}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK PoweredStatus
+VAR_INPUT
+	///Super state (TRUE if the super state is active, or if there is no super state)
+	superState: BOOL := TRUE;
+	///TRUE if power is enabled
+	isEnabled: BOOL;
+END_VAR
+VAR_OUTPUT
+	///The power is enabled
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	enabled: BOOL;
+	///The power is disabled
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	disabled: BOOL;
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[enabled := isEnabled AND superState;
+disabled := (NOT(isEnabled)) AND superState;
+]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

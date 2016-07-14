@@ -1,0 +1,12 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.5">
+  <DUT Name="ServicesTimingTabs" Id="{637cccec-e66e-45a2-b158-885e20c105f2}">
+    <Declaration><![CDATA[TYPE ServicesTimingTabs :
+(
+	OVERVIEW := 0,
+    IO := 1
+);
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

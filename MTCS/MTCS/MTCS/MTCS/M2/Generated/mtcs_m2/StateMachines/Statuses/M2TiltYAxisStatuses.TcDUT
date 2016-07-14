@@ -1,0 +1,12 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="M2TiltYAxisStatuses" Id="{141cf8b0-9582-4679-aa32-c3c777b59358}">
+    <Declaration><![CDATA[TYPE M2TiltYAxisStatuses :
+STRUCT
+	///Is the axis healthy?
+	healthStatus: HealthStatus;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

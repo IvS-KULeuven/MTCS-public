@@ -1,0 +1,13 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="CoverPanelSetStatuses" Id="{f44f98de-f3ad-479c-87a4-8949da8599fe}">
+    <Declaration><![CDATA[TYPE CoverPanelSetStatuses :
+STRUCT
+	apertureStatus: ApertureStatus;
+	healthStatus: HealthStatus;
+	busyStatus: BusyStatus;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

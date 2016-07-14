@@ -1,0 +1,418 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="SM_BaseAxis" Id="{fabbbbf9-cc89-4e8e-b498-f083dddcafc4}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK SM_BaseAxis
+VAR_INPUT
+	///The AXIS_REF to be linked to the NC I/O
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	axis_ref: AXIS_REF;
+	///Is gearIn/gearOut supported?
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	isGearingSupported: BOOL := FALSE;
+	///Is control enabled?
+	{attribute 'OPC.UA.DA' := '0'}
+	isEnabled: BOOL;
+	///Tolerance in [main units] per second: if < ABS(this value), then the axis is considered to be standing still
+	{attribute 'OPC.UA.DA' := '0'}
+	standstillTolerance: LREAL;
+END_VAR
+VAR_OUTPUT
+	///Current status description
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	actualStatus: STRING;
+	///True if jog is enabled
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	isJogEnabled: BOOL;
+	///Statuses of the state machine
+	statuses: BaseAxisStatuses;
+	///Processes of the state machine
+	processes: BaseAxisProcesses;
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[statuses.busyStatus( isBusy := processes.moveAbsolute.statuses.busyStatus.busy OR (processes.moveRelative.statuses.busyStatus.busy OR (processes.reset.statuses.busyStatus.busy OR (processes.power.statuses.busyStatus.busy OR (processes.gearIn.statuses.busyStatus.busy OR (processes.gearOut.statuses.busyStatus.busy OR (processes.initialize.statuses.busyStatus.busy OR (processes.setPosition.statuses.busyStatus.busy OR (processes.enableExtSetGen.statuses.busyStatus.busy OR (processes.disableExtSetGen.statuses.busyStatus.busy OR (processes.forceCalibration.statuses.busyStatus.busy OR (processes.resetCalibration.statuses.busyStatus.busy OR (processes.readParameter.statuses.busyStatus.busy OR (processes.readBoolParameter.statuses.busyStatus.busy OR (processes.writeParameter.statuses.busyStatus.busy OR processes.writeBoolParameter.statuses.busyStatus.busy)))))))))))))) );
+statuses.healthStatus( isGood := NOT(axis_ref.Status.Error) );
+statuses.poweredStatus( isEnabled := NOT(axis_ref.Status.Disabled) );
+statuses.extSetGenStatus( isEnabled := axis_ref.Status.ExtSetPointGenEnabled );
+statuses.motionStatus(
+    actVel := axis_ref.NcToPlc.ActVelo,
+    tolerance := standstillTolerance);
+processes.moveAbsolute( isEnabled := isEnabled );
+processes.moveRelative( isEnabled := isEnabled );
+processes.moveVelocity( isEnabled := isEnabled AND processes.moveVelocity.statuses.busyStatus.idle );
+processes.reset( isEnabled := isEnabled AND processes.reset.statuses.busyStatus.idle );
+processes.stop( isEnabled := isEnabled AND processes.stop.statuses.busyStatus.idle );
+processes.stopParametrized();
+processes.power( isEnabled := isEnabled AND processes.power.statuses.busyStatus.idle );
+processes.gearIn( isEnabled := isEnabled AND (processes.gearIn.statuses.busyStatus.idle AND isGearingSupported) );
+processes.gearOut( isEnabled := isEnabled AND (processes.gearOut.statuses.busyStatus.idle AND isGearingSupported) );
+processes.initialize( isEnabled := isEnabled AND statuses.busyStatus.idle );
+processes.setPosition( isEnabled := isEnabled AND processes.setPosition.statuses.busyStatus.idle );
+processes.enableExtSetGen( isEnabled := isEnabled AND processes.enableExtSetGen.statuses.busyStatus.idle );
+processes.disableExtSetGen( isEnabled := isEnabled AND processes.disableExtSetGen.statuses.busyStatus.idle );
+processes.forceCalibration( isEnabled := isEnabled AND statuses.busyStatus.idle );
+processes.resetCalibration( isEnabled := isEnabled AND statuses.busyStatus.idle );
+processes.readParameter( isEnabled := isEnabled AND statuses.busyStatus.idle );
+processes.readBoolParameter( isEnabled := isEnabled AND statuses.busyStatus.idle );
+processes.writeParameter( isEnabled := isEnabled AND statuses.busyStatus.idle );
+processes.writeBoolParameter( isEnabled := isEnabled AND statuses.busyStatus.idle );
+]]></ST>
+    </Implementation>
+    <Method Name="writeBoolParameter" Id="{09f98ad3-f40f-4413-a752-bfaddac44327}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD writeBoolParameter : RequestResults
+VAR_INPUT
+	parameterNumber: INT;
+	value: BOOL;
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[writeBoolParameter := THIS^.processes.writeBoolParameter.request(
+    parameterNumber := parameterNumber,
+    value := value);
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="writeParameter" Id="{1c8547ad-d9db-49bd-b3be-b03fff541083}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD writeParameter : RequestResults
+VAR_INPUT
+	parameterNumber: INT;
+	value: LREAL;
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[writeParameter := THIS^.processes.writeParameter.request(
+    parameterNumber := parameterNumber,
+    value := value);
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="disableExtSetGen" Id="{2b39cdfb-36d8-47ac-87e4-670697283afa}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD disableExtSetGen : RequestResults
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[disableExtSetGen := THIS^.processes.disableExtSetGen.request();
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="moveVelocity" Id="{3234bc8d-550e-4144-8c76-7f27a169787e}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD moveVelocity : RequestResults
+VAR_INPUT
+	value: LREAL;
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[moveVelocity := THIS^.processes.moveVelocity.request( value := value );
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="power" Id="{4f85d54c-bb06-43d9-9987-fe54f7474d8b}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD power : RequestResults
+VAR_INPUT
+	enable: BOOL;
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[power := THIS^.processes.power.request( enable := enable );
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="stop" Id="{56cc13c5-9e68-4a54-92b3-21942c804520}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD stop : RequestResults
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[stop := THIS^.processes.stop.request();
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="forceCalibration" Id="{66acb196-6254-44d6-94ff-87d8c844f2de}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD forceCalibration : RequestResults
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[forceCalibration := THIS^.processes.forceCalibration.request();
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="initialize" Id="{684abdba-fb6b-45a3-b6f2-71aa313702bb}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD initialize : RequestResults
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[initialize := THIS^.processes.initialize.request();
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="gearOut" Id="{70e4b388-e6ec-46bc-8b09-9d3b04ee4af0}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD gearOut : RequestResults
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[gearOut := THIS^.processes.gearOut.request();
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="moveRelative" Id="{71ce61d2-3976-48c2-9a54-54b9aac44aa1}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD moveRelative : RequestResults
+VAR_INPUT
+	distance: LREAL;
+	maxVelocity: LREAL;
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[moveRelative := THIS^.processes.moveRelative.request(
+    distance := distance,
+    maxVelocity := maxVelocity);
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="stopParametrized" Id="{8aacc5a2-b23b-4c95-b44a-77c2c29fbd01}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD stopParametrized : RequestResults
+VAR_INPUT
+	deceleration: LREAL;
+	jerk: LREAL;
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[stopParametrized := THIS^.processes.stopParametrized.request(
+    deceleration := deceleration,
+    jerk := jerk);
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="moveAbsolute" Id="{9282931e-e078-4fae-8bd3-ccc47222f0c9}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD moveAbsolute : RequestResults
+VAR_INPUT
+	position: LREAL;
+	maxVelocity: LREAL;
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[moveAbsolute := THIS^.processes.moveAbsolute.request(
+    position := position,
+    maxVelocity := maxVelocity);
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="readBoolParameter" Id="{9857eb0c-1577-47fb-ab92-83aea8ade95d}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD readBoolParameter : RequestResults
+VAR_INPUT
+	parameterNumber: INT;
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[readBoolParameter := THIS^.processes.readBoolParameter.request( parameterNumber := parameterNumber );
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="enableExtSetGen" Id="{a0ab3600-f2d1-4dec-a863-43665f818b0e}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD enableExtSetGen : RequestResults
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[enableExtSetGen := THIS^.processes.enableExtSetGen.request();
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="resetCalibration" Id="{ac7e2d66-4082-4fdf-9d1c-b6e88eac21f5}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD resetCalibration : RequestResults
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[resetCalibration := THIS^.processes.resetCalibration.request();
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="setPosition" Id="{b6ce6dc3-b4e5-48a5-a1ac-62d91371b070}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD setPosition : RequestResults
+VAR_INPUT
+	value: LREAL;
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[setPosition := THIS^.processes.setPosition.request( value := value );
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="readParameter" Id="{c1e40200-ad5b-4979-9b48-c5d9177a4665}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD readParameter : RequestResults
+VAR_INPUT
+	parameterNumber: INT;
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[readParameter := THIS^.processes.readParameter.request( parameterNumber := parameterNumber );
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="reset" Id="{e7201cdb-b870-41d4-a6ef-4d047069cbd4}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD reset : RequestResults
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[reset := THIS^.processes.reset.request();
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="gearIn" Id="{f7a55361-68ec-409f-a674-334f97ff75f6}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD gearIn : RequestResults
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[gearIn := THIS^.processes.gearIn.request();
+]]></ST>
+      </Implementation>
+    </Method>
+  </POU>
+</TcPlcObject>

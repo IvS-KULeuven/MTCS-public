@@ -1,0 +1,46 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="M2Config" Id="{c813b0af-cb69-48c5-87a4-0e74621d8bce}">
+    <Declaration><![CDATA[TYPE M2Config :
+STRUCT
+	///The config of the X axis
+	x: M2PotentiometerAxisConfig;
+	///The config of the Y axis
+	y: M2PotentiometerAxisConfig;
+	///The config of the Z axis
+	z: M2ZAxisConfig;
+	///The config of the tiltX axis
+	tiltX: M2PotentiometerAxisConfig;
+	///The config of the tiltY axis
+	tiltY: M2PotentiometerAxisConfig;
+	///The thermal focus coefficients for all focal stations
+	thermalFocus: M2ThermalFocusConfig;
+	///Time (in seconds) to wait after the field electronics of M2 have been powered on
+	waitAfterPowerOn: LREAL;
+	///Time (in seconds) to wait after the field electronics of M2 have been powered off
+	waitAfterPowerOff: LREAL;
+	///If no new command is sent to M2 within this time (in seconds) after completion of the last command, M2 will be powered off automatically
+	powerOffTimeout: LREAL;
+	///The fixed X position in mm
+	fixedXPosition: LREAL;
+	///If the X position is within fixedXPosition +/- this tolerance, there's no need to adjust it
+	fixedXPositionTolerance: LREAL;
+	///The fixed Y position in mm
+	fixedYPosition: LREAL;
+	///If the Y position is within fixedYPosition +/- this tolerance, there's no need to adjust it
+	fixedYPositionTolerance: LREAL;
+	///The fixed TiltX position in mm
+	fixedTiltXPosition: LREAL;
+	///If the TiltX position is within fixedTiltXPosition +/- this tolerance, there's no need to adjust it
+	fixedTiltXPositionTolerance: LREAL;
+	///The fixed TiltY position in mm
+	fixedTiltYPosition: LREAL;
+	///If the TiltY position is within fixedTiltYPosition +/- this tolerance, there's no need to adjust it
+	fixedTiltYPositionTolerance: LREAL;
+	///Each time a theremal focus is done, verify the fixed positions (and adjust them if they fall out of the tolerance)
+	verifyFixedPositinsOnThermalFocus: BOOL;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

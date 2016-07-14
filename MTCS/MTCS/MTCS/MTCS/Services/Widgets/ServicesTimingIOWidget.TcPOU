@@ -1,0 +1,28 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.5">
+  <POU Name="ServicesTimingIOWidget" Id="{8662c5d8-b1bb-4635-91e2-8fed40236715}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK ServicesTimingIOWidget
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR
+	actualStatus : StatusWidget;
+	coupler : EtherCatDeviceWidget;
+	slot1 : EtherCatDeviceWidget;
+	slot2 : EtherCatDeviceWidget;
+END_VAR
+VAR_IN_OUT
+	ref : ServicesTimingIO;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[actualStatus(text  := ref.actualStatus,
+             color := HealthToColor(ref.statuses.healthStatus));
+
+coupler(device := ref.parts.coupler);
+slot1(device := ref.parts.slot1);
+slot2(device := ref.parts.slot2);]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

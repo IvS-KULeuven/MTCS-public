@@ -1,0 +1,97 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.5">
+  <POU Name="M2FigureWidget" Id="{7c6eb5a5-4628-4bee-80bf-cf8aed19c226}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK M2FigureWidget
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+	// power
+	power_on : BOOL;
+	power_percent : INT;
+	
+    // a axis (from top to bottom)
+    a_top_head_invisible    : BOOL    := TRUE;
+    a_top_name              : STRING  := '';
+    a_top_arrow_name        : STRING  := '-Z';
+    a_bottom_head_invisible : BOOL    := FALSE;
+    a_bottom_name           : STRING  := 'Z';
+    a_bottom_arrow_name     : STRING  := '+Z';
+    a_top_arrow_invisible   : BOOL; 
+    a_bottom_arrow_invisible: BOOL; 
+    // b axis (from left to right)
+    b_left_head_invisible   : BOOL    := TRUE;
+    b_left_name             : STRING  := '';
+    b_left_arrow_name       : STRING  := '-X';
+    b_right_head_invisible  : BOOL    := FALSE;
+    b_right_name            : STRING  := 'X';
+    b_right_arrow_name      : STRING  := '+X';
+    b_left_arrow_invisible  : BOOL; 
+    b_right_arrow_invisible : BOOL; 
+    // b axis (from left to right)
+    c_left_head_invisible   : BOOL    := TRUE;
+    c_left_name             : STRING  := '';
+    c_left_arrow_name       : STRING  := '-Y';
+    c_right_head_invisible  : BOOL    := FALSE;
+    c_right_name            : STRING  := 'Y';
+    c_right_arrow_name      : STRING  := '+Y';
+    c_left_arrow_invisible  : BOOL; 
+    c_right_arrow_invisible : BOOL; 
+    // d axis (from left to right)
+    d_left_arrow_name       : STRING  := '-tilt Y';
+    d_right_arrow_name      : STRING  := '+tilt Y';
+    d_left_arrow_invisible  : BOOL; 
+    d_right_arrow_invisible : BOOL; 
+    d_arrow_invisible       : BOOL; 
+    // e axis (from left to right)
+    e_left_arrow_name       : STRING  := '-tilt X';
+    e_right_arrow_name      : STRING  := '+tilt X';
+    e_left_arrow_invisible  : BOOL; 
+    e_right_arrow_invisible : BOOL; 
+    e_arrow_invisible       : BOOL; 
+    
+    high_speed_invisible : BOOL;
+END_VAR
+VAR_IN_OUT
+    ref : M2;
+END_VAR
+VAR
+    moving : BOOL;
+    cw : BOOL;
+    axis : M2Axes;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[// aliases
+moving := ref.parts.moveStepsProcedure.state = M2MoveProcedureStates.MOVING;
+cw     := ref.parts.multiplexer.parts.CW.digitalOutput;
+axis   := ref.selectedAxis;
+
+// power
+power_on := ref.parts.powerRelay.digitalOutput;
+IF ref.config.powerOffTimeout <= 0 THEN
+	power_percent := 0;
+ELSE
+	power_percent := LREAL_TO_INT(ref.powerOffTimer / ref.config.powerOffTimeout * 100.0);
+END_IF
+
+// arrows visibility
+a_top_arrow_invisible      := NOT( moving AND axis = M2Axes.Z     AND cw );
+a_bottom_arrow_invisible   := NOT( moving AND axis = M2Axes.Z     AND NOT cw );
+b_left_arrow_invisible     := NOT( moving AND axis = M2Axes.X     AND cw );
+b_right_arrow_invisible    := NOT( moving AND axis = M2Axes.X     AND NOT cw );
+c_left_arrow_invisible     := NOT( moving AND axis = M2Axes.Y     AND cw );
+c_right_arrow_invisible    := NOT( moving AND axis = M2Axes.Y     AND NOT cw );
+d_left_arrow_invisible     := NOT( moving AND axis = M2Axes.tiltY AND cw );
+d_right_arrow_invisible    := NOT( moving AND axis = M2Axes.tiltY AND NOT cw );
+e_left_arrow_invisible     := NOT( moving AND axis = M2Axes.tiltX AND cw );
+e_right_arrow_invisible    := NOT( moving AND axis = M2Axes.tiltX AND NOT cw );
+
+// automatically derived visibility
+d_arrow_invisible := d_left_arrow_invisible AND d_right_arrow_invisible;
+e_arrow_invisible := e_left_arrow_invisible AND e_right_arrow_invisible;
+
+// high speed
+high_speed_invisible := NOT( moving AND (axis = M2Axes.Z) AND ref.parts.z.parts.highSpeed.digitalOutput );]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

@@ -1,0 +1,20 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="AxesPointingModelSetup" Id="{e7d0321a-c871-4edb-b49e-2a5680df0b86}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK AxesPointingModelSetup EXTENDS SM_AxesPointingModelSetup
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR
+	{attribute 'OPC.UA.DA' := '0'}
+    _testVar : BOOL; // without any variable, the superclass attributes are not visible in the UA address space
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[SUPER^();
+
+]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

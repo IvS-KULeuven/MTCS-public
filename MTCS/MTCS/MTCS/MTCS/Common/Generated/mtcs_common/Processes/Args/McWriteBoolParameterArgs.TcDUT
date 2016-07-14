@@ -1,0 +1,14 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="McWriteBoolParameterArgs" Id="{5af6ff3d-286b-401e-9ba3-4e099559a7a5}">
+    <Declaration><![CDATA[TYPE McWriteBoolParameterArgs :
+STRUCT
+	///Number of the parameter
+	parameterNumber: INT;
+	///Value to write
+	value: BOOL;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

@@ -1,0 +1,39 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="SM_Current" Id="{a3d922e7-85bf-4484-9305-2c88929b068d}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK SM_Current
+VAR_INPUT
+	///New current in amps
+	{attribute 'OPC.UA.DA' := '0'}
+	newAmpsValue: LREAL;
+END_VAR
+VAR_OUTPUT
+	///Current status description
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	actualStatus: STRING;
+	///Current in amps
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	amps: QuantityValue;
+	///Current in milliamps
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	milliAmps: QuantityValue;
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[amps(
+    value := newAmpsValue,
+    unit := Units.AMPS);
+milliAmps(
+    value := newAmpsValue * 1000.0,
+    unit := Units.MILLIAMPS);
+]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

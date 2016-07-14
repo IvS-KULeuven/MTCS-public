@@ -1,0 +1,18 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="CoverPanelStatuses" Id="{77bfb9ee-d978-4aae-8c7d-30d29b11bf46}">
+    <Declaration><![CDATA[TYPE CoverPanelStatuses :
+STRUCT
+	///Is the panel in a busy state?
+	busyStatus: BusyStatus;
+	///Is the panel open or closed?
+	apertureStatus: ApertureStatus;
+	///Is the panel in a healthy state?
+	healthStatus: HealthStatus;
+	///Is the panel opening or closing or standing still?
+	openingStatus: OpeningStatus;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

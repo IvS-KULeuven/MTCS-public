@@ -1,0 +1,131 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="SM_HydraulicsSide" Id="{4e0d3960-70b7-4c7e-89dd-321cdba5e665}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK SM_HydraulicsSide
+VAR_INPUT
+	///TRUE if there is no overpressure for entrance filter 1
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	entranceFilter1OK AT %I*: BOOL;
+	///TRUE if there is no overpressure for entrance filter 2
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	entranceFilter2OK AT %I*: BOOL;
+	///TRUE if there is no overpressure for entrance filter 3
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	entranceFilter3OK AT %I*: BOOL;
+	///TRUE if there is no overpressure for entrance filter 4
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	entranceFilter4OK AT %I*: BOOL;
+END_VAR
+VAR_OUTPUT
+	///Current status description
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	actualStatus: STRING;
+	///TRIP output of the drive, as copied from the safety system
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	driveTripOK: BOOL;
+	///Release output of the drive (ReglerFreigabe RFR), as copied from the safety system
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	driveRelease: BOOL;
+	///Minimum frequency output of the drive (QMIN), as copied from the safety system
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	driveMinFrequency: BOOL;
+	///Pressure measurement
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	pressureMeasurement: PressureMeasurement;
+	///Frequency measurement
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	frequencyMeasurement: FrequencyMeasurement;
+	///Frequency setpoint actually used
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	driveSetpoint: Frequency;
+	///Raw signal value of the frequency setpoint
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	driveSetpointSignal AT %Q*: INT;
+	///Output to reset the drive
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	resetDriveSignal AT %Q*: BOOL;
+	///Statuses of the state machine
+	statuses: HydraulicsSideStatuses;
+	///Processes of the state machine
+	processes: HydraulicsSideProcesses;
+END_VAR
+VAR_IN_OUT
+	{attribute 'OPC.UA.DA' := '0'}
+	operatorStatus: OperatorStatus;
+	{attribute 'OPC.UA.DA' := '0'}
+	operatingStatus: OperatingStatus;
+	{attribute 'OPC.UA.DA' := '0'}
+	safetyHydraulics: SafetyHydraulics;
+	{attribute 'OPC.UA.DA' := '0'}
+	config: HydraulicsSideConfig;
+	{attribute 'OPC.UA.DA' := '0'}
+	hydraulicsConfig: HydraulicsConfig;
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[pressureMeasurement(
+    config := config.pressureMeasurement,
+    conversionFactor := config.pressureSensorFullScale / 32768.0);
+frequencyMeasurement(
+    config := config.frequencyMeasurement,
+    conversionFactor := config.frequencyMeasurementFullScale / 32768.0);
+statuses.healthStatus(
+    isGood := (processes.resetDrive.statuses.healthStatus.isGood AND processes.changeFrequencySetpoint.statuses.healthStatus.isGood) AND ((pressureMeasurement.statuses.healthStatus.isGood OR pressureMeasurement.statuses.enabledStatus.disabled) AND ((frequencyMeasurement.statuses.healthStatus.isGood OR frequencyMeasurement.statuses.enabledStatus.disabled) AND (entranceFilter1OK AND (entranceFilter2OK AND (entranceFilter3OK AND (entranceFilter4OK AND driveTripOK)))))),
+    hasWarning := processes.changeFrequencySetpoint.statuses.healthStatus.hasWarning OR (pressureMeasurement.statuses.healthStatus.hasWarning OR frequencyMeasurement.statuses.healthStatus.hasWarning));
+statuses.busyStatus( isBusy := processes.changeFrequencySetpoint.statuses.busyStatus.busy OR processes.resetDrive.statuses.busyStatus.busy );
+processes.resetDrive( isEnabled := statuses.busyStatus.idle AND operatorStatus.tech );
+processes.changeFrequencySetpoint( isEnabled := statuses.busyStatus.idle AND (operatingStatus.manual AND operatorStatus.tech) );
+]]></ST>
+    </Implementation>
+    <Method Name="resetDrive" Id="{5139545c-ab08-4b2a-bf52-dc74be2571e5}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD resetDrive : RequestResults
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[resetDrive := THIS^.processes.resetDrive.request();
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="changeFrequencySetpoint" Id="{f6cf5aab-59d3-478a-b45d-80f35343e15b}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD changeFrequencySetpoint : RequestResults
+VAR_INPUT
+	setpoint: LREAL;
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[changeFrequencySetpoint := THIS^.processes.changeFrequencySetpoint.request( setpoint := setpoint );
+]]></ST>
+      </Implementation>
+    </Method>
+  </POU>
+</TcPlcObject>

@@ -1,0 +1,19 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="M2MoveProcedureStates" Id="{1460d3ab-f0f8-4fb2-8bda-6b5da97ac9e2}">
+    <Declaration><![CDATA[TYPE M2MoveProcedureStates :
+(
+	IDLE := 0,
+	ABORTED := 1,
+	PREPARE_PROCESS := 2,
+	MOVING := 3,
+	MOVING_TO_ANTI_BACKLASH_POSITION := 4,
+	MOVING_CLOSE_TO_FINAL_POSITION := 5,
+	MOVING_TO_FINAL_POSITION := 6,
+	ERROR := 7,
+	ABORTING := 8
+);
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

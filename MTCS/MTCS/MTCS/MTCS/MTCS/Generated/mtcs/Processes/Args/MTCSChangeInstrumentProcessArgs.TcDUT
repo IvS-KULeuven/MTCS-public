@@ -1,0 +1,12 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="MTCSChangeInstrumentProcessArgs" Id="{064ad553-3fee-43b6-8620-0accfd3436cb}">
+    <Declaration><![CDATA[TYPE MTCSChangeInstrumentProcessArgs :
+STRUCT
+	///Name of the instrument
+	name: STRING;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

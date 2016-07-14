@@ -1,0 +1,21 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.5">
+  <POU Name="SafetyDomeAccessIO" Id="{e40f7b7b-b1af-46ee-ace1-4c2e2989f32c}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK SafetyDomeAccessIO EXTENDS SM_SafetyDomeAccessIO
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR
+    _testVar : INT;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[SUPER^();
+
+// do stuff
+
+//SUPER^();]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

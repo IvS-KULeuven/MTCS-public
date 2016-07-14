@@ -1,0 +1,115 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="AxesManualJoystickRotWidget" Id="{6bceeffb-517c-4a57-a278-0640731bca9c}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK AxesManualJoystickRotWidget
+VAR_INPUT
+
+    joystick_hold : BOOL := TRUE; 
+
+    joystick_velocity_fast : LREAL := 6.0;   // degrees/s
+    joystick_velocity_medium : LREAL := 1.0; // degrees/s
+    joystick_velocity_slow : LREAL := 0.1;   // degrees/s
+    
+    jog_roc_forward_fast    : BOOL;
+    jog_roc_forward_medium  : BOOL;
+    jog_roc_forward_slow    : BOOL;
+    jog_roc_backwards_fast    : BOOL;
+    jog_roc_backwards_medium  : BOOL;
+    jog_roc_backwards_slow    : BOOL;
+    
+    jog_ron_forward_fast    : BOOL;
+    jog_ron_forward_medium  : BOOL;
+    jog_ron_forward_slow    : BOOL;
+    jog_ron_backwards_fast    : BOOL;
+    jog_ron_backwards_medium  : BOOL;
+    jog_ron_backwards_slow    : BOOL;
+END_VAR
+VAR_OUTPUT
+    jog_roc_disabled : BOOL;
+    jog_ron_disabled : BOOL;
+    
+    joystick_disabled : BOOL;
+    
+ 
+END_VAR
+VAR_IN_OUT
+    ref : Axes;
+END_VAR
+VAR
+    rocJogForward : BOOL;
+    rocJogBackwards : BOOL;
+    rocJogVelocity : LREAL;
+    ronJogForward : BOOL;
+    ronJogBackwards : BOOL;
+    ronJogVelocity : LREAL;
+    
+    rocJogForwardTrig : R_TRIG;
+    rocJogBackwardsTrig : R_TRIG;
+    ronJogForwardTrig : R_TRIG;
+    ronJogBackwardsTrig : R_TRIG;
+    
+END_VAR
+
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[// rocmuth
+IF joystick_hold THEN
+    jog_roc_disabled := (NOT ref.parts.roc.parts.virtualAxis.isJogEnabled) OR ref.parts.roc.statuses.poweredStatus.disabled;
+ELSE
+    jog_roc_disabled := ref.parts.roc.processes.moveVelocity.statuses.enabledStatus.disabled OR ref.parts.roc.statuses.poweredStatus.disabled;
+END_IF
+
+rocJogForward   := jog_roc_forward_fast OR jog_roc_forward_medium OR jog_roc_forward_slow;
+rocJogBackwards := jog_roc_backwards_fast OR jog_roc_backwards_medium OR jog_roc_backwards_slow;
+IF jog_roc_forward_fast OR jog_roc_backwards_fast THEN
+    rocJogVelocity := joystick_velocity_fast;
+ELSIF jog_roc_forward_medium OR jog_roc_backwards_medium THEN
+    rocJogVelocity := joystick_velocity_medium;
+ELSIF jog_roc_forward_slow OR jog_roc_backwards_slow THEN
+    rocJogVelocity := joystick_velocity_slow;
+END_IF
+
+rocJogForwardTrig(CLK := rocJogForward);
+rocJogBackwardsTrig(CLK := rocJogBackwards);
+
+IF joystick_hold THEN
+    ref.parts.roc.parts.virtualAxis.jog(rocJogForward, rocJogBackwards, rocJogVelocity, 0.0, 0.0);
+ELSIF rocJogForwardTrig.Q THEN
+    ref.parts.roc.processes.moveVelocity.request(units := AxesMoveVelocityUnits.DEGREES_PER_SECOND, rocJogVelocity);
+ELSIF rocJogBackwardsTrig.Q THEN
+    ref.parts.roc.processes.moveVelocity.request(units := AxesMoveVelocityUnits.DEGREES_PER_SECOND, -rocJogVelocity);
+END_IF
+
+// ronvation
+IF joystick_hold THEN
+    jog_ron_disabled := (NOT ref.parts.ron.parts.virtualAxis.isJogEnabled) OR ref.parts.ron.statuses.poweredStatus.disabled;
+ELSE
+    jog_ron_disabled := ref.parts.ron.processes.moveVelocity.statuses.enabledStatus.disabled OR ref.parts.ron.statuses.poweredStatus.disabled;
+END_IF
+
+ronJogForward   := jog_ron_forward_fast OR jog_ron_forward_medium OR jog_ron_forward_slow;
+ronJogBackwards := jog_ron_backwards_fast OR jog_ron_backwards_medium OR jog_ron_backwards_slow;
+IF jog_ron_forward_fast OR jog_ron_backwards_fast THEN
+    ronJogVelocity := joystick_velocity_fast;
+ELSIF jog_ron_forward_medium OR jog_ron_backwards_medium THEN
+    ronJogVelocity := joystick_velocity_medium;
+ELSIF jog_ron_forward_slow OR jog_ron_backwards_slow THEN
+    ronJogVelocity := joystick_velocity_slow;
+END_IF
+
+ronJogForwardTrig(CLK := ronJogForward);
+ronJogBackwardsTrig(CLK := ronJogBackwards);
+
+IF joystick_hold THEN
+    ref.parts.ron.parts.virtualAxis.jog(ronJogForward, ronJogBackwards, ronJogVelocity, 0.0, 0.0);
+ELSIF ronJogForwardTrig.Q THEN
+    ref.parts.ron.processes.moveVelocity.request(units := AxesMoveVelocityUnits.DEGREES_PER_SECOND, ronJogVelocity);
+ELSIF ronJogBackwardsTrig.Q THEN
+    ref.parts.ron.processes.moveVelocity.request(units := AxesMoveVelocityUnits.DEGREES_PER_SECOND, -ronJogVelocity);
+END_IF
+
+joystick_disabled := jog_roc_disabled AND jog_ron_disabled;
+]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

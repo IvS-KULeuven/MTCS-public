@@ -1,0 +1,21 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.2">
+  <POU Name="EtherCatDeviceWidget" Id="{ca672c8c-a49c-4024-9488-7cda63accc71}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK EtherCatDeviceWidget
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR
+	actualStatus : StatusWidget;
+END_VAR
+VAR_IN_OUT
+	device : EtherCatDevice;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[actualStatus(text  := device.actualStatus, 
+             color := HealthToColor(device.statuses.healthStatus));]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

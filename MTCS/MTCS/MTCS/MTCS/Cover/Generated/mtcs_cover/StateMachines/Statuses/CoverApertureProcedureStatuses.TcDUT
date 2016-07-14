@@ -1,0 +1,14 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="CoverApertureProcedureStatuses" Id="{95c73066-9c95-4fd0-a4d5-7667bf9e0a65}">
+    <Declaration><![CDATA[TYPE CoverApertureProcedureStatuses :
+STRUCT
+	///Is the CoverApertureProcedure in a busy state?
+	busyStatus: BusyStatus;
+	///Is the CoverApertureProcedure in a healthy state?
+	healthStatus: HealthStatus;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

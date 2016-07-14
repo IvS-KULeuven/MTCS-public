@@ -1,0 +1,840 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="BaseAxis" Id="{a9e710f8-eb19-4a66-8acd-3f219202d7fb}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK BaseAxis EXTENDS SM_BaseAxis
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR
+	_mc_moveAbsolute1         : MC_MoveAbsolute;
+	_mc_moveAbsolute2         : MC_MoveAbsolute;
+    _moveAbsoluteAlternator   : BOOL;
+    _previousMoveAbsolutePosition : LREAL;
+    _previousMoveAbsoluteMaxVelocity : LREAL;
+    _moveAbsoluteStopping   : BOOL;
+    _mc_moveVelocity : MC_MoveVelocity;
+    _mc_moveRelative : MC_MoveRelative;
+    
+	_mc_power : MC_Power;
+	_mc_reset : MC_Reset;
+	_mc_halt : MC_Halt;
+	_mc_halt2 : MC_Halt;
+	_mc_gearIn : MC_GearIn;
+	_mc_gearOut : MC_GearOut;
+    _mc_setPosition : MC_SetPosition;
+    _mc_extSetPointGenEnable : MC_ExtSetPointGenEnable;
+    _mc_extSetPointGenDisable : MC_ExtSetPointGenDisable;
+    _mc_home : MC_Home;
+    _mc_jog : MC_Jog;
+    
+	_powered : BOOL;
+    
+    _masterAddr : POINTER TO AXIS_REF := 0;
+    
+    _ctrl_pi_params : ST_CTRL_PI_PARAMS;
+    _ctrl_pi : FB_CTRL_PI;
+    _mc_moveVelocity1 : MC_MoveVelocity;
+    _mc_moveVelocity2 : MC_MoveVelocity;
+    
+    _mc_writeParameter : MC_WriteParameter;
+    _mc_writeBoolParameter : MC_WriteBoolParameter;
+    _mc_readParameter : MC_ReadParameter;
+    _mc_readBoolParameter : MC_ReadBoolParameter;
+    
+    
+    Kp : LREAL := 1.0;
+    Td : LREAL := 0.0;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[SUPER^.axis_ref.ReadStatus();
+
+_update();
+
+// command the axis
+_powering();
+_movingAbsolute();
+_movingRelative();
+_resetting();
+_initializing();
+_stopping();
+_stoppingParametrized();
+_gearIn();
+_gearOut();
+_setPosition();
+_moveVelocity();
+_enableExtSetGen();
+_disableExtSetGen();
+_forceCalibration();
+_resetCalibration();
+
+_readParameter();
+_readBoolParameter();
+_writeParameter();
+_writeBoolParameter();
+
+_update();]]></ST>
+    </Implementation>
+    <Method Name="_forceCalibration" Id="{074f4ea8-c4e4-4293-a8f0-c6cc982fec41}">
+      <Declaration><![CDATA[METHOD _forceCalibration
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[
+_mc_home(
+    Execute     := processes.forceCalibration.statuses.busyStatus.busy,
+    Position    := 0.0,
+    HomingMode  := MC_HomingMode.MC_ForceCalibration,
+    Axis        := axis_ref);
+
+(* update the health status *)
+SUPER^.processes.forceCalibration.statuses.healthStatus(isGood := NOT _mc_home.Error);
+
+(* update the busy status *)
+SUPER^.processes.forceCalibration.statuses.busyStatus(isBusy := _mc_home.Busy);
+
+(* update the error ID *)
+SUPER^.processes.forceCalibration.errorId := _mc_home.ErrorId;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_movingAbsolute" Id="{0eb2eb3d-5ce7-4a7a-ae30-0f7be9350742}">
+      <Declaration><![CDATA[METHOD _movingAbsolute
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF processes.moveAbsolute.statuses.busyStatus.busy THEN
+	
+    // MC_MoveAbsolute is a single command to instruct the axis to go to some position.
+    // This position cannot be changed later: the command only does what you initially requested
+    // (in other words: it only uses the position at the time of the Execute trigger).
+    
+    // We don' t want this behaviour, as we would like to be able to change the setpoint
+    // position also during positioning. There are many use cases for this behaviour, e.g.:
+    //  - you can send corrections to the axis while the position loop is running
+    //  - you can change your mind while the positioning is running.
+    
+    // Therefore, we need 2 MC_MoveAbsolute commands, that abort each other alternatingly.
+    // At each PLC cycle, one MC_MoveAbsolute command will be Busy and the other will be
+    // CommandAborted. Only when one of them is Done (or Error), the motion has ended.
+    
+    IF    _previousMoveAbsolutePosition <> processes.moveAbsolute.get.position 
+       OR _previousMoveAbsoluteMaxVelocity <> processes.moveAbsolute.get.maxVelocity
+    THEN
+        _moveAbsoluteAlternator := NOT _moveAbsoluteAlternator;
+        _previousMoveAbsolutePosition := processes.moveAbsolute.get.position;
+        _previousMoveAbsoluteMaxVelocity := processes.moveAbsolute.get.maxVelocity;
+	END_IF
+    
+    IF _moveAbsoluteAlternator THEN
+    
+        _mc_moveAbsolute2(Axis := axis_ref, Execute := FALSE);
+        
+        _mc_moveAbsolute1(
+            Axis       := axis_ref,
+            Execute    := TRUE,
+            Position   := processes.moveAbsolute.get.position,
+            Velocity   := processes.moveAbsolute.get.maxVelocity,
+            BufferMode := MC_BufferMode.MC_Aborting);
+        
+        (* update the statuses *)
+        processes.moveAbsolute.statuses.healthStatus(isGood := NOT _mc_moveAbsolute1.Error);
+        processes.moveAbsolute.errorId := _mc_moveAbsolute1.ErrorId;
+        processes.moveAbsolute.statuses.busyStatus(isBusy := _mc_moveAbsolute1.Busy);
+    ELSE
+        
+        _mc_moveAbsolute1(Axis := axis_ref, Execute := FALSE);
+        
+        _mc_moveAbsolute2(
+            Axis       := axis_ref,
+            Execute    := TRUE,
+            Position   := processes.moveAbsolute.get.position,
+            Velocity   := processes.moveAbsolute.get.maxVelocity,
+            BufferMode := MC_BufferMode.MC_Aborting);
+        
+        (* update the statuses *)
+        processes.moveAbsolute.statuses.healthStatus(isGood := NOT _mc_moveAbsolute2.Error);
+        processes.moveAbsolute.errorId := _mc_moveAbsolute2.ErrorId;
+        processes.moveAbsolute.statuses.busyStatus(isBusy := _mc_moveAbsolute2.Busy);
+        
+	END_IF
+	
+    (* reset the function blocks if needed *)
+    IF processes.moveAbsolute.statuses.busyStatus.idle THEN
+        _mc_moveAbsolute1(Axis := axis_ref, Execute := FALSE);
+        _mc_moveAbsolute2(Axis := axis_ref, Execute := FALSE);
+	END_IF
+    
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_writeBoolParameter" Id="{1db2e14b-b7e1-4265-90ef-3d7f7b89d963}">
+      <Declaration><![CDATA[METHOD _writeBoolParameter
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[
+_mc_writeBoolParameter(
+    Execute         := processes.writeBoolParameter.statuses.busyStatus.busy,
+    ParameterNumber := processes.writeBoolParameter.get.parameterNumber,
+    Value           := processes.writeBoolParameter.get.value,
+    Axis            := axis_ref);
+
+(* update the health status *)
+SUPER^.processes.writeBoolParameter.statuses.healthStatus(isGood := NOT _mc_writeBoolParameter.Error);
+
+(* update the busy status *)
+SUPER^.processes.writeBoolParameter.statuses.busyStatus(isBusy := _mc_writeBoolParameter.Busy);
+
+(* update the error ID *)
+SUPER^.processes.writeBoolParameter.errorId := _mc_writeBoolParameter.ErrorId;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_gearIn" Id="{24dd61b1-ded5-4bf3-a7f9-473e47ec8117}">
+      <Declaration><![CDATA[METHOD _gearIn
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[
+IF _masterAddr = 0 THEN
+    processes.gearIn.setBad();
+    processes.gearIn.setFinished();
+ELSE
+    _mc_gearIn(
+        Execute := processes.gearIn.statuses.busyStatus.busy,
+        Master  := _masterAddr^,
+        Slave   := axis_ref);
+    
+    (* update the health status *)
+    SUPER^.processes.gearIn.statuses.healthStatus(isGood := NOT _mc_gearIn.Error);
+    
+    (* update the busy status *)
+    SUPER^.processes.gearIn.statuses.busyStatus(isBusy := _mc_gearIn.Busy);
+    
+    (* update the error ID *)
+    SUPER^.processes.gearIn.errorId := _mc_gearIn.ErrorId;
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_moveVelocity" Id="{34376ce1-859d-4a86-8309-92c5dd7a857d}">
+      <Declaration><![CDATA[METHOD _moveVelocity
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[
+IF processes.moveVelocity.isBusy() THEN
+    
+    IF NOT processes.moveVelocity.isStarted() THEN
+        IF processes.moveVelocity.get.value >= 0 THEN
+            _mc_moveVelocity(Execute := FALSE, Axis := axis_ref);
+            _mc_moveVelocity(
+                Execute      := TRUE,
+                Velocity     := ABS(processes.moveVelocity.get.value),
+                Acceleration := 0,
+                Deceleration := 0,
+                Jerk         := 0,
+                Direction    := MC_Positive_Direction,
+                Axis         := axis_ref);
+        ELSE
+            _mc_moveVelocity(Execute := FALSE, Axis := axis_ref);
+            _mc_moveVelocity(
+                Execute      := TRUE,
+                Velocity     := ABS(processes.moveVelocity.get.value),
+                Acceleration := 0,
+                Deceleration := 0,
+                Jerk         := 0,
+                Direction    := MC_Negative_Direction,
+                Axis         := axis_ref);
+        END_IF
+        processes.moveVelocity.setStarted();
+    ELSE
+        _mc_moveVelocity(Execute := FALSE, Axis := axis_ref);
+	END_IF
+    
+    (* update the health status *)
+    processes.moveVelocity.statuses.healthStatus(isGood := NOT _mc_moveVelocity.Error);
+    
+    (* update the busy status *)
+    processes.moveVelocity.statuses.busyStatus(isBusy := _mc_moveVelocity.Busy AND NOT _mc_moveVelocity.InVelocity);
+    
+    (* update the error ID *)
+    processes.moveVelocity.errorId := _mc_moveVelocity.ErrorId;
+    
+    
+END_IF
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_readParameter" Id="{36f4d219-08de-4510-892a-ec407e1af976}">
+      <Declaration><![CDATA[METHOD _readParameter
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[
+_mc_readParameter(
+    Enable          := processes.readParameter.statuses.busyStatus.busy,
+    ParameterNumber := processes.readParameter.get.parameterNumber,
+    Axis            := axis_ref,
+    Value           => processes.readParameter.value);
+
+(* update the health status *)
+SUPER^.processes.readParameter.statuses.healthStatus(isGood := NOT _mc_readParameter.Error);
+
+(* update the busy status *)
+SUPER^.processes.readParameter.statuses.busyStatus(isBusy := _mc_readParameter.Busy);
+
+(* update the error ID *)
+SUPER^.processes.readParameter.errorId := _mc_readParameter.ErrorId;
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_stopping" Id="{410bf238-98ca-41b0-9bce-1f6d91468719}">
+      <Declaration><![CDATA[METHOD _stopping
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[
+IF processes.stop.statuses.busyStatus.busy THEN
+    
+    _mc_halt(Execute := TRUE, Axis := axis_ref);
+    
+    IF _mc_halt.Error OR _mc_halt.Done OR _mc_halt.CommandAborted THEN
+        _mc_halt(Execute := FALSE, Axis := axis_ref);
+	END_IF
+    
+    (* update the health status *)
+    SUPER^.processes.stop.statuses.healthStatus(isGood := NOT _mc_halt.Error);
+    
+    (* update the busy status *)
+    SUPER^.processes.stop.statuses.busyStatus(isBusy := _mc_halt.Busy);
+    
+    (* update the error ID *)
+    SUPER^.processes.stop.errorId := _mc_halt.ErrorId;
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_resetCalibration" Id="{50a0a56c-d022-4c81-bdab-294d3295695a}">
+      <Declaration><![CDATA[METHOD _resetCalibration
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[
+_mc_home(
+    Execute     := processes.resetCalibration.statuses.busyStatus.busy,
+    Position    := 0.0,
+    HomingMode  := MC_HomingMode.MC_ResetCalibration,
+    Axis        := axis_ref);
+
+(* update the health status *)
+SUPER^.processes.resetCalibration.statuses.healthStatus(isGood := NOT _mc_home.Error);
+
+(* update the busy status *)
+SUPER^.processes.resetCalibration.statuses.busyStatus(isBusy := _mc_home.Busy);
+
+(* update the error ID *)
+SUPER^.processes.resetCalibration.errorId := _mc_home.ErrorId;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_tracking_notworking" Id="{586c9d5f-0881-42b4-9dfe-62b8fb5684cc}">
+      <Declaration><![CDATA[METHOD _tracking_notworking
+VAR_INPUT
+END_VAR
+
+VAR
+    direction : MC_Direction;
+END_VAR]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF processes.moveAbsolute.statuses.busyStatus.busy THEN
+	
+    IF NOT processes.moveAbsolute.isStarted() THEN
+        _mc_moveVelocity1(Axis := axis_ref, Execute := FALSE);
+        _mc_moveVelocity2(Axis := axis_ref, Execute := FALSE);
+        _ctrl_pi_params.tCtrlCycleTime := GLOBAL.config.PLC_CTRL_TIME;
+        _ctrl_pi_params.tTaskCycleTime := GLOBAL.config.PLC_TASK_TIME;
+        processes.moveAbsolute.setStarted();
+    END_IF
+
+    _ctrl_pi_params.fKp := Kp;
+    _ctrl_pi_params.tTn := LREAL_TO_TIME(Td); //ms
+    _ctrl_pi_params.fOutMaxLimit :=  processes.moveAbsolute.get.maxVelocity;
+    _ctrl_pi_params.fOutMinLimit := -processes.moveAbsolute.get.maxVelocity;
+    
+    _ctrl_pi(
+        fSetpointValue := processes.moveAbsolute.get.position,
+        fActualValue   := axis_ref.NcToPlc.ActPos,
+        fManSyncValue  := 0.0,
+        bSync          := FALSE,
+        eMode          := eCTRL_MODE_ACTIVE,
+        bHold          := FALSE,
+        stParams       := _ctrl_pi_params);
+    
+    IF _ctrl_pi.fOut > 0 THEN
+        direction := MC_Positive_Direction;
+    ELSE
+        direction := MC_Negative_Direction;
+	END_IF
+    
+    _moveAbsoluteAlternator := NOT _moveAbsoluteAlternator;
+    
+    _moveAbsoluteStopping := ABS(processes.moveAbsolute.get.position - axis_ref.NcToPlc.ActPos) < 0.001
+                             OR _mc_moveVelocity1.Error 
+                             OR _mc_moveVelocity2.Error
+                             OR (_mc_moveVelocity1.CommandAborted AND _mc_moveVelocity2.CommandAborted);
+    
+    IF _moveAbsoluteStopping THEN
+        _mc_halt(Execute := TRUE, Axis := axis_ref);
+        IF _mc_halt.Done THEN
+            _mc_halt(Execute := FALSE, Axis := axis_ref);
+            processes.moveAbsolute.setGood();
+            processes.moveAbsolute.setFinished();
+        ELSIF _mc_halt.Error OR _mc_halt.CommandAborted THEN
+            _mc_halt(Execute := FALSE, Axis := axis_ref);
+            processes.moveAbsolute.setBad();
+            processes.moveAbsolute.setFinished();
+		END_IF
+    ELSIF _moveAbsoluteAlternator THEN
+        _mc_moveVelocity2(Axis := axis_ref, Execute := FALSE);
+        _mc_moveVelocity1(
+            Execute      := TRUE,
+            Velocity     := ABS(_ctrl_pi.fOut),
+            Acceleration := 0,
+            Deceleration := 0,
+            Jerk         := 0,
+            Direction    := direction,
+            BufferMode := MC_BufferMode.MC_Aborting,
+            Axis         := axis_ref);
+            
+            (* update the statuses *)
+            //processes.moveAbsolute.statuses.busyStatus(isBusy := _mc_moveVelocity1.Busy);
+            processes.moveAbsolute.statuses.healthStatus(isGood := NOT _mc_moveVelocity1.Error);
+            processes.moveAbsolute.errorId := _mc_moveVelocity1.ErrorId;
+    ELSE
+        _mc_moveVelocity1(Axis := axis_ref, Execute := FALSE);
+        _mc_moveVelocity2(
+            Execute      := TRUE,
+            Velocity     := ABS(_ctrl_pi.fOut),
+            Acceleration := 0,
+            Deceleration := 0,
+            Jerk         := 0,
+            Direction    := direction,
+            BufferMode := MC_BufferMode.MC_Aborting,
+            Axis         := axis_ref);
+            
+            (* update the statuses *)
+            //processes.moveAbsolute.statuses.busyStatus(isBusy := _mc_moveVelocity2.Busy);
+            processes.moveAbsolute.statuses.healthStatus(isGood := NOT _mc_moveVelocity2.Error);
+            processes.moveAbsolute.errorId := _mc_moveVelocity2.ErrorId;
+	END_IF
+    
+ELSE
+    
+    _ctrl_pi(eMode := eCTRL_MODE_RESET, stParams := _ctrl_pi_params);
+    
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_setPosition" Id="{58a8b7c4-cdab-439d-9527-7d6f747371b0}">
+      <Declaration><![CDATA[METHOD _setPosition
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[
+_mc_setPosition(
+    Execute  := processes.setPosition.statuses.busyStatus.busy,
+    Position := processes.setPosition.get.value,
+    Mode     := FALSE,
+    Axis     := axis_ref);
+
+(* update the health status *)
+SUPER^.processes.setPosition.statuses.healthStatus(isGood := NOT _mc_setPosition.Error);
+
+(* update the busy status *)
+SUPER^.processes.setPosition.statuses.busyStatus(isBusy := _mc_setPosition.Busy);
+
+(* update the error ID *)
+SUPER^.processes.setPosition.errorId := _mc_setPosition.ErrorId;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_readBoolParameter" Id="{6a032937-fc4b-428c-9e8a-56ba15b74a8f}">
+      <Declaration><![CDATA[METHOD _readBoolParameter
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[
+_mc_readBoolParameter(
+    Enable          := processes.readBoolParameter.statuses.busyStatus.busy,
+    ParameterNumber := processes.readBoolParameter.get.parameterNumber,
+    Axis            := axis_ref,
+    Value           => processes.readBoolParameter.value);
+
+(* update the health status *)
+SUPER^.processes.readBoolParameter.statuses.healthStatus(isGood := NOT _mc_readBoolParameter.Error);
+
+(* update the busy status *)
+SUPER^.processes.readBoolParameter.statuses.busyStatus(isBusy := _mc_readBoolParameter.Busy);
+
+(* update the error ID *)
+SUPER^.processes.readBoolParameter.errorId := _mc_readBoolParameter.ErrorId;
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_update" Id="{77966ff5-f47b-46b0-b2e3-0b6785e27281}">
+      <Declaration><![CDATA[METHOD _update
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[SUPER^();
+
+IF statuses.healthStatus.good THEN
+    IF statuses.busyStatus.idle THEN
+        IF statuses.poweredStatus.enabled THEN
+            actualStatus := 'Enabled';
+        ELSIF statuses.poweredStatus.disabled THEN
+            actualStatus := 'Disabled';
+        ELSE
+            actualStatus := 'Idle';
+		END_IF
+    ELSIF statuses.busyStatus.busy THEN
+        IF statuses.motionStatus.forward THEN
+            actualStatus := 'Moving forward';
+        ELSIF statuses.motionStatus.backward THEN
+            actualStatus := 'Moving backward';
+        ELSIF statuses.motionStatus.standstill THEN
+            actualStatus := 'Standing still';
+        ELSE
+            actualStatus := 'Busy';
+		END_IF
+    ELSE
+        actualStatus := 'Good';
+    END_IF
+ELSIF statuses.healthStatus.bad THEN
+    IF axis_ref.Status.ErrorId = 16992 THEN
+        actualStatus := 'Controller not enabled!';
+    ELSIF axis_ref.Status.ErrorId = 18000 THEN
+        actualStatus := 'Drive not ready!';
+    ELSE
+        actualStatus := CONCAT(CONCAT('Error (id: ', UDINT_TO_STRING(axis_ref.Status.ErrorId)), ')');
+	END_IF
+ELSE
+    actualStatus := '';
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_enableExtSetGen" Id="{794111b5-e3a8-4313-956d-c50263b75285}">
+      <Declaration><![CDATA[METHOD _enableExtSetGen
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[_mc_extSetPointGenEnable(
+	Axis    := axis_ref,
+	Execute := processes.enableExtSetGen.statuses.busyStatus.busy);
+
+(* update the health status *)
+SUPER^.processes.enableExtSetGen.statuses.healthStatus(isGood := NOT _mc_extSetPointGenEnable.Error);
+
+(* update the busy status *)
+SUPER^.processes.enableExtSetGen.statuses.busyStatus(isBusy := _mc_extSetPointGenEnable.Busy);
+
+(* update the error ID *)
+SUPER^.processes.enableExtSetGen.errorId := _mc_extSetPointGenEnable.ErrorId;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_initializing" Id="{a78e7f4d-cd13-41ba-ad49-d73e061f929e}">
+      <Declaration><![CDATA[METHOD _initializing
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF processes.initialize.statuses.busyStatus.busy THEN
+    
+	IF processes.initialize.statuses.startedStatus.notStarted THEN
+		processes.reset.start();
+		processes.initialize.setStarted();
+	END_IF
+    
+    processes.initialize.statuses.busyStatus(isBusy := processes.reset.statuses.busyStatus.busy);
+    processes.initialize.statuses.healthStatus(isGood := processes.reset.statuses.healthStatus.good);
+    
+    
+ELSE
+    // done
+	processes.initialize.setFinished();
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_disableExtSetGen" Id="{bdf13afa-104f-42e5-a5a5-f98262cec01a}">
+      <Declaration><![CDATA[METHOD _disableExtSetGen
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[_mc_extSetPointGenDisable(
+	Axis    := axis_ref,
+	Execute := processes.disableExtSetGen.statuses.busyStatus.busy);
+
+(* update the health status *)
+SUPER^.processes.disableExtSetGen.statuses.healthStatus(isGood := NOT _mc_extSetPointGenDisable.Error);
+
+(* update the busy status *)
+SUPER^.processes.disableExtSetGen.statuses.busyStatus(isBusy := _mc_extSetPointGenDisable.Busy);
+
+(* update the error ID *)
+SUPER^.processes.disableExtSetGen.errorId := _mc_extSetPointGenDisable.ErrorId;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_writeParameter" Id="{c30b6585-7f98-4d63-af03-a75597ecbd61}">
+      <Declaration><![CDATA[METHOD _writeParameter
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[
+_mc_writeParameter(
+    Execute         := processes.writeParameter.statuses.busyStatus.busy,
+    ParameterNumber := processes.writeParameter.get.parameterNumber,
+    Value           := processes.writeParameter.get.value,
+    Axis            := axis_ref);
+
+(* update the health status *)
+SUPER^.processes.writeParameter.statuses.healthStatus(isGood := NOT _mc_writeParameter.Error);
+
+(* update the busy status *)
+SUPER^.processes.writeParameter.statuses.busyStatus(isBusy := _mc_writeParameter.Busy);
+
+(* update the error ID *)
+SUPER^.processes.writeParameter.errorId := _mc_writeParameter.ErrorId;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_resetting" Id="{cae639e7-996c-4896-8c7f-e91de01a5b5c}">
+      <Declaration><![CDATA[METHOD _resetting
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[_mc_reset(
+	Axis    := axis_ref,
+	Execute := processes.reset.statuses.busyStatus.busy);
+
+(* update the health status *)
+SUPER^.processes.reset.statuses.healthStatus(isGood := NOT _mc_reset.Error);
+
+(* update the busy status *)
+SUPER^.processes.reset.statuses.busyStatus(isBusy := _mc_reset.Busy);
+
+(* update the error ID *)
+SUPER^.processes.reset.errorId := _mc_reset.ErrorId;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="configureMaster" Id="{cd3d959f-bb1a-42c2-9237-7cd536dd7fb6}">
+      <Declaration><![CDATA[METHOD configureMaster
+VAR_INPUT
+    masterAddr : POINTER TO AXIS_REF;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[_masterAddr := masterAddr;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_powering" Id="{d3f17f47-1c23-4efd-a2d9-f1a8f59a03d9}">
+      <Declaration><![CDATA[METHOD _powering
+VAR_INPUT
+END_VAR
+VAR
+	enablePower : BOOL;
+END_VAR]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[(* The user can power on/off the axis via the command 'power' of SM_NcSimpleAxis.
+   The MC_Power function block however isn't a "command" that can be executed via an Execute trigger,
+   but instead it's a function block that requires a "continuous" flag which is either set TRUE or FALSE.
+   Therefore, we only execute this MC_Power function block when our command is busy. *)
+IF processes.power.statuses.busyStatus.busy THEN
+	(* call the MC FB *)
+	_mc_power(
+		Axis 			:= axis_ref,
+		Enable 			:= processes.power.get.enable,
+		Enable_Positive := processes.power.get.enable,
+		Enable_Negative := processes.power.get.enable);
+
+	(* update the health status *)
+	processes.power.statuses.healthStatus(isGood := NOT _mc_power.Error);
+	
+	(* update the busy status *)
+    IF _mc_power.Error THEN
+        processes.power.setBad();
+        processes.power.setFinished();
+    ELSIF _mc_power.Enable THEN
+        processes.power.setGood();
+        IF _mc_power.Status THEN
+            processes.power.setFinished();
+        ELSE
+            processes.power.setBusy();
+		END_IF
+    ELSE
+        processes.power.setGood();
+        IF _mc_power.Busy THEN
+            processes.power.setBusy();
+        ELSE
+            processes.power.setFinished();
+		END_IF
+	END_IF
+	
+	(* update the error ID *)
+	SUPER^.processes.power.errorId := _mc_power.ErrorId;
+END_IF
+
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_stoppingParametrized" Id="{defdbf0d-d85a-426d-afc2-74df6c5a971e}">
+      <Declaration><![CDATA[METHOD _stoppingParametrized
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[
+IF processes.stopParametrized.statuses.busyStatus.busy THEN
+    
+    _mc_halt2(Execute := TRUE, Deceleration := processes.stopParametrized.get.deceleration, Jerk := processes.stopParametrized.get.jerk, Axis := axis_ref);
+    
+    IF _mc_halt2.Error OR _mc_halt2.Done OR _mc_halt2.CommandAborted THEN
+        _mc_halt2(Execute := FALSE, Axis := axis_ref);
+	END_IF
+    
+    (* update the health status *)
+    SUPER^.processes.stopParametrized.statuses.healthStatus(isGood := NOT _mc_halt2.Error);
+    
+    (* update the busy status *)
+    SUPER^.processes.stopParametrized.statuses.busyStatus(isBusy := _mc_halt2.Busy);
+    
+    (* update the error ID *)
+    SUPER^.processes.stopParametrized.errorId := _mc_halt2.ErrorId;
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="setPositionCorrection" Id="{dfc3b563-6436-446c-a7c1-c65d8c0e2975}">
+      <Declaration><![CDATA[METHOD setPositionCorrection
+VAR_INPUT
+    positionCorrection : LREAL;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[axis_ref.PlcToNc.PositionCorrection := positionCorrection;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_movingRelative" Id="{ebe3600e-948d-45e8-9bc2-88d48673ab3a}">
+      <Declaration><![CDATA[METHOD _movingRelative
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[
+IF processes.moveRelative.isBusy() THEN
+    
+    IF NOT processes.moveRelative.isStarted() THEN
+        _mc_moveRelative(Execute := FALSE, Axis := axis_ref);
+        _mc_moveRelative(
+            Execute      := TRUE,
+            Distance     := processes.moveRelative.get.distance,
+            Velocity     := processes.moveRelative.get.maxVelocity,
+            Acceleration := 0,
+            Deceleration := 0,
+            Jerk         := 0,
+            Axis         := axis_ref);
+        processes.moveRelative.setStarted();
+    ELSE
+        _mc_moveRelative(Execute := FALSE, Axis := axis_ref);
+	END_IF
+    
+    (* update the health status *)
+    processes.moveRelative.statuses.healthStatus(isGood := NOT _mc_moveRelative.Error);
+    
+    (* update the error ID *)
+    processes.moveRelative.errorId := _mc_moveRelative.ErrorId;
+    
+    (* update the busy status *)
+    processes.moveRelative.statuses.busyStatus(isBusy := _mc_moveRelative.Busy AND NOT _mc_moveRelative.Done);
+    
+    
+END_IF
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_gearOut" Id="{eda1d746-5b8b-49e0-b41d-bb7c2cc5494a}">
+      <Declaration><![CDATA[METHOD _gearOut
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[_mc_gearOut(
+    Execute := processes.gearOut.statuses.busyStatus.busy,
+    Slave   := axis_ref);
+
+(* update the health status *)
+SUPER^.processes.gearOut.statuses.healthStatus(isGood := NOT _mc_gearOut.Error);
+
+(* update the busy status *)
+SUPER^.processes.gearOut.statuses.busyStatus(isBusy := _mc_gearOut.Busy);
+
+(* update the error ID *)
+SUPER^.processes.gearOut.errorId := _mc_gearOut.ErrorId;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="jog" Id="{f17157fb-d1b4-48f4-b4a9-38b279189b38}">
+      <Declaration><![CDATA[METHOD jog
+VAR_INPUT
+    forward : BOOL;
+    backwards : BOOL;
+    velocity : LREAL;
+    acceleration : LREAL;
+    deceleration : LREAL;
+    
+    
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[isJogEnabled :=  isEnabled 
+    AND (statuses.busyStatus.idle OR forward OR backwards)
+    AND (statuses.healthStatus.good)
+    AND statuses.poweredStatus.enabled;
+    
+IF isJogEnabled THEN
+    
+    _mc_jog(
+        JogForward := forward,
+        JogBackwards := backwards,
+        Mode := E_JogMode.MC_JOGMODE_CONTINOUS,
+        Position := 0.0,
+        Velocity := velocity,
+        Acceleration := acceleration,
+        Deceleration := deceleration,
+        Axis := axis_ref);
+ELSE
+    
+
+    _mc_jog(
+        JogForward := FALSE,
+        JogBackwards := FALSE,
+        Mode := E_JogMode.MC_JOGMODE_CONTINOUS,
+        Position := 0.0,
+        Velocity := velocity,
+        Acceleration := acceleration,
+        Deceleration := deceleration,
+        Axis := axis_ref);
+
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+  </POU>
+</TcPlcObject>

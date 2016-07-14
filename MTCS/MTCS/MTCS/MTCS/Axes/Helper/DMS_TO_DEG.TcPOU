@@ -1,0 +1,22 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.5">
+  <POU Name="DMS_TO_DEG" Id="{841e9283-eb48-4d8e-be76-e332c4d98e36}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION DMS_TO_DEG : LREAL
+VAR_INPUT
+    positive : BOOL;
+    degrees : LREAL;
+    minutes : LREAL;
+    seconds : LREAL;
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[DMS_TO_DEG := degrees + minutes/60.0 + seconds/3600.0;
+
+IF NOT positive THEN
+    DMS_TO_DEG := -DMS_TO_DEG;
+END_IF]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

@@ -1,0 +1,28 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="MAIN" Id="{efa827b5-65a0-4913-8cc4-104ac0d1c17a}" SpecialFunc="None">
+    <Declaration><![CDATA[PROGRAM MAIN
+VAR
+    startTimer : TON;
+	
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[// wait some seconds, so that e.g. the XML server can start up
+startTimer(IN := TRUE, PT := GLOBAL.config.STARTUP_WAIT_TIME);
+
+// update the actual times
+GLOBAL.config.SYSTEM_TIME();
+GLOBAL.config.TIME_NOW_MS := (UDINT_TO_LREAL(GLOBAL.config.SYSTEM_TIME.timeHiDW)*429496.7296) + (UDINT_TO_LREAL(GLOBAL.config.SYSTEM_TIME.timeLoDW)/10000);
+GLOBAL.config.TIME_NOW_S := GLOBAL.config.TIME_NOW_MS / 1000.0;
+
+
+IF startTimer.Q THEN
+    mtcs();
+    gui(ref := mtcs);
+END_IF
+
+]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

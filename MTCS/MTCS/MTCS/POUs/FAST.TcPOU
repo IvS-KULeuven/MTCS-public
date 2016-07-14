@@ -1,0 +1,62 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="FAST" Id="{35ed27e3-d207-46b6-9347-05225e1204cd}" SpecialFunc="None">
+    <Declaration><![CDATA[PROGRAM FAST
+VAR
+    startTimer : TON;
+    
+    
+    timingSerialLine : SerialLine;
+    m2FastTaskControl : M2FastTaskControl;
+	
+	tempSafetyState : INT;
+	tempSafetyTon : TON;
+	restartEStop AT %Q* : BOOL;
+	safetyGroupAck AT %Q* : BOOL;
+	EStopError AT %I* : BOOL;
+	EnableDrive AT %I* : BOOL;
+	outputEnableDrive AT %Q* : BOOL;
+	
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[startTimer(IN := TRUE, PT := GLOBAL.config.STARTUP_WAIT_TIME + T#1s); // wait one second longer, because the FAST task depends on the normal PLC task!
+
+// update the actual times
+GLOBAL.config.SYSTEM_TIME();
+GLOBAL.config.TIME_NOW_MS := (UDINT_TO_LREAL(GLOBAL.config.SYSTEM_TIME.timeHiDW)*429496.7296) + (UDINT_TO_LREAL(GLOBAL.config.SYSTEM_TIME.timeLoDW)/10000);
+GLOBAL.config.TIME_NOW_S := GLOBAL.config.TIME_NOW_MS / 1000.0;
+
+GLOBAL.config.PLC_FAST_TASK_PREVIOUS_START_MS   := GLOBAL.config.PLC_FAST_TASK_START_MS;
+GLOBAL.config.PLC_FAST_TASK_START_MS            := GLOBAL.config.TIME_NOW_MS;
+GLOBAL.config.PLC_FAST_MEASURED_TASK_TIME_MS    := GLOBAL.config.PLC_FAST_TASK_START_MS - GLOBAL.config.PLC_FAST_TASK_PREVIOUS_START_MS;
+
+
+
+IF startTimer.Q THEN
+    
+    timingSerialLine(
+            TxBuffer := GLOBAL.mtcs.parts.services.parts.timing.parts.serialInfo.TxBuffer,
+            RxBuffer := GLOBAL.mtcs.parts.services.parts.timing.parts.serialInfo.RxBuffer);
+    
+    m2FastTaskControl(
+            brakeReleaseSignal := GLOBAL.mtcs.parts.m2.parts.multiplexer.parts.release.digitalOutput,
+            actualCounterValue := GLOBAL.mtcs.parts.m2.parts.moveStepsProcedure.actualCounterValue);
+    
+    // the whole axes subsystem runs within the FAST task!
+    GLOBAL.mtcs.parts.axes(
+        timing := GLOBAL.mtcs.parts.services.parts.timing,
+        motionBlocking := GLOBAL.mtcs.parts.safety.parts.motionBlocking,
+        domeAccess := GLOBAL.mtcs.parts.safety.parts.domeAccess,
+        operatorStatus := GLOBAL.mtcs.statuses.operatorStatus,
+        activityStatus := GLOBAL.mtcs.statuses.activityStatus,
+        activeInstrument := GLOBAL.mtcs.activeInstrument,
+        isInstrumentActive := GLOBAL.mtcs.isInstrumentActive);
+    
+
+END_IF
+
+]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

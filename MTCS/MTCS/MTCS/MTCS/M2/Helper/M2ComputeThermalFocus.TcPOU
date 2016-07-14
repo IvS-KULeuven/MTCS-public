@@ -1,0 +1,21 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.5">
+  <POU Name="M2ComputeThermalFocus" Id="{a66c3d4a-4968-4967-9f1e-9a97c57ca913}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION M2ComputeThermalFocus : LREAL // returns position in mm
+VAR_INPUT
+END_VAR
+VAR_IN_OUT
+    config : M2ThermalFocusStationConfig;
+    temperatures : TelemetryTemperatures;
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[M2ComputeThermalFocus := config.offset
+                         + config.topCoefficient * temperatures.topTube.average.celsius.value
+                         + config.centreCoefficient * temperatures.centreTube.average.celsius.value
+                         + config.mirrorCellCoefficient * temperatures.mirrorCell.average.celsius.value;]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

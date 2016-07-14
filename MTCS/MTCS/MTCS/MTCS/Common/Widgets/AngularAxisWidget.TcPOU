@@ -1,0 +1,25 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.5">
+  <POU Name="AngularAxisWidget" Id="{6b7619a5-866d-4e1a-8e7d-3ea20f4dc191}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK AngularAxisWidget
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+    positionSymbol : STRING := '°';
+    velocitySymbol : STRING := '°/s';
+    base : BaseAxisWidget;
+END_VAR
+VAR_IN_OUT
+    baseRef : AngularAxis;
+    ref : AngularAxis;
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[base(ref := baseRef);
+
+]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

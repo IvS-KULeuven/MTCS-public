@@ -1,0 +1,40 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="AxesPointingModelSetupWidget" Id="{28656fc0-b475-41d0-a843-3d0c38905396}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK AxesPointingModelSetupWidget
+VAR_INPUT
+    part : INT;
+    enableButtonPressed : BOOL;
+    disableButtonPressed : BOOL;
+END_VAR
+VAR_OUTPUT
+    enableButtonDisabled : BOOL;
+    disableButtonDisabled : BOOL;
+END_VAR
+VAR
+    configManager : ConfigManagerWidget;
+END_VAR
+VAR_IN_OUT
+	ref : AxesPointingModelSetup;
+    ref_enable : AxesEnablePointingModelProcess;
+    ref_disable : Process;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[configManager(mgr := ref.parts.configManager);
+
+IF enableButtonPressed THEN
+    ref_enable.request(name := ref.config.name);
+    enableButtonPressed := FALSE;
+END_IF
+
+IF disableButtonPressed THEN
+    ref_disable.request();
+    disableButtonPressed := FALSE;
+END_IF
+
+enableButtonDisabled := ref_enable.statuses.enabledStatus.disabled OR ref.config.name = '';
+disableButtonDisabled := ref_disable.statuses.enabledStatus.disabled;]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

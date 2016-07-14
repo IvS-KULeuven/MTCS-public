@@ -1,0 +1,22 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="M2MultiplexerParts" Id="{7f236367-ac41-4c30-baaa-73891cf20297}">
+    <Declaration><![CDATA[TYPE M2MultiplexerParts :
+STRUCT
+	///Output A of the multiplexer corresponding with the selected axis
+	A: SimpleRelay;
+	///Output B of the multiplexer corresponding with the selected axis
+	B: SimpleRelay;
+	///Output C of the multiplexer corresponding with the selected axis
+	C: SimpleRelay;
+	///Enabled (TRUE) if the drive selected by the multiplexer must be enabled, Disabled (FALSE) if it must be disabled
+	driveEnable: SimpleRelay;
+	///Enabled (TRUE) if the motor selected by the multiplexer will run in CW direction (- motion on the screw), Disabled (FALSE) if it will run in CCW direction (+ motion on the screw)
+	CW: SimpleRelay;
+	///Disabled (FALSE) if the motor selected by the multiplexer must be braking, Enabled (TRUE) if it must be released
+	release: SimpleRelay;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

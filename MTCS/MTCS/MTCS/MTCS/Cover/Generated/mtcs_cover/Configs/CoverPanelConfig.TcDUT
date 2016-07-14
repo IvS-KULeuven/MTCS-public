@@ -1,0 +1,24 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="CoverPanelConfig" Id="{3b0feb6b-03ec-4d26-b36b-dadadb646cd2}">
+    <Declaration><![CDATA[TYPE CoverPanelConfig :
+STRUCT
+	///The closed position of the panel in degrees
+	closedPosition: LREAL := 10.0;
+	///The open position of the panel in degrees
+	openPosition: LREAL := 200.0;
+	///The tolerance for opening, in degrees
+	openTolerance: LREAL := 1.0;
+	///The tolerance for closing, in degrees
+	closedTolerance: LREAL := 1.0;
+	///Tolerance in degrees per second: if smaller than ABS(this value), then the cover panel is considered to be standing still
+	standstillTolerance: LREAL := 0.01;
+	///The name of the panel
+	name: STRING;
+	///The offset of the panel w.r.t. north
+	offset: LREAL;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

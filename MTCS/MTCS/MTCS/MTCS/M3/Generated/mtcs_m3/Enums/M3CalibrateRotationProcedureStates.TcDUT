@@ -1,0 +1,29 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="M3CalibrateRotationProcedureStates" Id="{95d500bd-c7dc-4153-ac38-5a4374e41bf1}">
+    <Declaration><![CDATA[TYPE M3CalibrateRotationProcedureStates :
+(
+	IDLE := 0,
+	ABORTED := 1,
+	PREPARE_PROCESS := 2,
+	DECOUPLING_AXES := 3,
+	ENABLING_AXES := 4,
+	COUPLING_AXES := 5,
+	GOING_TO_START_POSITION := 6,
+	DECOUPLING_AXES_AGAIN := 7,
+	START_MOVING := 8,
+	WAIT_UNTIL_MOVING_STABLE := 9,
+	WAIT_UNTIL_RANGE_PASSED := 10,
+	HALT := 11,
+	GO_TO_CLUTCH_ZERO_TORQUE := 12,
+	DISABLING_AXES := 13,
+	WAIT_UNTIL_STANDSTILL := 14,
+	SYNC_AXES := 15,
+	ERROR := 16,
+	RESETTING := 17,
+	ABORTING := 18
+);
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

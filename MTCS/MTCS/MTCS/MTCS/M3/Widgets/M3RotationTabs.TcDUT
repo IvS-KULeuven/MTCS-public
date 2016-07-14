@@ -1,0 +1,15 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.2">
+  <DUT Name="M3RotationTabs" Id="{fc47594b-8427-46f5-9b6d-b611db7183d7}">
+    <Declaration><![CDATA[TYPE M3RotationTabs :
+(
+    GENERAL   := 0,
+	POS_AXIS  := 1,
+	POS_DRIVE := 2,
+    ABL_AXIS  := 3,
+    ABL_DRIVE := 4
+);
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

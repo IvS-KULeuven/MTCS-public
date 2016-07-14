@@ -1,0 +1,65 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="AxesStopProcess" Id="{eae7bc08-d8fc-48ae-85f1-e755d0aca748}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK AxesStopProcess EXTENDS BaseProcess
+VAR_INPUT
+	///State of the process
+	state: INT;
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[IF do_request THEN
+    do_request_result := request();
+    do_request := FALSE;
+END_IF;
+SUPER^();
+]]></ST>
+    </Implementation>
+    <Method Name="start" Id="{2e1bcf26-118d-4b94-96d3-ed9a26d50a97}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD start
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[THIS^.statuses.busyStatus( isBusy := TRUE );
+THIS^.statuses.healthStatus( isGood := TRUE );
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="request" Id="{d0fd52df-a935-4577-85a5-44b2668b2f63}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD request : RequestResults
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF THIS^.statuses.enabledStatus.enabled THEN
+    THIS^.start();
+    request := RequestResults.ACCEPTED;
+ELSE
+    request := RequestResults.REJECTED;
+END_IF;
+]]></ST>
+      </Implementation>
+    </Method>
+  </POU>
+</TcPlcObject>

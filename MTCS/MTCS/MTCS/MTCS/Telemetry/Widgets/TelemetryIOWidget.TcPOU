@@ -1,0 +1,46 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.5">
+  <POU Name="TelemetryIOWidget" Id="{60d9dba8-ef7b-4116-99a4-549772aca79a}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK TelemetryIOWidget
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR
+	actualStatus : StatusWidget;
+	coupler : EtherCatDeviceWidget;
+	slot5 : EtherCatDeviceWidget;
+	slot6 : EtherCatDeviceWidget;
+	slot7 : EtherCatDeviceWidget;
+	slot8 : EtherCatDeviceWidget;
+	slot9 : EtherCatDeviceWidget;
+	slot10 : EtherCatDeviceWidget;
+	slot11 : EtherCatDeviceWidget;
+	slot12 : EtherCatDeviceWidget;
+	slot13 : EtherCatDeviceWidget;
+    
+	tubeAccelerometers : EtherCatDeviceWidget;
+END_VAR
+VAR_IN_OUT
+	ref : TelemetryIO;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[actualStatus(text  := ref.actualStatus,
+             color := HealthToColor(ref.statuses.healthStatus));
+
+coupler(device := ref.parts.coupler);
+slot5(device := ref.parts.slot5);
+slot6(device := ref.parts.slot6);
+slot7(device := ref.parts.slot7);
+slot8(device := ref.parts.slot8);
+slot9(device := ref.parts.slot9);
+slot10(device := ref.parts.slot10);
+slot11(device := ref.parts.slot11);
+slot12(device := ref.parts.slot12);
+slot13(device := ref.parts.slot13);
+
+tubeAccelerometers(device := ref.parts.tubeAccelerometers);]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

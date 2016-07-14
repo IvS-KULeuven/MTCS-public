@@ -1,0 +1,61 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.5">
+  <POU Name="TelemetryAccelerometersWidget" Id="{ffa40f68-3eb3-4da1-9b9a-4f5411d0b3c7}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK TelemetryAccelerometersWidget 
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+    ref : TelemetryAccelerometers;
+END_VAR
+VAR
+    actualStatus : StatusWidget;
+    
+    tubeX              : MeasurementWidget('Tube X angle (roll)', '%.1f °');
+    tubeY              : MeasurementWidget('Tube Y angle (pitch)', '%.1f °');
+    
+    _tubeXStatus : MeasurementToStatus;
+    _tubeYStatus : MeasurementToStatus;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[
+
+actualStatus(text := ref.actualStatus, color := HealthToColor(ref.statuses.healthStatus));
+
+_tubeXStatus(   overrange := FALSE, 
+                underrange := FALSE, 
+                error := ref.tube.X1plus.error OR ref.tube.Y1plus.error OR ref.tube.Z1minus.error OR ref.tube.X2minus.error OR ref.tube.Y2plus.error OR ref.tube.Z2minus.error, 
+                alarmStatus := ref.tube.statuses.xAlarmStatus, 
+                enabledStatus := ref.tube.statuses.xEnabledStatus);
+
+_tubeYStatus(   overrange := FALSE, 
+                underrange := FALSE, 
+                error := ref.tube.X1plus.error OR ref.tube.Y1plus.error OR ref.tube.Z1minus.error OR ref.tube.X2minus.error OR ref.tube.Y2plus.error OR ref.tube.Z2minus.error, 
+                alarmStatus := ref.tube.statuses.yAlarmStatus, 
+                enabledStatus := ref.tube.statuses.yEnabledStatus);
+                
+tubeX(  value := ref.tube.averageXAngle.degrees.value, 
+        actualStatus := _tubeXStatus.actualStatus,
+        healthStatus := ref.tube.statuses.xHealthStatus);
+
+tubeY(  value := ref.tube.averageYAngle.degrees.value, 
+        actualStatus := _tubeYStatus.actualStatus,
+        healthStatus := ref.tube.statuses.yHealthStatus);]]></ST>
+    </Implementation>
+    <Method Name="_updateAngle" Id="{c63b5738-a834-4531-9f36-2c4864abf80b}">
+      <Declaration><![CDATA[METHOD _updateAngle : BOOL
+VAR_INPUT
+END_VAR
+VAR_IN_OUT
+    ref : TelemetryAccelerometer;
+    widget : MeasurementWidget;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[]]></ST>
+      </Implementation>
+    </Method>
+  </POU>
+</TcPlcObject>

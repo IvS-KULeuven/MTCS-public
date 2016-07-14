@@ -1,0 +1,940 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.2">
+  <POU Name="CoverApertureProcedure" Id="{b2cf75c4-9d45-4d48-8fef-908cfb024111}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK CoverApertureProcedure EXTENDS SM_CoverApertureProcedure
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR
+    substate : INT;
+    _cause : STRING;
+    _ton : TON;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[_update();
+
+// run the procedure
+CASE state OF
+    CoverApertureProcedureStates.IDLE:
+        _idle();
+    CoverApertureProcedureStates.ABORTED:
+        _aborted();
+    CoverApertureProcedureStates.PREPARE_PROCESS:
+        _prepareProcess();
+    CoverApertureProcedureStates.ENABLING_RELAYS:
+        _enablingRelays();
+    CoverApertureProcedureStates.ENABLING_MOTORS:
+        _enablingMotors();
+    CoverApertureProcedureStates.OPENING_TOP_PANELS:
+        _openingTopPanels();
+    CoverApertureProcedureStates.OPENING_BOTH_PANELS:
+        _openingBothPanels();
+    CoverApertureProcedureStates.ENABLING_MAGNETS:
+        _enablingMagnets();
+    CoverApertureProcedureStates.DISABLING_MAGNETS:
+        _disablingMagnets();
+    CoverApertureProcedureStates.CLOSING_BOTTOM_PANELS:
+        _closingBottomPanels();
+    CoverApertureProcedureStates.CLOSING_BOTH_PANELS:
+        _closingBothPanels();
+    CoverApertureProcedureStates.DISABLING_MOTORS:
+        _disablingMotors();
+    CoverApertureProcedureStates.DISABLING_RELAYS:
+        _disablingRelays();
+    CoverApertureProcedureStates.ABORTING:
+        _aborting();
+    CoverApertureProcedureStates.RESETTING:
+        _resetting();
+END_CASE
+
+IF state = CoverApertureProcedureStates.ERROR THEN
+    actualStatus := _cause;
+ELSE
+    actualStatus := _stateToString(state);
+END_IF
+
+_update();]]></ST>
+    </Implementation>
+    <Method Name="_closingBothPanels" Id="{17aab5d4-338a-4470-932f-18f32854090e}">
+      <Declaration><![CDATA[METHOD _closingBothPanels
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[CASE substate OF
+    -1:
+        // This "special" state will only be active if closing is requested during OPENING_BOTH_PANELS!
+        bottom.parts.p1.parts.axis.processes.moveAbsolute.start(
+            position    := coverConfig.bottom.p1.closedPosition, 
+            maxVelocity := coverConfig.closingVelocity);
+        bottom.parts.p2.parts.axis.processes.moveAbsolute.start(
+            position    := coverConfig.bottom.p2.closedPosition, 
+            maxVelocity := coverConfig.closingVelocity);
+        bottom.parts.p3.parts.axis.processes.moveAbsolute.start(
+            position    := coverConfig.bottom.p3.closedPosition, 
+            maxVelocity := coverConfig.closingVelocity);
+        bottom.parts.p4.parts.axis.processes.moveAbsolute.start(
+            position    := coverConfig.bottom.p4.closedPosition, 
+            maxVelocity := coverConfig.closingVelocity);
+        substate := 0;
+    0:
+        // now also close the top panels
+        top.parts.p1.parts.axis.processes.moveAbsolute.start(
+            position    := coverConfig.top.p1.closedPosition, 
+            maxVelocity := coverConfig.closingVelocity);
+        top.parts.p2.parts.axis.processes.moveAbsolute.start(
+            position    := coverConfig.top.p2.closedPosition, 
+            maxVelocity := coverConfig.closingVelocity);
+        top.parts.p3.parts.axis.processes.moveAbsolute.start(
+            position    := coverConfig.top.p3.closedPosition, 
+            maxVelocity := coverConfig.closingVelocity);
+        top.parts.p4.parts.axis.processes.moveAbsolute.start(
+            position    := coverConfig.top.p4.closedPosition, 
+            maxVelocity := coverConfig.closingVelocity);
+        substate := 1;
+    1:
+        IF top.statuses.healthStatus.bad OR bottom.statuses.healthStatus.bad THEN
+            _cause := 'One or more panels in error state!';
+            substate := 999; // error!
+        ELSIF distance.degrees.value < coverConfig.minDistanceBetweenPanelSets AND NOT bottom.statuses.apertureStatus.closed THEN
+            _cause := CONCAT(LREAL_TO_STRING(distance.degrees.value), '° < safety distance!');
+            substate := 999; // error!
+        ELSIF top.statuses.busyStatus.idle AND bottom.statuses.busyStatus.idle THEN
+            IF top.statuses.apertureStatus.closed AND bottom.statuses.apertureStatus.closed THEN
+                substate := 1000; // done!
+            ELSE
+                _cause := 'Panels moved but are not closed!';
+                substate := 999; // error!
+			END_IF
+        END_IF
+    999:
+        // if there is some error, immediately stop all panels and go to the error state
+        top.parts.p1.parts.axis.processes.stop.start();
+        top.parts.p2.parts.axis.processes.stop.start();
+        top.parts.p3.parts.axis.processes.stop.start();
+        top.parts.p4.parts.axis.processes.stop.start();
+        bottom.parts.p1.parts.axis.processes.stop.start();
+        bottom.parts.p2.parts.axis.processes.stop.start();
+        bottom.parts.p3.parts.axis.processes.stop.start();
+        bottom.parts.p4.parts.axis.processes.stop.start();
+        
+        state  := CoverApertureProcedureStates.ERROR;
+        substate := 0;
+    1000:
+        // success, all panels are closed
+        substate := 0;
+        state    := CoverApertureProcedureStates.DISABLING_MOTORS;
+END_CASE]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_aborted" Id="{25f4812a-4851-42d2-b95c-c30fc40f72a4}">
+      <Declaration><![CDATA[METHOD _aborted
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// not doing anything, just being idle... :-)
+;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="startOpening" Id="{3a7b5ba1-c0df-46ce-9c66-070ae5971012}">
+      <Declaration><![CDATA[METHOD startOpening
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF    state = CoverApertureProcedureStates.IDLE 
+   OR state = CoverApertureProcedureStates.ABORTED 
+   OR state = CoverApertureProcedureStates.ERROR 
+THEN
+    state    := CoverApertureProcedureStates.PREPARE_PROCESS;
+    substate := 0;
+    opening := TRUE;
+    closing := FALSE;
+ELSIF state = CoverApertureProcedureStates.CLOSING_BOTH_PANELS THEN
+    // go to the OPENING_BOTH_PANELS state, but set the substate to the "special" -1 ! 
+    substate := -1;
+    state := CoverApertureProcedureStates.OPENING_BOTH_PANELS;
+    opening := TRUE;
+    closing := FALSE;
+END_IF
+
+_update();]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_disablingMotors" Id="{3d33cafa-259e-4aeb-ac91-a4c717080f53}">
+      <Declaration><![CDATA[METHOD _disablingMotors
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[CASE substate OF
+    0:
+        // set the relays of the motors OFF
+        top.parts.p1.parts.axis.processes.power.start(enable := FALSE);
+        top.parts.p2.parts.axis.processes.power.start(enable := FALSE);
+        top.parts.p3.parts.axis.processes.power.start(enable := FALSE);
+        top.parts.p4.parts.axis.processes.power.start(enable := FALSE);
+        bottom.parts.p1.parts.axis.processes.power.start(enable := FALSE);
+        bottom.parts.p2.parts.axis.processes.power.start(enable := FALSE);
+        bottom.parts.p3.parts.axis.processes.power.start(enable := FALSE);
+        bottom.parts.p4.parts.axis.processes.power.start(enable := FALSE);
+        substate := 1;
+    1:
+        IF      top.parts.p1.parts.axis.processes.power.isIdle()
+            AND top.parts.p2.parts.axis.processes.power.isIdle()
+            AND top.parts.p3.parts.axis.processes.power.isIdle()
+            AND top.parts.p4.parts.axis.processes.power.isIdle()
+            AND bottom.parts.p1.parts.axis.processes.power.isIdle()
+            AND bottom.parts.p2.parts.axis.processes.power.isIdle()
+            AND bottom.parts.p3.parts.axis.processes.power.isIdle()
+            AND bottom.parts.p4.parts.axis.processes.power.isIdle()
+        THEN
+            IF      top.parts.p1.parts.axis.processes.power.isGood()
+                AND top.parts.p2.parts.axis.processes.power.isGood()
+                AND top.parts.p3.parts.axis.processes.power.isGood()
+                AND top.parts.p4.parts.axis.processes.power.isGood()
+                AND bottom.parts.p1.parts.axis.processes.power.isGood()
+                AND bottom.parts.p2.parts.axis.processes.power.isGood()
+                AND bottom.parts.p3.parts.axis.processes.power.isGood()
+                AND bottom.parts.p4.parts.axis.processes.power.isGood()
+            THEN
+                // done!
+                state    := CoverApertureProcedureStates.DISABLING_RELAYS;
+                substate := 0;
+            ELSE
+                // error!
+                state    := CoverApertureProcedureStates.ERROR;
+                substate := 0;
+                _cause   := 'Could not disable motors';
+            END_IF
+		END_IF
+END_CASE]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_prepareProcess" Id="{42fac8a3-1756-4321-9295-927331d24482}">
+      <Declaration><![CDATA[METHOD _prepareProcess
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// reset both panelsets
+CASE substate OF
+    0:
+        top.processes.reset.start();
+        bottom.processes.reset.start();
+        substate := 1;
+    1:
+        IF top.processes.reset.isIdle() AND bottom.processes.reset.isIdle() THEN
+            IF top.processes.reset.isGood() AND bottom.processes.reset.isGood() THEN
+                state := CoverApertureProcedureStates.ENABLING_RELAYS;
+                substate := 0;
+            ELSE
+                state    := CoverApertureProcedureStates.ERROR;
+                substate := 0;
+                _cause   := 'Could not reset panels!';
+			END_IF
+        END_IF
+END_CASE]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="startClosing" Id="{430781db-0aad-4b18-b236-c965fae9ea22}">
+      <Declaration><![CDATA[METHOD startClosing
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF    state = CoverApertureProcedureStates.IDLE 
+   OR state = CoverApertureProcedureStates.ABORTED
+   OR state = CoverApertureProcedureStates.ERROR THEN
+    state    := CoverApertureProcedureStates.PREPARE_PROCESS;
+    substate := 0;
+    opening  := FALSE;
+    closing  := TRUE;
+ELSIF state = CoverApertureProcedureStates.OPENING_BOTH_PANELS THEN
+    // go to the CLOSING_BOTH_PANELS state, but set the substate to the "special" -1 ! 
+    substate := -1;
+    state := CoverApertureProcedureStates.CLOSING_BOTH_PANELS;
+    opening  := FALSE;
+    closing  := TRUE;
+END_IF
+
+_update();]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_enablingMagnets" Id="{53101f8d-2637-4a35-8044-1213e09bc866}">
+      <Declaration><![CDATA[METHOD _enablingMagnets
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[CASE substate OF
+    0:
+        // set the magnets ON
+        top.parts.magnetsRelay.processes.setEnabled.start(enabled := TRUE);
+        bottom.parts.magnetsRelay.processes.setEnabled.start(enabled := TRUE);
+        substate := 1;
+    1:
+        IF      top.parts.magnetsRelay.processes.setEnabled.isIdle()
+            AND bottom.parts.magnetsRelay.processes.setEnabled.isIdle()
+        THEN
+            IF      top.parts.magnetsRelay.processes.setEnabled.isGood()
+                AND bottom.parts.magnetsRelay.processes.setEnabled.isGood()
+            THEN
+                substate := 2;
+            ELSE
+                substate := 999; // ERROR!
+            END_IF
+		END_IF
+    2:
+        // wait a second or so, to make sure the magnet has done its job of 'locking' the panels.
+        // This step may not be strictly needed, but it doesn't hurt to add a small waiting time here...
+        _ton(IN := FALSE);
+        _ton(IN := TRUE,
+             PT := T#3S); 
+        substate := 3;
+    3:
+        _ton(IN := TRUE);
+        IF _ton.Q THEN
+            substate := 1000; // done!
+		END_IF
+    999:
+        // error!
+        state    := CoverApertureProcedureStates.ERROR;
+        substate := 0;
+        _cause   := 'Could not enable magnets';
+    1000:
+        // done!
+        state    := CoverApertureProcedureStates.DISABLING_MOTORS;
+        substate := 0;
+END_CASE]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_disablingRelays" Id="{5c5bfeee-8c3d-4888-88b1-52ca752f33cd}">
+      <Declaration><![CDATA[METHOD _disablingRelays
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[CASE substate OF
+    0:
+        // set the relays of the motors ON
+        top.parts.p1.parts.motorRelay.processes.setEnabled.start(enabled := FALSE);
+        top.parts.p2.parts.motorRelay.processes.setEnabled.start(enabled := FALSE);
+        top.parts.p3.parts.motorRelay.processes.setEnabled.start(enabled := FALSE);
+        top.parts.p4.parts.motorRelay.processes.setEnabled.start(enabled := FALSE);
+        bottom.parts.p1.parts.motorRelay.processes.setEnabled.start(enabled := FALSE);
+        bottom.parts.p2.parts.motorRelay.processes.setEnabled.start(enabled := FALSE);
+        bottom.parts.p3.parts.motorRelay.processes.setEnabled.start(enabled := FALSE);
+        bottom.parts.p4.parts.motorRelay.processes.setEnabled.start(enabled := FALSE);
+        substate := 1;
+    1:
+        IF      top.parts.p1.parts.motorRelay.processes.setEnabled.isIdle()
+            AND top.parts.p2.parts.motorRelay.processes.setEnabled.isIdle()
+            AND top.parts.p3.parts.motorRelay.processes.setEnabled.isIdle()
+            AND top.parts.p4.parts.motorRelay.processes.setEnabled.isIdle()
+            AND bottom.parts.p1.parts.motorRelay.processes.setEnabled.isIdle()
+            AND bottom.parts.p2.parts.motorRelay.processes.setEnabled.isIdle()
+            AND bottom.parts.p3.parts.motorRelay.processes.setEnabled.isIdle()
+            AND bottom.parts.p4.parts.motorRelay.processes.setEnabled.isIdle()
+        THEN
+            IF      top.parts.p1.parts.motorRelay.processes.setEnabled.isGood()
+                AND top.parts.p2.parts.motorRelay.processes.setEnabled.isGood()
+                AND top.parts.p3.parts.motorRelay.processes.setEnabled.isGood()
+                AND top.parts.p4.parts.motorRelay.processes.setEnabled.isGood()
+                AND bottom.parts.p1.parts.motorRelay.processes.setEnabled.isGood()
+                AND bottom.parts.p2.parts.motorRelay.processes.setEnabled.isGood()
+                AND bottom.parts.p3.parts.motorRelay.processes.setEnabled.isGood()
+                AND bottom.parts.p4.parts.motorRelay.processes.setEnabled.isGood()
+            THEN
+                substate := 2;
+            ELSE
+                state    := CoverApertureProcedureStates.ERROR;
+                substate := 0;
+                _cause   := 'Could not disable relays';
+            END_IF
+		END_IF
+    2:
+        // wait a second or so to deal with any transient behaviour
+        _ton(IN := FALSE);
+        _ton(IN := TRUE,
+             PT := T#1S); 
+        substate := 3;
+    3:
+        _ton(IN := TRUE);
+        IF _ton.Q THEN
+            substate := 4;
+		END_IF
+    4:
+        state    := CoverApertureProcedureStates.IDLE;
+        substate := 0;
+END_CASE]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_stateToString" Id="{649ee03d-7aba-4536-ac70-2f1462db3819}">
+      <Declaration><![CDATA[METHOD _stateToString : STRING
+VAR_INPUT
+    x : CoverApertureProcedureStates;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[CASE x OF    
+    CoverApertureProcedureStates.IDLE:
+        _stateToString := 'Idle';
+    CoverApertureProcedureStates.ABORTED:
+        _stateToString := 'Aborted';
+    CoverApertureProcedureStates.PREPARE_PROCESS:
+        _stateToString := 'Preparing process';
+    CoverApertureProcedureStates.ENABLING_RELAYS:
+        _stateToString := 'Enabling relays';
+    CoverApertureProcedureStates.ENABLING_MOTORS:
+        _stateToString := 'Enabling motors';
+    CoverApertureProcedureStates.ENABLING_MAGNETS:
+        _stateToString := 'Enabling magnets';
+    CoverApertureProcedureStates.DISABLING_RELAYS:
+        _stateToString := 'Disabling relays';
+    CoverApertureProcedureStates.DISABLING_MOTORS:
+        _stateToString := 'Disabling motors';
+    CoverApertureProcedureStates.DISABLING_MAGNETS:
+        _stateToString := 'Disabling magnets';
+    CoverApertureProcedureStates.OPENING_TOP_PANELS:
+        _stateToString := 'Opening top panels';
+    CoverApertureProcedureStates.OPENING_BOTH_PANELS:
+        _stateToString := 'Opening all panels';
+    CoverApertureProcedureStates.CLOSING_BOTTOM_PANELS:
+        _stateToString := 'Closing bottom panels';
+    CoverApertureProcedureStates.CLOSING_BOTH_PANELS:
+        _stateToString := 'Closing all panels';
+    CoverApertureProcedureStates.ERROR:
+        _stateToString := 'Error';
+    CoverApertureProcedureStates.RESETTING:
+        _stateToString := 'Resetting';
+    CoverApertureProcedureStates.ABORTING:
+        _stateToString := 'Aborting';
+END_CASE]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_enablingRelays" Id="{7ce45770-0304-4c28-b8a9-e05a0903cf55}">
+      <Declaration><![CDATA[METHOD _enablingRelays
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[CASE substate OF
+    0:
+        // set the relays of the motors ON
+        top.parts.p1.parts.motorRelay.processes.setEnabled.start(enabled := TRUE);
+        top.parts.p2.parts.motorRelay.processes.setEnabled.start(enabled := TRUE);
+        top.parts.p3.parts.motorRelay.processes.setEnabled.start(enabled := TRUE);
+        top.parts.p4.parts.motorRelay.processes.setEnabled.start(enabled := TRUE);
+        bottom.parts.p1.parts.motorRelay.processes.setEnabled.start(enabled := TRUE);
+        bottom.parts.p2.parts.motorRelay.processes.setEnabled.start(enabled := TRUE);
+        bottom.parts.p3.parts.motorRelay.processes.setEnabled.start(enabled := TRUE);
+        bottom.parts.p4.parts.motorRelay.processes.setEnabled.start(enabled := TRUE);
+        substate := 1;
+    1:
+        IF      top.parts.p1.parts.motorRelay.processes.setEnabled.isIdle()
+            AND top.parts.p2.parts.motorRelay.processes.setEnabled.isIdle()
+            AND top.parts.p3.parts.motorRelay.processes.setEnabled.isIdle()
+            AND top.parts.p4.parts.motorRelay.processes.setEnabled.isIdle()
+            AND bottom.parts.p1.parts.motorRelay.processes.setEnabled.isIdle()
+            AND bottom.parts.p2.parts.motorRelay.processes.setEnabled.isIdle()
+            AND bottom.parts.p3.parts.motorRelay.processes.setEnabled.isIdle()
+            AND bottom.parts.p4.parts.motorRelay.processes.setEnabled.isIdle()
+        THEN
+            IF      top.parts.p1.parts.motorRelay.processes.setEnabled.isGood()
+                AND top.parts.p2.parts.motorRelay.processes.setEnabled.isGood()
+                AND top.parts.p3.parts.motorRelay.processes.setEnabled.isGood()
+                AND top.parts.p4.parts.motorRelay.processes.setEnabled.isGood()
+                AND bottom.parts.p1.parts.motorRelay.processes.setEnabled.isGood()
+                AND bottom.parts.p2.parts.motorRelay.processes.setEnabled.isGood()
+                AND bottom.parts.p3.parts.motorRelay.processes.setEnabled.isGood()
+                AND bottom.parts.p4.parts.motorRelay.processes.setEnabled.isGood()
+            THEN
+                substate := 2;
+            ELSE
+                state    := CoverApertureProcedureStates.ERROR;
+                substate := 0;
+                _cause   := 'Could not enable relays';
+            END_IF
+		END_IF
+    2:
+        // wait a second or so, to make sure the controllers of the motors are up and running
+        _ton(IN := FALSE);
+        _ton(IN := TRUE,
+             PT := T#1S); 
+        substate := 3;
+    3:
+        _ton(IN := TRUE);
+        IF _ton.Q THEN
+            substate := 4;
+		END_IF
+    4:
+        state    := CoverApertureProcedureStates.ENABLING_MOTORS;
+        substate := 0;
+END_CASE]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_update" Id="{adac7f42-21e2-4683-8d01-8c682d48f86e}">
+      <Declaration><![CDATA[METHOD _update
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[SUPER^(top := top, bottom := bottom, coverConfig := coverConfig);
+
+distance(newDegreesValue := ABS(top._maxRelativePosition - bottom._minRelativePosition));]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_openingBothPanels" Id="{aecf6ac1-1cdd-4a72-a6a8-67a90c56193c}">
+      <Declaration><![CDATA[METHOD _openingBothPanels
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[CASE substate OF
+    -1:
+        // This "special" state will only be active if closing is requested during OPENING_BOTH_PANELS!
+        top.parts.p1.parts.axis.processes.moveAbsolute.start(
+            position    := coverConfig.top.p1.openPosition, 
+            maxVelocity := coverConfig.openingVelocity);
+        top.parts.p2.parts.axis.processes.moveAbsolute.start(
+            position    := coverConfig.top.p2.openPosition, 
+            maxVelocity := coverConfig.openingVelocity);
+        top.parts.p3.parts.axis.processes.moveAbsolute.start(
+            position    := coverConfig.top.p3.openPosition, 
+            maxVelocity := coverConfig.openingVelocity);
+        top.parts.p4.parts.axis.processes.moveAbsolute.start(
+            position    := coverConfig.top.p4.openPosition, 
+            maxVelocity := coverConfig.openingVelocity);
+        substate := 0;
+    0:
+        // now also open the bottom panels
+        bottom.parts.p1.parts.axis.processes.moveAbsolute.start(
+            position    := coverConfig.bottom.p1.openPosition, 
+            maxVelocity := coverConfig.openingVelocity);
+        bottom.parts.p2.parts.axis.processes.moveAbsolute.start(
+            position    := coverConfig.bottom.p2.openPosition, 
+            maxVelocity := coverConfig.openingVelocity);
+        bottom.parts.p3.parts.axis.processes.moveAbsolute.start(
+            position    := coverConfig.bottom.p3.openPosition, 
+            maxVelocity := coverConfig.openingVelocity);
+        bottom.parts.p4.parts.axis.processes.moveAbsolute.start(
+            position    := coverConfig.bottom.p4.openPosition, 
+            maxVelocity := coverConfig.openingVelocity);
+        substate := 1;
+    1:
+        IF top.statuses.healthStatus.bad OR bottom.statuses.healthStatus.bad THEN
+            _cause := 'One or more panels in error state!';
+            substate := 999;
+        ELSIF distance.degrees.value < coverConfig.minDistanceBetweenPanelSets AND NOT top.statuses.apertureStatus.open THEN
+            _cause := CONCAT(LREAL_TO_STRING(distance.degrees.value), '° < safety distance!');
+            substate := 999;
+        ELSIF top.statuses.busyStatus.idle AND bottom.statuses.busyStatus.idle THEN
+            IF top.statuses.apertureStatus.open AND bottom.statuses.apertureStatus.open THEN
+                substate := 1000; // done!
+            ELSE
+                _cause := 'Panels moved but are not open!';
+                substate := 999; // error!
+			END_IF
+        END_IF
+    999:
+        // if there is some error, immediately stop all panels and go to the error state
+        top.parts.p1.parts.axis.processes.stop.start();
+        top.parts.p2.parts.axis.processes.stop.start();
+        top.parts.p3.parts.axis.processes.stop.start();
+        top.parts.p4.parts.axis.processes.stop.start();
+        bottom.parts.p1.parts.axis.processes.stop.start();
+        bottom.parts.p2.parts.axis.processes.stop.start();
+        bottom.parts.p3.parts.axis.processes.stop.start();
+        bottom.parts.p4.parts.axis.processes.stop.start();
+        
+        state  := CoverApertureProcedureStates.ERROR;
+        substate := 0;
+    1000:
+        // success, all panels are open
+        substate := 0;
+        state    := CoverApertureProcedureStates.ENABLING_MAGNETS;
+END_CASE]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_aborting" Id="{bc65243e-6c89-4cae-b44c-d7784ebbff7d}">
+      <Declaration><![CDATA[METHOD _aborting
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[CASE substate OF
+    0:  
+        // halt all axes
+        top.parts.p1.parts.axis.processes.stop.start();
+        top.parts.p2.parts.axis.processes.stop.start();
+        top.parts.p3.parts.axis.processes.stop.start();
+        top.parts.p4.parts.axis.processes.stop.start();
+        bottom.parts.p1.parts.axis.processes.stop.start();
+        bottom.parts.p2.parts.axis.processes.stop.start();
+        bottom.parts.p3.parts.axis.processes.stop.start();
+        bottom.parts.p4.parts.axis.processes.stop.start();
+        substate := 1;
+    1: 
+        IF      top.parts.p1.parts.axis.processes.stop.isIdle() 
+            AND top.parts.p2.parts.axis.processes.stop.isIdle() 
+            AND top.parts.p3.parts.axis.processes.stop.isIdle() 
+            AND top.parts.p4.parts.axis.processes.stop.isIdle()
+            AND bottom.parts.p2.parts.axis.processes.stop.isIdle() 
+            AND bottom.parts.p2.parts.axis.processes.stop.isIdle() 
+            AND bottom.parts.p3.parts.axis.processes.stop.isIdle() 
+            AND bottom.parts.p4.parts.axis.processes.stop.isIdle() 
+        THEN
+            // whatever happens, always try to disable the drives
+            substate := 2;
+        END_IF
+    2:
+        // disable the drives
+        top.parts.p1.parts.axis.processes.power.start(enable := FALSE);
+        top.parts.p2.parts.axis.processes.power.start(enable := FALSE);
+        top.parts.p3.parts.axis.processes.power.start(enable := FALSE);
+        top.parts.p4.parts.axis.processes.power.start(enable := FALSE);
+        bottom.parts.p1.parts.axis.processes.power.start(enable := FALSE);
+        bottom.parts.p2.parts.axis.processes.power.start(enable := FALSE);
+        bottom.parts.p3.parts.axis.processes.power.start(enable := FALSE);
+        bottom.parts.p4.parts.axis.processes.power.start(enable := FALSE);
+        substate := 3;
+    3: 
+        IF      top.parts.p1.parts.axis.processes.power.isIdle() 
+            AND top.parts.p2.parts.axis.processes.power.isIdle() 
+            AND top.parts.p3.parts.axis.processes.power.isIdle() 
+            AND top.parts.p4.parts.axis.processes.power.isIdle()
+            AND bottom.parts.p2.parts.axis.processes.power.isIdle() 
+            AND bottom.parts.p2.parts.axis.processes.power.isIdle() 
+            AND bottom.parts.p3.parts.axis.processes.power.isIdle() 
+            AND bottom.parts.p4.parts.axis.processes.power.isIdle() 
+        THEN
+            IF      top.parts.p1.parts.axis.processes.power.isGood() 
+                AND top.parts.p2.parts.axis.processes.power.isGood() 
+                AND top.parts.p3.parts.axis.processes.power.isGood() 
+                AND top.parts.p4.parts.axis.processes.power.isGood()
+                AND bottom.parts.p2.parts.axis.processes.power.isGood() 
+                AND bottom.parts.p2.parts.axis.processes.power.isGood() 
+                AND bottom.parts.p3.parts.axis.processes.power.isGood() 
+                AND bottom.parts.p4.parts.axis.processes.power.isGood() 
+            THEN
+                // Okay, all done!
+                state    := CoverApertureProcedureStates.ABORTED;
+                substate := 0;
+            ELSE
+                state    := CoverApertureProcedureStates.ERROR;
+                substate := 0;
+                _cause   := 'Axes could not be disabled';
+            END_IF
+        END_IF
+            
+END_CASE]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="reset" Id="{c0a3849e-7154-48a6-bfa1-7378cd033fce}">
+      <Declaration><![CDATA[METHOD reset
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF state = CoverApertureProcedureStates.ERROR THEN
+    // return to the idle state
+    state    := CoverApertureProcedureStates.RESETTING;
+    substate := 0;
+    _cause   := 'RESETTING';
+    _update();
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="abort" Id="{c4614021-9640-4737-aa6a-6bc48225132f}">
+      <Declaration><![CDATA[METHOD abort
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF statuses.busyStatus.busy THEN
+    // go to the aborting state
+    state    := CoverApertureProcedureStates.ABORTING;
+    substate := 0;
+    _cause   := 'ABORTING';
+    _update();
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_disablingMagnets" Id="{c99e20c8-d5b4-4ad5-a74b-97fcd5188869}">
+      <Declaration><![CDATA[METHOD _disablingMagnets
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[CASE substate OF
+    0:
+        // set the magnets ON
+        top.parts.magnetsRelay.processes.setEnabled.start(enabled := FALSE);
+        bottom.parts.magnetsRelay.processes.setEnabled.start(enabled := FALSE);
+        substate := 1;
+    1:
+        IF      top.parts.magnetsRelay.processes.setEnabled.isIdle()
+            AND bottom.parts.magnetsRelay.processes.setEnabled.isIdle()
+        THEN
+            IF      top.parts.magnetsRelay.processes.setEnabled.isGood()
+                AND bottom.parts.magnetsRelay.processes.setEnabled.isGood()
+            THEN
+                substate := 2;
+            ELSE
+                substate := 999; // ERROR!
+                _cause   := 'Could not disable magnets';
+            END_IF
+		END_IF
+    2:
+        // wait a few seconds, to make sure the magnet has done its job of 'unlocking' the panels.
+        _ton(IN := FALSE);
+        _ton(IN := TRUE,
+             PT := T#3S); 
+        substate := 3;
+    3:
+        _ton(IN := TRUE);
+        IF _ton.Q THEN
+            substate := 1000; // done!
+		END_IF
+    999:
+        // error!
+        state    := CoverApertureProcedureStates.ERROR;
+        substate := 0;
+    1000:
+        // done!
+        state    := CoverApertureProcedureStates.CLOSING_BOTTOM_PANELS;
+        substate := 0;
+END_CASE]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_idle" Id="{cc1cedab-23f1-441a-9d82-490743a6381d}">
+      <Declaration><![CDATA[METHOD _idle
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// not doing anything, just being idle... :-)
+;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_openingTopPanels" Id="{d3221cc3-6e54-43ac-a061-2008d1946e1d}">
+      <Declaration><![CDATA[METHOD _openingTopPanels
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[CASE substate OF
+    0:
+        top.parts.p1.parts.axis.processes.moveAbsolute.start(
+            position    := coverConfig.top.p1.openPosition, 
+            maxVelocity := coverConfig.openingVelocity);
+        top.parts.p2.parts.axis.processes.moveAbsolute.start(
+            position    := coverConfig.top.p2.openPosition, 
+            maxVelocity := coverConfig.openingVelocity);
+        top.parts.p3.parts.axis.processes.moveAbsolute.start(
+            position    := coverConfig.top.p3.openPosition, 
+            maxVelocity := coverConfig.openingVelocity);
+        top.parts.p4.parts.axis.processes.moveAbsolute.start(
+            position    := coverConfig.top.p4.openPosition, 
+            maxVelocity := coverConfig.openingVelocity);
+        substate := 1;
+    1:
+        IF top.statuses.healthStatus.bad THEN
+            // if there is some error, immediately stop all panels and go to the error state
+            top.parts.p1.parts.axis.processes.stop.start();
+            top.parts.p2.parts.axis.processes.stop.start();
+            top.parts.p3.parts.axis.processes.stop.start();
+            top.parts.p4.parts.axis.processes.stop.start();
+            
+            state  := CoverApertureProcedureStates.ERROR;
+            substate := 0;
+            _cause := 'Top panels moving error!';
+        ELSE
+            IF top.statuses.busyStatus.idle THEN
+                // shouldn' t be happening, the top panels should be busy moving!
+                top.parts.p1.parts.axis.processes.stop.start();
+                top.parts.p2.parts.axis.processes.stop.start();
+                top.parts.p3.parts.axis.processes.stop.start();
+                top.parts.p4.parts.axis.processes.stop.start();
+                state  := CoverApertureProcedureStates.ERROR;
+                substate := 0;
+                _cause := 'Top panels not busy!';
+            ELSE
+                IF distance.degrees.value > coverConfig.targetDistanceBetweenPanelSets OR top.statuses.apertureStatus.open THEN
+                    // the target distance is reached (or the top panels are fully open), so we can
+                    // start opening the bottom panels as well
+                    state  := CoverApertureProcedureStates.OPENING_BOTH_PANELS;
+                    substate := 0;
+                ELSE
+                    ; // OK, still moving until the desired distance is reached, nothing to do yet
+                END_IF
+			END_IF
+        END_IF
+END_CASE]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_enablingMotors" Id="{dd735465-9415-4c50-ab2f-89a2e0c53c4c}">
+      <Declaration><![CDATA[METHOD _enablingMotors
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[CASE substate OF
+    0:
+        // set the relays of the motors ON
+        top.parts.p1.parts.axis.processes.power.start(enable := TRUE);
+        top.parts.p2.parts.axis.processes.power.start(enable := TRUE);
+        top.parts.p3.parts.axis.processes.power.start(enable := TRUE);
+        top.parts.p4.parts.axis.processes.power.start(enable := TRUE);
+        bottom.parts.p1.parts.axis.processes.power.start(enable := TRUE);
+        bottom.parts.p2.parts.axis.processes.power.start(enable := TRUE);
+        bottom.parts.p3.parts.axis.processes.power.start(enable := TRUE);
+        bottom.parts.p4.parts.axis.processes.power.start(enable := TRUE);
+        substate := 1;
+    1:
+        IF      top.parts.p1.parts.axis.processes.power.isIdle()
+            AND top.parts.p2.parts.axis.processes.power.isIdle()
+            AND top.parts.p3.parts.axis.processes.power.isIdle()
+            AND top.parts.p4.parts.axis.processes.power.isIdle()
+            AND bottom.parts.p1.parts.axis.processes.power.isIdle()
+            AND bottom.parts.p2.parts.axis.processes.power.isIdle()
+            AND bottom.parts.p3.parts.axis.processes.power.isIdle()
+            AND bottom.parts.p4.parts.axis.processes.power.isIdle()
+        THEN
+            IF      top.parts.p1.parts.axis.processes.power.isGood()
+                AND top.parts.p2.parts.axis.processes.power.isGood()
+                AND top.parts.p3.parts.axis.processes.power.isGood()
+                AND top.parts.p4.parts.axis.processes.power.isGood()
+                AND bottom.parts.p1.parts.axis.processes.power.isGood()
+                AND bottom.parts.p2.parts.axis.processes.power.isGood()
+                AND bottom.parts.p3.parts.axis.processes.power.isGood()
+                AND bottom.parts.p4.parts.axis.processes.power.isGood()
+            THEN
+                IF opening THEN
+                    state := CoverApertureProcedureStates.OPENING_TOP_PANELS;
+                ELSIF closing THEN
+                    state := CoverApertureProcedureStates.DISABLING_MAGNETS;
+                ELSE
+                    state    := CoverApertureProcedureStates.ERROR;
+                    substate := 0;
+                    _cause   := 'BUG: not opening or closing';
+                END_IF
+                substate := 0;
+            ELSE
+                state    := CoverApertureProcedureStates.ERROR;
+                substate := 0;
+                _cause   := 'Could not enable motors';
+            END_IF
+		END_IF
+END_CASE]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_resetting" Id="{df24f7e2-48b5-4639-a8df-354e9307ef2e}">
+      <Declaration><![CDATA[METHOD _resetting
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// reset the axes
+CASE substate OF
+    0:
+        top.parts.p1.parts.axis.processes.reset.start();
+        top.parts.p2.parts.axis.processes.reset.start();
+        top.parts.p3.parts.axis.processes.reset.start();
+        top.parts.p4.parts.axis.processes.reset.start();
+        bottom.parts.p1.parts.axis.processes.reset.start();
+        bottom.parts.p2.parts.axis.processes.reset.start();
+        bottom.parts.p3.parts.axis.processes.reset.start();
+        bottom.parts.p4.parts.axis.processes.reset.start();
+        substate := 1;
+    1:
+        IF      top.parts.p1.parts.axis.processes.reset.isIdle() 
+            AND top.parts.p2.parts.axis.processes.reset.isIdle() 
+            AND top.parts.p3.parts.axis.processes.reset.isIdle() 
+            AND top.parts.p4.parts.axis.processes.reset.isIdle() 
+            AND bottom.parts.p1.parts.axis.processes.reset.isIdle() 
+            AND bottom.parts.p2.parts.axis.processes.reset.isIdle() 
+            AND bottom.parts.p3.parts.axis.processes.reset.isIdle() 
+            AND bottom.parts.p4.parts.axis.processes.reset.isIdle() 
+        THEN
+            IF      top.parts.p1.parts.axis.processes.reset.isGood() 
+                AND top.parts.p2.parts.axis.processes.reset.isGood() 
+                AND top.parts.p3.parts.axis.processes.reset.isGood() 
+                AND top.parts.p4.parts.axis.processes.reset.isGood() 
+                AND bottom.parts.p1.parts.axis.processes.reset.isGood() 
+                AND bottom.parts.p2.parts.axis.processes.reset.isGood() 
+                AND bottom.parts.p3.parts.axis.processes.reset.isGood() 
+                AND bottom.parts.p4.parts.axis.processes.reset.isGood() 
+            THEN
+                state    := CoverApertureProcedureStates.IDLE;
+                substate := 0;
+            ELSE
+                state    := CoverApertureProcedureStates.ERROR;
+                substate := 0;
+                _cause   := 'Could not reset all panels!';
+            END_IF
+        END_IF
+END_CASE]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_closingBottomPanels" Id="{eb5cd53a-4860-4ab7-8409-3ee077058daf}">
+      <Declaration><![CDATA[METHOD _closingBottomPanels
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[CASE substate OF
+    0:
+        bottom.parts.p1.parts.axis.processes.moveAbsolute.start(
+            position    := coverConfig.bottom.p1.closedPosition, 
+            maxVelocity := coverConfig.closingVelocity);
+        bottom.parts.p2.parts.axis.processes.moveAbsolute.start(
+            position    := coverConfig.bottom.p2.closedPosition, 
+            maxVelocity := coverConfig.closingVelocity);
+        bottom.parts.p3.parts.axis.processes.moveAbsolute.start(
+            position    := coverConfig.bottom.p3.closedPosition, 
+            maxVelocity := coverConfig.closingVelocity);
+        bottom.parts.p4.parts.axis.processes.moveAbsolute.start(
+            position    := coverConfig.bottom.p4.closedPosition, 
+            maxVelocity := coverConfig.closingVelocity);
+        substate := 1;
+    1:
+        IF bottom.statuses.healthStatus.bad THEN
+            substate := 999; // error!
+            _cause := 'Could not close bottom panels!';
+        ELSE
+            IF bottom.statuses.busyStatus.idle THEN
+                // shouldn' t be happening, the top panels should be busy moving!
+                substate := 999; // error!
+                _cause := 'Bottom panels moving error!';
+            ELSE
+                IF distance.degrees.value > coverConfig.targetDistanceBetweenPanelSets OR bottom.statuses.apertureStatus.closed THEN
+                    // the target distance is reached (or the top panels are fully open), so we can
+                    // start opening the bottom panels as well
+                    substate := 1000;
+                ELSE
+                    ; // OK, still moving until the desired distance is reached, nothing to do yet
+                END_IF
+			END_IF
+        END_IF
+    999:
+        // if there is some error, immediately sbottom all panels and go to the error state
+        bottom.parts.p1.parts.axis.processes.stop.start();
+        bottom.parts.p2.parts.axis.processes.stop.start();
+        bottom.parts.p3.parts.axis.processes.stop.start();
+        bottom.parts.p4.parts.axis.processes.stop.start();
+        state  := CoverApertureProcedureStates.ERROR;
+        substate := 0;
+    1000:
+        // done!
+        state  := CoverApertureProcedureStates.CLOSING_BOTH_PANELS;
+        substate := 0;
+END_CASE]]></ST>
+      </Implementation>
+    </Method>
+  </POU>
+</TcPlcObject>

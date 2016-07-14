@@ -1,0 +1,39 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="ActivityStatus" Id="{96b739ed-9b4f-4084-bb58-6a289ed2085f}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK ActivityStatus
+VAR_INPUT
+	///Super state (TRUE if the super state is active, or if there is no super state)
+	superState: BOOL := TRUE;
+	///TRUE if moving
+	isMoving: BOOL;
+	///TRUE if awake
+	isAwake: BOOL;
+END_VAR
+VAR_OUTPUT
+	///Opening
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	moving: BOOL;
+	///Opening
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	awake: BOOL;
+	///Opening
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	sleeping: BOOL;
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[moving := (isAwake AND isMoving) AND superState;
+sleeping := (NOT(isAwake)) AND superState;
+awake := (isAwake AND (NOT(isMoving))) AND superState;
+]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

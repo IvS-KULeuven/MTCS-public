@@ -1,0 +1,32 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="TelemetryIOParts" Id="{ce31d81e-1290-4785-8ea8-b9012e5699a3}">
+    <Declaration><![CDATA[TYPE TelemetryIOParts :
+STRUCT
+	///Coupler
+	coupler: EtherCatDevice;
+	///Slot 5
+	slot5: EtherCatDevice;
+	///Slot 6
+	slot6: EtherCatDevice;
+	///Slot 7
+	slot7: EtherCatDevice;
+	///Slot 8
+	slot8: EtherCatDevice;
+	///Slot 9
+	slot9: EtherCatDevice;
+	///Slot 10
+	slot10: EtherCatDevice;
+	///Slot 11
+	slot11: EtherCatDevice;
+	///Slot 12
+	slot12: EtherCatDevice;
+	///Slot 13
+	slot13: EtherCatDevice;
+	///Tube accelerometers
+	tubeAccelerometers: EtherCatDevice;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

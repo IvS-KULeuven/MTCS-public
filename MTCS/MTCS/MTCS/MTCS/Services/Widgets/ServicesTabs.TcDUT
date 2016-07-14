@@ -1,0 +1,13 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.5">
+  <DUT Name="ServicesTabs" Id="{605076d6-99e7-451f-af33-0e38d8c701a8}">
+    <Declaration><![CDATA[TYPE ServicesTabs :
+(
+	OVERVIEW := 0,
+    TIMING := 1,
+    CONFIG := 2
+);
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

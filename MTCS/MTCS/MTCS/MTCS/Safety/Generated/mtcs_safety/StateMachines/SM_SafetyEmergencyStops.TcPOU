@@ -1,0 +1,114 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="SM_SafetyEmergencyStops" Id="{59164c61-fd0a-4cc4-bb94-13591ed24b3d}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK SM_SafetyEmergencyStops
+VAR_INPUT
+	///TwinSAFE group communication error
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	groupComError AT %I*: BOOL;
+	///TwinSAFE group function block error
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	groupFbError AT %I*: BOOL;
+	///TwinSAFE group output error
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	groupOutError AT %I*: BOOL;
+	///TRUE if the emergency stops are OK
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	allOK AT %I*: BOOL;
+	///TRUE if there is a discrepancy time error between two contacts of an emergency stop
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	discrepancyError AT %I*: BOOL;
+	///TRUE if the make contact (NO) is conducting --> button is pushed!
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	dome1NO AT %I*: BOOL;
+	///TRUE if the break contact (NC) is conducting --> button is not pushed
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	dome1NC AT %I*: BOOL;
+	///TRUE if the make contact (NO) is conducting --> button is pushed!
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	dome2NO AT %I*: BOOL;
+	///TRUE if the break contact (NC) is conducting --> button is not pushed
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	dome2NC AT %I*: BOOL;
+	///TRUE if the make contact (NO) is conducting --> button is pushed!
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	firstFloorNO AT %I*: BOOL;
+	///TRUE if the break contact (NC) is conducting --> button is not pushed
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	firstFloorNC AT %I*: BOOL;
+	///TRUE if the make contact (NO) is conducting --> button is pushed!
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	controlRoomNO AT %I*: BOOL;
+	///TRUE if the break contact (NC) is conducting --> button is not pushed
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	controlRoomNC AT %I*: BOOL;
+	///TRUE if the make contact (NO) is conducting --> button is pushed!
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	domeAccessNO AT %I*: BOOL;
+	///TRUE if the break contact (NC) is conducting --> button is not pushed
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	domeAccessNC AT %I*: BOOL;
+END_VAR
+VAR_OUTPUT
+	///Current status description
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	actualStatus: STRING;
+	///Output to restart the emergency buttons
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	restartOutput AT %Q*: BOOL;
+	///Output to restart the TwinSAFE group
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	errorAcknowledge AT %Q*: BOOL;
+	///Statuses of the state machine
+	statuses: SafetyEmergencyStopsStatuses;
+	///Processes of the state machine
+	processes: SafetyEmergencyStopsProcesses;
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[statuses.healthStatus( isGood := allOK AND (NOT(groupComError OR (groupFbError OR (groupOutError OR discrepancyError)))) );
+statuses.busyStatus( isBusy := processes.reset.statuses.busyStatus.busy );
+processes.reset( isEnabled := NOT(processes.reset.statuses.busyStatus.busy) );
+]]></ST>
+    </Implementation>
+    <Method Name="reset" Id="{5fa7d4fe-22d8-4064-b3c0-f0e32c249657}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD reset : RequestResults
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[reset := THIS^.processes.reset.request();
+]]></ST>
+      </Implementation>
+    </Method>
+  </POU>
+</TcPlcObject>

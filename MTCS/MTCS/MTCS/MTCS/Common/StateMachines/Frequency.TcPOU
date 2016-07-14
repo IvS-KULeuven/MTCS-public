@@ -1,0 +1,17 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.5">
+  <POU Name="Frequency" Id="{93b63e8c-6f41-43c9-ae3c-5e3cf15683a9}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK Frequency EXTENDS SM_Frequency
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR
+    _testVar : INT;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[SUPER^();]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

@@ -1,0 +1,36 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="SM_ServicesTimingIO" Id="{2a494261-5f84-4b90-85fd-124070bd46d9}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK SM_ServicesTimingIO
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+	///Current status description
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	actualStatus: STRING;
+	///Statuses of the state machine
+	statuses: ServicesTimingIOStatuses;
+	///Parts of the state machine
+	parts: ServicesTimingIOParts;
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[parts.coupler(
+    id := 'COUPLER',
+    typeId := 'EK1100');
+parts.slot1(
+    id := 'SERIAL',
+    typeId := 'EL6001');
+parts.slot2(
+    id := 'PTP',
+    typeId := 'EL6688');
+statuses.healthStatus( isGood := parts.coupler.statuses.healthStatus.isGood AND (parts.slot1.statuses.healthStatus.isGood AND parts.slot2.statuses.healthStatus.isGood) );
+]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

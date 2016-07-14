@@ -1,0 +1,22 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="M3IOParts" Id="{8ed86dac-a995-44c6-bdfe-b9171536a87c}">
+    <Declaration><![CDATA[TYPE M3IOParts :
+STRUCT
+	///CANopen bus
+	canOpenBus: CANopenBus;
+	///Coupler
+	coupler: EtherCatDevice;
+	///Slot 1
+	slot1: EtherCatDevice;
+	///Slot 2
+	slot2: EtherCatDevice;
+	///Slot 3
+	slot3: EtherCatDevice;
+	///Slot 4
+	slot4: EtherCatDevice;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

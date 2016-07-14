@@ -1,0 +1,12 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="TelemetryAccelerometersStatuses" Id="{87e7d2c9-7991-4b04-9aab-98a94c7460d7}">
+    <Declaration><![CDATA[TYPE TelemetryAccelerometersStatuses :
+STRUCT
+	///Are all accelerometers in a healthy state?
+	healthStatus: HealthStatus;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

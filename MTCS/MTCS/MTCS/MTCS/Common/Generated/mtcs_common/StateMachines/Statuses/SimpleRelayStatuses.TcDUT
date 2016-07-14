@@ -1,0 +1,12 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="SimpleRelayStatuses" Id="{2eda4c00-e11e-4509-a797-a7dc6e2c911b}">
+    <Declaration><![CDATA[TYPE SimpleRelayStatuses :
+STRUCT
+	///Is the SimpleRelay in a busy state?
+	busyStatus: BusyStatus;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

@@ -1,0 +1,22 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="SafetyParts" Id="{e7c5c942-1ef0-41c5-bcca-1f9766bbc1ab}">
+    <Declaration><![CDATA[TYPE SafetyParts :
+STRUCT
+	///Hydraulics safety
+	hydraulics: SafetyHydraulics;
+	///Emergency stops
+	emergencyStops: SafetyEmergencyStops;
+	///Dome access
+	domeAccess: SafetyDomeAccess;
+	///Motion blocking
+	motionBlocking: SafetyMotionBlocking;
+	///I/O modules
+	io: SafetyIO;
+	///The config manager (to load/save/activate configuration data)
+	configManager: ConfigManager;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

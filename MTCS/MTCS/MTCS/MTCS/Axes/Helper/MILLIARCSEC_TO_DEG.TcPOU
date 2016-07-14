@@ -1,0 +1,15 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.5">
+  <POU Name="MILLIARCSEC_TO_DEG" Id="{1dc291b7-6302-4dd4-a419-fb710d7fe088}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION MILLIARCSEC_TO_DEG : LREAL
+VAR_INPUT
+    mas : LREAL;
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[MILLIARCSEC_TO_DEG := mas / 3600000.0;]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

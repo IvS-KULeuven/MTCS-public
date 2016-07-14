@@ -1,0 +1,77 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="McReadBoolParameter" Id="{d57fcadc-178c-4d90-9ce8-322483de6590}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK McReadBoolParameter EXTENDS BaseMcProcess
+VAR_INPUT
+	///Value that was read
+	value: BOOL;
+	///Arguments to be set, before writing do_request TRUE
+	{attribute 'OPC.UA.DA' := '1'}
+	set: McReadBoolParameterArgs;
+END_VAR
+VAR_OUTPUT
+	///Arguments in use by the process, if do_request was accepted
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	get: McReadBoolParameterArgs;
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[IF do_request THEN
+    do_request_result := request( parameterNumber := set.parameterNumber );
+    do_request := FALSE;
+END_IF;
+SUPER^();
+]]></ST>
+    </Implementation>
+    <Method Name="request" Id="{6bb524bc-adbd-4f31-95dd-1cda6c36ef26}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD request : RequestResults
+VAR_INPUT
+	///Number of the parameter
+	parameterNumber: INT;
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF THIS^.statuses.enabledStatus.enabled THEN
+    THIS^.start( parameterNumber := parameterNumber );
+    request := RequestResults.ACCEPTED;
+ELSE
+    request := RequestResults.REJECTED;
+END_IF;
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="start" Id="{8dfcab72-e184-4994-a7a0-510052bb1f49}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD start
+VAR_INPUT
+	///Number of the parameter
+	parameterNumber: INT;
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[THIS^.get.parameterNumber := parameterNumber;
+THIS^.statuses.busyStatus( isBusy := TRUE );
+THIS^.statuses.healthStatus( isGood := TRUE );
+]]></ST>
+      </Implementation>
+    </Method>
+  </POU>
+</TcPlcObject>

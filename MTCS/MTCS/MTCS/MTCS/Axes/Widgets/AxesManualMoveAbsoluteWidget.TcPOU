@@ -1,0 +1,26 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="AxesManualMoveAbsoluteWidget" Id="{fc6e9625-4a59-470a-abec-c7e9daad17b4}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK AxesManualMoveAbsoluteWidget
+VAR_INPUT
+    moveAbsolute : AxesMultiMoveProcessWIdget;
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+    ref : Axes;
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[moveAbsolute(
+    aziDisabled := ref.processes.moveAbsolute.statuses.enabledStatus.disabled OR ref.parts.azi.statuses.poweredStatus.disabled,
+    eleDisabled := ref.processes.moveAbsolute.statuses.enabledStatus.disabled OR ref.parts.ele.statuses.poweredStatus.disabled,
+    rocDisabled := ref.processes.moveAbsolute.statuses.enabledStatus.disabled OR ref.parts.roc.statuses.poweredStatus.disabled,
+    ronDisabled := ref.processes.moveAbsolute.statuses.enabledStatus.disabled OR ref.parts.ron.statuses.poweredStatus.disabled,
+    process := ref.processes.moveAbsolute,  
+    title := 'Move absolute');]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

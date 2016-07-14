@@ -1,0 +1,46 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="SM_AngularAcceleration" Id="{81b3521f-bc48-4905-b991-494b2528054a}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK SM_AngularAcceleration
+VAR_INPUT
+	///New velocity value in degrees per second^2
+	{attribute 'OPC.UA.DA' := '0'}
+	newDegreesPerSquareSecondValue: LREAL;
+END_VAR
+VAR_OUTPUT
+	///Current status description
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	actualStatus: STRING;
+	///Angular velocity in radians per second^2
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	radiansPerSquareSecond: QuantityValue;
+	///Angular velocity in degrees per second^2
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	degreesPerSquareSecond: QuantityValue;
+	///Angular velocity in arcseconds per second^2
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	arcsecondsPerSquareSecond: QuantityValue;
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[radiansPerSquareSecond(
+    value := newDegreesPerSquareSecondValue * 0.0174532925199,
+    unit := Units.RADIANS_PER_SQUARE_SECOND);
+degreesPerSquareSecond(
+    value := newDegreesPerSquareSecondValue,
+    unit := Units.DEGREES_PER_SQUARE_SECOND);
+arcsecondsPerSquareSecond(
+    value := newDegreesPerSquareSecondValue * 3600.0,
+    unit := Units.ARCSECONDS_PER_SQUARE_SECOND);
+]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

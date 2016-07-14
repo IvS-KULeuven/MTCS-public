@@ -1,0 +1,16 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="FrequencyMeasurementStatuses" Id="{a3dc7d67-3adf-44af-bc96-8a8215dcc26a}">
+    <Declaration><![CDATA[TYPE FrequencyMeasurementStatuses :
+STRUCT
+	///Is the frequency being measured?
+	enabledStatus: EnabledStatus;
+	///Is the measurement OK?
+	healthStatus: HealthStatus;
+	///Alarm status
+	alarmStatus: HiHiLoLoAlarmStatus;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

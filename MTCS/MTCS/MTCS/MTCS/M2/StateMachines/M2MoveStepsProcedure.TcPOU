@@ -1,0 +1,368 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.5">
+  <POU Name="M2MoveStepsProcedure" Id="{ede3a431-81f8-4b3d-b6e1-894f96be8f45}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK M2MoveStepsProcedure EXTENDS SM_M2MoveStepsProcedure
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR
+    substate : INT;
+	
+	_cause : STRING;
+    
+    _axis          : M2Axes;
+    _steps         : UDINT;
+    _cw            : BOOL;
+    _fast          : BOOL;
+    _stoppingSteps : UDINT;
+    _timeout : TIME;
+    _axisGeneralConfig : M2AxisGeneralConfig;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[
+_update();
+
+// run the procedure
+CASE state OF
+    M2MoveProcedureStates.IDLE: 
+        _idle();
+    M2MoveProcedureStates.ABORTED: 
+        _aborted();
+    M2MoveProcedureStates.PREPARE_PROCESS: 
+        _prepareProcess();
+    M2MoveProcedureStates.MOVING: 
+        _moving();
+    M2MoveProcedureStates.ERROR: 
+        _error();
+    M2MoveProcedureStates.ABORTING: 
+        _aborting();
+END_CASE
+
+
+IF state = M2MoveProcedureStates.ERROR THEN
+    actualStatus := _cause;
+ELSE
+    actualStatus := _stateToString(state);
+END_IF
+
+_update();
+]]></ST>
+    </Implementation>
+    <Method Name="_error" Id="{12198d05-7c81-487a-92b0-8614670f898e}">
+      <Declaration><![CDATA[METHOD _error
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// nothing to do, just waiting for the reset...
+;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_update" Id="{22ff49c3-61b2-49c5-8c16-3a258a377f3e}">
+      <Declaration><![CDATA[METHOD _update
+VAR_INPUT
+END_VAR
+
+VAR
+END_VAR]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[SUPER^(
+    powerOn := powerOn, 
+    x := x, 
+    y := y, 
+    z := z, 
+    tiltX := tiltX, 
+    tiltY := tiltY, 
+    multiplexer := multiplexer, 
+    config := config);
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="start" Id="{33c5878a-ac81-4b14-b5cd-15803eb74a32}">
+      <Declaration><![CDATA[METHOD start
+VAR_INPUT
+    axis : M2Axes;
+    steps : UDINT;
+    cw : BOOL;
+    fast : BOOL;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF state = M2MoveProcedureStates.IDLE OR state = M2MoveProcedureStates.ERROR OR state = M2MoveProcedureStates.ABORTED THEN
+    _steps              := steps;
+    _axis               := axis;
+    _cw                 := cw;
+    _fast               := fast;
+    _axisGeneralConfig  := M2AxisToGeneralConfig(_axis, config);
+    
+    IF _steps < _axisGeneralConfig.stoppingSteps THEN
+        state       := M2MoveProcedureStates.ERROR;
+        substate    := 0;
+        _cause      := CONCAT('Min steps to move: ', UDINT_TO_STRING(_axisGeneralConfig.stoppingSteps));
+    ELSE
+        state       := M2MoveProcedureStates.PREPARE_PROCESS;
+        substate    := 0;
+	END_IF
+    
+END_IF
+
+_update();]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_stateToString" Id="{3c3f2438-acb3-4ad0-99f1-8c44bf506697}">
+      <Declaration><![CDATA[METHOD _stateToString : STRING
+VAR_INPUT
+    x : M2MoveProcedureStates;
+END_VAR
+VAR
+    _formatString : FB_FormatString;
+END_VAR]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[CASE x OF
+    M2MoveProcedureStates.IDLE: 
+        _stateToString := 'Idle';
+    M2MoveProcedureStates.ABORTED: 
+        _stateToString := 'Aborted';
+    M2MoveProcedureStates.PREPARE_PROCESS: 
+        _stateToString := 'Preparing process';
+    M2MoveProcedureStates.MOVING: 
+        _stateToString := 'Moving';
+        _formatString(sFormat := 'Moving (%d remaining)', 
+                      arg1    := F_UDINT(stepsRemaining),
+                      sOut    => _stateToString);
+    M2MoveProcedureStates.ERROR: 
+        _stateToString := 'Error';
+    M2MoveProcedureStates.ABORTING: 
+        _stateToString := 'Aborting';
+END_CASE]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_aborting" Id="{543ec453-a325-4a8a-8f0f-f8077493862f}">
+      <Declaration><![CDATA[METHOD _aborting
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[CASE substate OF
+    0: 
+		FAST.m2FastTaskControl.abort();
+        substate := 1;
+    1:
+        IF NOT FAST.m2FastTaskControl.isBusy() THEN
+            state := M2MoveProcedureStates.ABORTED;
+            substate := 0;
+		END_IF
+END_CASE]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_idle" Id="{755ed09c-c706-4f7a-b3cf-08b5f4e1b34d}">
+      <Declaration><![CDATA[METHOD _idle
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// not doing anything, just being idle... :-)
+;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_prepareProcess" Id="{8671f164-aa5f-4712-966f-b322d919bd09}">
+      <Declaration><![CDATA[METHOD _prepareProcess
+VAR_INPUT
+END_VAR
+
+VAR
+	CW: INT;
+END_VAR]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// select the right axis
+CASE substate OF
+    0:
+        // make sure the drive is not released
+        multiplexer.parts.release.processes.setEnabled.start(enabled := FALSE);
+        substate := 1;
+    1:
+        IF  multiplexer.parts.release.processes.setEnabled.isIdle() THEN
+            IF  multiplexer.parts.release.processes.setEnabled.isGood() THEN
+                substate := 2;
+            ELSE
+                _cause := 'Could not turn on tbe brake';
+                substate := 999;
+			END_IF
+		END_IF
+    2:
+        // select the axis
+        multiplexer.processes.selectAxis.start(axis := _axis);
+        substate := 3;
+    3:
+        IF multiplexer.processes.selectAxis.isIdle() THEN
+            IF multiplexer.processes.selectAxis.isGood() THEN
+                substate := 4;
+            ELSE
+                _cause := 'Could not select axis';
+                substate := 999;
+			END_IF
+		END_IF
+    4:
+        // set the CW flag
+        multiplexer.parts.CW.processes.setEnabled.start(enabled := _cw);
+        substate := 5;
+    5:
+        IF multiplexer.parts.CW.processes.setEnabled.isIdle() THEN
+            IF multiplexer.parts.CW.processes.setEnabled.isGood() THEN
+                substate := 6;
+            ELSE
+                _cause := 'Could not set CW flag';
+                substate := 999;
+			END_IF
+		END_IF
+    6:
+        // set the fast flag
+        Z.parts.highSpeed.processes.setEnabled.start(enabled := _fast);
+        substate := 7;
+    7:
+        IF Z.parts.highSpeed.processes.setEnabled.isIdle() THEN
+            IF Z.parts.highSpeed.processes.setEnabled.isGood() THEN
+                substate := 8;
+            ELSE
+                _cause := 'Could not set high-speed';
+                substate := 999;
+			END_IF
+		END_IF
+    8:
+        // choose the stopping steps and the timeout
+        IF _axis = M2Axes.Z AND _fast THEN
+            _stoppingSteps := config.z.highSpeedStoppingSteps;
+            _timeout       := LREAL_TO_TIME(config.z.highSpeedTimeout * 1000.0);
+        ELSE
+            _stoppingSteps := _axisGeneralConfig.stoppingSteps;
+            _timeout       := LREAL_TO_TIME(_axisGeneralConfig.timeout * 1000.0);
+		END_IF
+        
+        substate := 9;
+    9:
+        // power on the electronics
+        powerOn.start();
+        substate := 10;
+    10:
+        IF  powerOn.isIdle() THEN
+            IF  powerOn.isGood() THEN
+                substate := 1000;
+            ELSE
+                _cause := 'Could not power on';
+                substate := 999;
+			END_IF
+		END_IF
+    999:
+        state := M2MoveProcedureStates.ERROR;
+        substate := 0;
+    1000:
+        state := M2MoveProcedureStates.MOVING;
+        substate := 0;
+END_CASE]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_moving" Id="{b76e5600-b2e7-4719-8997-eea9768dab40}">
+      <Declaration><![CDATA[METHOD _moving
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[CASE substate OF
+    0:
+        IF FAST.m2FastTaskControl.isBusy() THEN
+            _cause := 'Move procedure was busy!';
+            substate := 999;
+        ELSE
+            FAST.m2FastTaskControl.start(
+                setpointCounterValue := _steps - _stoppingSteps,
+                timeout              := _timeout,
+                waitAfterMove        := LREAL_TO_TIME(_axisGeneralConfig.waitAfterMove * 1000.0)
+            );
+            
+        // we can already reset the backlash flag if the sense is wrong
+        IF _cw <> _axisGeneralConfig.finalSenseCW THEN
+            CASE _axis OF
+                M2Axes.X:
+                    x.backlashLifted := FALSE; 
+                M2Axes.Y:
+                    y.backlashLifted := FALSE; 
+                M2Axes.Z:
+                    z.backlashLifted := FALSE; 
+                M2Axes.TILTX:
+                    tiltX.backlashLifted := FALSE; 
+                M2Axes.TILTY:
+                    tiltY.backlashLifted := FALSE; 
+            END_CASE 
+		END_IF
+            
+            
+            substate := 1;
+		END_IF
+    1:
+        IF FAST.m2FastTaskControl.isBusy() THEN
+            stepsRemaining := _steps - actualCounterValue;
+        ELSE
+            IF FAST.m2FastTaskControl.isError() THEN
+                _cause := FAST.m2FastTaskControl.errorCause;
+                substate := 999;
+            ELSE
+                substate := 2;
+			END_IF
+		END_IF
+    2:
+        // update the flag if the backlash was lifted
+        // In theory, _axisGeneralConfig.antiBacklashPosition - _axisGeneralConfig.closePosition is the required distance to be 100% sure
+        // that the anti-backlash is lifted.
+        // In practice, we take  _axisGeneralConfig.antiBacklashPosition - 2*_axisGeneralConfig.closePosition to make sure that movements
+        // that are just smaller than (_axisGeneralConfig.antiBacklashPosition - _axisGeneralConfig.closePosition) are also marked 
+        // as "backlash lifted" 
+        CASE _axis OF
+            M2Axes.X:
+                x.backlashLifted := (_cw = _axisGeneralConfig.finalSenseCW) AND ((_steps > (_axisGeneralConfig.antiBacklashPosition-2*_axisGeneralConfig.closePosition) ) OR x.backlashLifted); 
+            M2Axes.Y:
+                y.backlashLifted := (_cw = _axisGeneralConfig.finalSenseCW) AND ((_steps > (_axisGeneralConfig.antiBacklashPosition-2*_axisGeneralConfig.closePosition)) OR y.backlashLifted); 
+            M2Axes.Z:
+                z.backlashLifted := (_cw = _axisGeneralConfig.finalSenseCW) AND ((_steps > (_axisGeneralConfig.antiBacklashPosition-2*_axisGeneralConfig.closePosition)) OR z.backlashLifted); 
+            M2Axes.TILTX:
+                tiltX.backlashLifted := (_cw = _axisGeneralConfig.finalSenseCW) AND ((_steps > (_axisGeneralConfig.antiBacklashPosition-2*_axisGeneralConfig.closePosition)) OR tiltX.backlashLifted); 
+            M2Axes.TILTY:
+                tiltY.backlashLifted := (_cw = _axisGeneralConfig.finalSenseCW) AND ((_steps > (_axisGeneralConfig.antiBacklashPosition-2*_axisGeneralConfig.closePosition)) OR tiltY.backlashLifted); 
+        END_CASE 
+        substate := 1000;
+    999:
+        state := M2MoveProcedureStates.ERROR;
+    1000:
+        // OK all done
+        state := M2MoveProcedureStates.IDLE;
+END_CASE]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_aborted" Id="{c3d5ac0b-5a7a-4009-8f27-7f21d76e99b4}">
+      <Declaration><![CDATA[METHOD _aborted
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// not doing anything, just being aborted... :-)
+;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="abort" Id="{f596dbc9-9dc1-4cbf-9894-370d1ba0e962}">
+      <Declaration><![CDATA[METHOD abort
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF statuses.busyStatus.busy THEN
+    // go to the aborting state
+    state    := M2MoveProcedureStates.ABORTING;
+    substate := 0;
+    _cause   := '';
+    _update();
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+  </POU>
+</TcPlcObject>

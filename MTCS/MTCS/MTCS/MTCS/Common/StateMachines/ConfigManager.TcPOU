@@ -1,0 +1,142 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="ConfigManager" Id="{ff578ac8-76c8-461d-9c99-e407887bb563}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK ConfigManager EXTENDS SM_ConfigManager
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR;
+    xmlRead : FB_XmlSrvReadByName;
+    xmlWrite : FB_XmlSrvWriteByName;
+    
+    _editableConfigAddress : PVOID := 0;
+    _activeConfigAddress : PVOID := 0;
+    _configLength : UDINT;
+    _editableConfigSymbolName : STRING;
+    _activeConfigSymbolName : STRING;
+    _configFilePath : STRING;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[SUPER^();
+
+_loading();
+_saving();
+_activating();
+
+SUPER^();]]></ST>
+    </Implementation>
+    <Method Name="_activating" Id="{5656149a-e330-4de4-8797-ed6c221ab312}">
+      <Declaration><![CDATA[METHOD _activating : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF processes.activate.statuses.busyStatus.busy THEN
+    
+    IF _editableConfigAddress <> 0 AND _activeConfigAddress <> 0 AND _configLength > 0 THEN
+        MEMCPY(_activeConfigAddress, _editableConfigAddress, _configLength);
+        processes.activate.setGood();
+    ELSE
+        processes.activate.setBad();
+	END_IF
+    
+    processes.activate.setFinished();
+
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="configure" Id="{93fde09b-102f-4cca-b628-d77c2a9f9c91}">
+      <Declaration><![CDATA[METHOD configure
+VAR_INPUT
+    editableConfigAddress : PVOID := 0;
+    activeConfigAddress : PVOID := 0;
+    configLength : UDINT;
+    editableConfigSymbolName : STRING;
+    activeConfigSymbolName : STRING;
+    configFilePath : STRING;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[_editableConfigAddress := editableConfigAddress;
+_activeConfigAddress := activeConfigAddress;
+_configLength := configLength;
+_editableConfigSymbolName := editableConfigSymbolName;
+_activeConfigSymbolName := activeConfigSymbolName;
+_configFilePath := configFilePath;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_saving" Id="{c584e108-f93b-4e54-8c9f-7028661d5d8e}">
+      <Declaration><![CDATA[METHOD _saving : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF processes.save.statuses.busyStatus.busy THEN
+	
+    // write the file to the local directory
+    xmlWrite(
+        sNetId := '',
+        nMode := XMLSRV_ADDMISSING,
+        sSymName := _activeConfigSymbolName,
+        sFilePath := _configFilePath,
+        sXPath := '/config',
+        bExecute := TRUE,
+        tTimeout := T#10S);
+        
+	(* update the busy status *)
+	processes.save.statuses.busyStatus(isBusy := xmlWrite.bBusy);
+	
+	(* update the health status *)
+	processes.save.statuses.healthStatus(isGood := NOT xmlWrite.bError);
+    
+    (* update the error ID *)
+    processes.save.errorId := xmlWrite.nErrId;
+    
+    IF NOT xmlWrite.bBusy THEN
+        // reset the trigger
+        xmlWrite(bExecute := FALSE);
+    END_IF
+    
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_loading" Id="{ebc4e225-88ac-43c6-b387-a09db501c93c}">
+      <Declaration><![CDATA[METHOD _loading : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF processes.load.statuses.busyStatus.busy THEN
+	
+    IF NOT processes.load.statuses.startedStatus.started THEN
+        // read the file
+        xmlRead(
+            sNetId := '',
+            nMode := XMLSRV_SKIPMISSING,
+            sSymName := _editableConfigSymbolName,
+            sFilePath := _configFilePath,
+            sXPath := 'config',
+            bExecute := TRUE,
+            tTimeout := T#5S);
+        
+        processes.load.setStarted();
+    ELSE
+        xmlRead(bExecute := FALSE);
+	END_IF
+    
+	(* update the busy status *)
+	processes.load.statuses.busyStatus(isBusy := xmlRead.bBusy);
+	
+	(* update the health status *)
+	processes.load.statuses.healthStatus(isGood := NOT xmlRead.bError);
+    
+    (* update the error ID *)
+    processes.load.errorId := xmlRead.nErrId;
+    
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+  </POU>
+</TcPlcObject>

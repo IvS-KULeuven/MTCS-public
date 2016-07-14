@@ -1,0 +1,12 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="LimitSwitches" Id="{c113c1ce-c5cb-4e01-a0af-afd5773ffb19}">
+    <Declaration><![CDATA[TYPE LimitSwitches :
+(
+	POSITIVE_LIMIT_SWITCH := 0,
+	NEGATIVE_LIMIT_SWITCH := 1
+);
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

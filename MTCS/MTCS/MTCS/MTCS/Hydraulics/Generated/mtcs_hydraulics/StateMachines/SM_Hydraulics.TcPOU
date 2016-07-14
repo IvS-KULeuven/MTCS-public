@@ -1,0 +1,201 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="SM_Hydraulics" Id="{eb7a2e24-0c39-45ee-915e-dcf040762c45}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK SM_Hydraulics
+VAR_INPUT
+	///Editable configuration of the Safety subsystem
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	editableConfig: HydraulicsConfig;
+	///TRUE if there is no overpressure for circulation filter G
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	circulationFilterGOK AT %I*: BOOL;
+	///TRUE if there is no overpressure for circulation filter D
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	circulationFilterDOK AT %I*: BOOL;
+	///TRUE if the oil level is too high (--> problem!)
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	oilLevelTooHigh AT %I*: BOOL;
+	///The current state of the pumps
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	pumpsState: HydraulicsPumpsStates;
+	///Textual representation of the current pumps status
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	pumpsStatus: STRING;
+END_VAR
+VAR_OUTPUT
+	///Current status description
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	actualStatus: STRING;
+	///Active configuration of the Hydraulics subsystem
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	config: HydraulicsConfig;
+	///Temperature measured at the bearing
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	bearingTemperature: TemperatureMeasurement;
+	///Statuses of the state machine
+	statuses: HydraulicsStatuses;
+	///Parts of the state machine
+	parts: HydraulicsParts;
+	///Processes of the state machine
+	processes: HydraulicsProcesses;
+END_VAR
+VAR_IN_OUT
+	///Shared operator status
+	{attribute 'OPC.UA.DA' := '0'}
+	operatorStatus: OperatorStatus;
+	///The hydraulics part of the safety system
+	{attribute 'OPC.UA.DA' := '0'}
+	safetyHydraulics: SafetyHydraulics;
+	///The I/O part of the safety system
+	{attribute 'OPC.UA.DA' := '0'}
+	safetyIO: SafetyIO;
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[bearingTemperature( config := config.bearingTemperature );
+parts.circulationPumpRelay( isEnabled := statuses.busyStatus.idle AND operatorStatus.tech AND statuses.operatingStatus.manual );
+parts.pumpsPowerRelay(isEnabled := statuses.busyStatus.idle AND operatorStatus.tech );
+parts.top(
+    operatorStatus := operatorStatus,
+    operatingStatus := statuses.operatingStatus,
+    safetyHydraulics := safetyHydraulics,
+    config := config.top,
+    hydraulicsConfig := config);
+parts.bottom(
+    operatorStatus := operatorStatus,
+    operatingStatus := statuses.operatingStatus,
+    safetyHydraulics := safetyHydraulics,
+    config := config.bottom,
+    hydraulicsConfig := config);
+parts.io( safetyIO := safetyIO );
+parts.configManager( isEnabled := operatorStatus.tech );
+statuses.initializationStatus();
+statuses.healthStatus(
+    isGood := (parts.io.statuses.healthStatus.isGood AND (parts.configManager.statuses.healthStatus.isGood AND (processes.initialize.statuses.healthStatus.isGood AND (processes.lock.statuses.healthStatus.isGood AND (processes.unlock.statuses.healthStatus.isGood AND (processes.changeOperatingState.statuses.healthStatus.isGood AND safetyHydraulics.statuses.healthStatus.isGood)))))) AND (circulationFilterGOK AND (circulationFilterDOK AND ((NOT(oilLevelTooHigh)) AND (NOT(pumpsState = HydraulicsPumpsStates.ERROR))))),
+    hasWarning := (parts.io.statuses.healthStatus.hasWarning OR (parts.configManager.statuses.healthStatus.hasWarning OR (processes.initialize.statuses.healthStatus.hasWarning OR (processes.lock.statuses.healthStatus.hasWarning OR (processes.unlock.statuses.healthStatus.hasWarning OR processes.changeOperatingState.statuses.healthStatus.hasWarning))))) OR (pumpsState = HydraulicsPumpsStates.MANUAL));
+statuses.busyStatus( isBusy := statuses.initializationStatus.initializing OR (processes.initialize.statuses.busyStatus.busy OR (processes.lock.statuses.busyStatus.busy OR (processes.unlock.statuses.busyStatus.busy OR (processes.changeOperatingState.statuses.busyStatus.busy OR (processes.startUpPumps.statuses.busyStatus.busy OR processes.stopPumps.statuses.busyStatus.busy))))) );
+statuses.operatingStatus();
+processes.initialize( isEnabled := statuses.initializationStatus.shutdown OR (statuses.initializationStatus.initializingFailed OR statuses.initializationStatus.initialized) );
+processes.lock( isEnabled := operatorStatus.tech AND statuses.initializationStatus.initialized );
+processes.unlock( isEnabled := operatorStatus.tech AND statuses.initializationStatus.locked );
+processes.changeOperatingState( isEnabled := statuses.busyStatus.idle AND operatorStatus.tech );
+processes.startUpPumps( isEnabled := statuses.initializationStatus.initialized AND ((pumpsState = HydraulicsPumpsStates.STOPPED) OR ((pumpsState = HydraulicsPumpsStates.MANUAL) OR (pumpsState = HydraulicsPumpsStates.ERROR))) );
+processes.stopPumps( isEnabled := statuses.initializationStatus.initialized AND ((pumpsState = HydraulicsPumpsStates.RUNNING) OR ((pumpsState = HydraulicsPumpsStates.MANUAL) OR (pumpsState = HydraulicsPumpsStates.ERROR))) );
+]]></ST>
+    </Implementation>
+    <Method Name="startUpPumps" Id="{1ab9d32b-1fd5-489e-9b93-6c339088b1de}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD startUpPumps : RequestResults
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[startUpPumps := THIS^.processes.startUpPumps.request();
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="initialize" Id="{55ec9e29-e421-44d7-ba6e-374968950cf6}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD initialize : RequestResults
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[initialize := THIS^.processes.initialize.request();
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="lock" Id="{6bc7406b-8746-4d8b-b29a-878a02f1de66}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD lock : RequestResults
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[lock := THIS^.processes.lock.request();
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="changeOperatingState" Id="{a815d50b-5da3-413c-af05-56bd971def81}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD changeOperatingState : RequestResults
+VAR_INPUT
+	state: OperatingStates;
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[changeOperatingState := THIS^.processes.changeOperatingState.request( state := state );
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="unlock" Id="{ba032663-78f3-4bb1-a26d-3764b278d468}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD unlock : RequestResults
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[unlock := THIS^.processes.unlock.request();
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="stopPumps" Id="{e2aa236b-a6df-4b2b-8bd5-f7966090dbdd}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD stopPumps : RequestResults
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[stopPumps := THIS^.processes.stopPumps.request();
+]]></ST>
+      </Implementation>
+    </Method>
+  </POU>
+</TcPlcObject>

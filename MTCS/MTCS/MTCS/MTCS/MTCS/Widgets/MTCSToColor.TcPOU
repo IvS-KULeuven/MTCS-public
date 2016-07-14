@@ -1,0 +1,46 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.2">
+  <POU Name="MTCSToColor" Id="{1f16b174-556e-4fa7-8d5e-3ffed7fe31ad}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION MTCSToColor : StatusColor
+VAR_IN_OUT
+    healthStatus : HealthStatus;
+    busyStatus   : BusyStatus;
+    initializationStatus : InitializationStatus;
+    operatorStatus : OperatorStatus;
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR
+END_VAR
+
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[IF initializationStatus.shutdown THEN
+    MTCSToColor.fg := Colors.BLACK;
+    MTCSToColor.bg := Colors.GRAY;
+ELSE
+    IF healthStatus.good THEN
+        IF busyStatus.busy THEN
+            MTCSToColor.fg := Colors.WHITE;
+            MTCSToColor.bg := Colors.BLUE;
+        ELSE
+            IF initializationStatus.locked OR operatorStatus.tech THEN
+                MTCSToColor.fg := Colors.WHITE;
+                MTCSToColor.bg := Colors.ORANGE;
+            ELSE
+                MTCSToColor.fg := Colors.BLACK;
+                MTCSToColor.bg := Colors.GREEN;
+			END_IF
+        END_IF
+    ELSIF healthStatus.bad THEN
+        MTCSToColor.fg := Colors.WHITE;
+        MTCSToColor.bg := Colors.RED;
+    ELSE
+        MTCSToColor.fg := Colors.BLACK;
+        MTCSToColor.bg := Colors.GRAY;
+    END_IF
+END_IF
+]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

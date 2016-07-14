@@ -1,0 +1,62 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.5">
+  <POU Name="ProcessStepWidget" Id="{5c6f07c9-8688-4958-bdd6-c7eab41ea71f}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK ProcessStepWidget
+VAR_INPUT
+    null : BOOL := FALSE;
+END_VAR
+VAR_IN_OUT
+    ref : ProcessStep;
+END_VAR
+VAR_OUTPUT
+	color : StatusColor;
+	description : STRING;
+	statusText : STRING;
+    inivisible : BOOL;
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[description := ref.description;
+statusText := ref.actualStatus;
+
+IF null THEN
+   
+    inivisible := TRUE;
+
+ELSIF ref.statuses.enabledStatus.enabled THEN
+    
+    inivisible := FALSE;
+    
+    IF ref.isGood() THEN
+    
+        IF ref.isBusy() THEN
+            color.bg := Colors.BLUE;
+            color.fg := Colors.WHITE;
+        END_IF
+        
+    ELSIF ref.isWarning() THEN
+        
+        color.bg := Colors.ORANGE;
+        color.bg := Colors.WHITE;
+        
+    ELSE
+        
+        color.bg := Colors.RED;
+        color.fg := Colors.WHITE;
+        
+    END_IF
+
+ELSE
+    
+    inivisible := FALSE;
+    
+    statusText := '';
+    color.bg := Colors.GRAY;
+    color.fg := Colors.BLACK;
+    
+END_IF]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

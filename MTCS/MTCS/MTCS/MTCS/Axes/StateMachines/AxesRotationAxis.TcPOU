@@ -1,0 +1,577 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="AxesRotationAxis" Id="{c1865efd-86af-408c-8967-c7bec7135433}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK AxesRotationAxis EXTENDS SM_AxesRotationAxis
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR 
+    // setpoint generator
+	{attribute 'OPC.UA.DA' := '0'}
+    _setGen : AxesExternalSetpointGenerator;
+    
+    // helpers
+	{attribute 'OPC.UA.DA' := '0'}
+    _powerOnHelper : AxesPowerOnHelper;
+	{attribute 'OPC.UA.DA' := '0'}
+    _powerOffHelper : AxesPowerOffHelper;
+	{attribute 'OPC.UA.DA' := '0'}
+    _homingHelper : AxesHomingHelper;
+	{attribute 'OPC.UA.DA' := '0'}
+    _moveOutOfLimitSwitchHelper : AxesMoveOutOfLimitSwitchHelper;
+	{attribute 'OPC.UA.DA' := '0'}
+    _stopHelper : AxesStopHelper;
+	{attribute 'OPC.UA.DA' := '0'}
+    _quickStopHelper : AxesQuickStopHelper;
+	{attribute 'OPC.UA.DA' := '0'}
+    _setPositionHelper : AxesSetPositionHelper;
+    
+    // RMS and average setpoint deviation calculator
+	{attribute 'OPC.UA.DA' := '0'}
+    _deviationCalculator: AverageAndRmsCalculator;
+    // local copy of the isTracking flag
+	{attribute 'OPC.UA.DA' := '0'}
+    _isTracking: BOOL;
+	{attribute 'OPC.UA.DA' := '0'}
+    _moveRelativeCalculator : AxesMoveRelativeCalculator;
+	{attribute 'OPC.UA.DA' := '0'}
+    _moveAbsoluteCalculator : AxesMoveAbsoluteCalculator;
+    
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[_update();
+
+_resetting();
+
+
+_powerOnHelper(
+    id                      := id,
+    setpointGenerator       := _setGen,
+    powerOn                 := processes.powerOn,
+    stop                    := processes.stop,
+    reset                   := processes.reset,
+    virtual                 := parts.virtualAxis,
+    physical                := parts.physicalAxis,
+    targetStart             := targetStart,
+    pAblAxis                := 0,
+    pAblDriveChannel        := 0,
+    pAblSetpointGenerator   := 0);
+    
+_powerOffHelper(
+    setpointGenerator       := _setGen,
+    powerOff                := processes.powerOff,
+    stop                    := processes.stop,
+    virtual                 := parts.virtualAxis,
+    physical                := parts.physicalAxis,
+    pAblAxis                := 0,
+    pAblDriveChannel        := 0,
+    pAblSetpointGenerator   := 0);
+
+
+_moveOutOfLimitSwitchHelper(
+    setpointGenerator               := _setGen,
+    positiveLimitSwitchError        := positiveLimitSwitchError,
+    negativeLimitSwitchError        := negativeLimitSwitchError,
+    positiveLimitSwitchInput        := config.positiveLimitSwitchInput,
+    negativeLimitSwitchInput        := config.negativeLimitSwitchInput,
+    moveOutOfLimitSwitchDistance    := config.moveOutOfLimitSwitchDistance,
+    moveOutOfLimitSwitch            := processes.moveOutOfLimitSwitch,
+    moveRelative                    := processes.moveRelative,
+    powerOn                         := processes.powerOn,
+    reset                           := processes.reset,
+    virtual                         := parts.virtualAxis,
+    physical                        := parts.physicalAxis,
+    driveChannel                    := mainDriveChannel);
+
+_moveAbsolute();
+_moveRelative();
+_moveVelocity();
+
+_stopHelper(
+    setpointGenerator   := _setGen,
+    stop                := processes.stop,
+    virtual             := parts.virtualAxis,
+    physical            := parts.physicalAxis);
+    
+_quickStopHelper(
+    deceleration        := config.quickStopDeceleration, 
+    jerk                := config.quickStopJerk,
+    setpointGenerator   := _setGen,
+    quickStop           := processes.quickStop,
+    virtual             := parts.virtualAxis,
+    physical            := parts.physicalAxis);
+    
+_setPositionHelper(
+    setpointGenerator   := _setGen,
+    setPosition         := processes.setPosition,
+    virtual             := parts.virtualAxis,
+    physical            := parts.physicalAxis);
+
+
+_update();]]></ST>
+    </Implementation>
+    <Method Name="callOnce" Id="{0a9c05cc-c31d-4fbd-9c56-dfb1e8d24397}">
+      <Declaration><![CDATA[METHOD callOnce : BOOL
+VAR_INPUT
+    dcTime : LINT; 
+	targetPosDeg  : LREAL; // degrees
+	targetVeloDegPerSec : LREAL; // degrees/sec
+	targetAccDegPerSec2  : LREAL; // degrees/sec2
+    trackingStart : LREAL; // degrees
+END_VAR
+VAR_IN_OUT
+    isTracking : BOOL;
+END_VAR]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// run the setpoint generators
+_setGen( 
+    dcTime                      := dcTime,
+    tracking                    := isTracking,
+    virtual                     := parts.virtualAxis.axis_ref, 
+    physical                    := parts.physicalAxis.axis_ref, 
+    targetPos                   := targetPosDeg, 
+    targetVelo                  := targetVeloDegPerSec, 
+    targetAcc                   := targetAccDegPerSec2, 
+    trackingStart               := trackingStart,
+    velocityLimit               := config.velocityLimit,
+    accelerationLimit           := config.accelerationLimit,
+    minTrackingPositionSetpoint := config.minPositionSetpoint,
+    maxTrackingPositionSetpoint := config.maxPositionSetpoint,
+    minVirtualPositionSetpoint  := config.minPositionLimitVirtualAxis,
+    maxVirtualPositionSetpoint  := config.maxPositionLimitVirtualAxis,
+    limitReached                => setPosLimitReached);
+
+// calculate the average and RMS deviation
+_deviationCalculator(in := parts.physicalAxis.axis_ref.NcToPlc.ActPos - parts.physicalAxis.axis_ref.NcToPlc.SetPos );
+deviation1SecAverage(newDegreesValue := _deviationCalculator.avg);
+deviation1SecRMS(newDegreesValue := _deviationCalculator.rms);
+
+// keep a local copy of the isTracking variable
+_isTracking := isTracking;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_moveVelocity" Id="{1d10d64d-ec32-47a1-8cec-cb0dab1d1438}">
+      <Declaration><![CDATA[METHOD _moveVelocity
+VAR_INPUT
+END_VAR
+VAR
+    velocityDegPerSec : LREAL;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF processes.moveVelocity.isBusy() THEN
+    
+    IF NOT processes.moveVelocity.isStarted() THEN
+        
+        velocityDegPerSec := AxesMoveVelocityUnitsToDegPerSec(units := processes.moveVelocity.get.units, value := processes.moveVelocity.get.value);
+        
+        parts.virtualAxis.processes.moveVelocity.start(value := velocityDegPerSec);
+    
+        processes.moveVelocity.setStarted();
+            
+	END_IF
+
+    // update the statuses
+    processes.moveVelocity.statuses.busyStatus(isBusy := parts.virtualAxis.processes.moveVelocity.statuses.busyStatus.isBusy);
+    processes.moveVelocity.statuses.healthStatus(
+        isGood := parts.virtualAxis.processes.moveVelocity.statuses.healthStatus.isGood,
+        hasWarning := parts.virtualAxis.processes.moveVelocity.statuses.healthStatus.hasWarning);
+    processes.moveVelocity.setActualStatus(parts.virtualAxis.processes.moveVelocity.actualStatus);
+
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_update" Id="{39c53153-336e-418b-84fb-5ee9e3be934a}">
+      <Declaration><![CDATA[METHOD _update : LREAL
+VAR_INPUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// update the superclass
+SUPER^(
+    config := config,
+    driveChannel := driveChannel,
+    mainDriveChannel := mainDriveChannel);
+    
+// update the limit switches
+positiveLimitSwitchError := NOT GETBIT32(inVal32 := INT_TO_DWORD(driveChannel.digitalInputs), bitNo := config.positiveLimitSwitchInput);
+negativeLimitSwitchError := NOT GETBIT32(inVal32 := INT_TO_DWORD(driveChannel.digitalInputs), bitNo := config.negativeLimitSwitchInput);
+
+// update the actual position/velocity/acceleration
+actPos(newDegreesValue := parts.physicalAxis.axis_ref.NcToPlc.ActPos);
+actVelo(newDegreesPerSecondValue := parts.physicalAxis.axis_ref.NcToPlc.ActVelo);
+actAcc(newDegreesPerSquareSecondValue := parts.physicalAxis.axis_ref.NcToPlc.ActAcc);
+setPos(newDegreesValue := parts.physicalAxis.axis_ref.NcToPlc.SetPos);
+setVelo(newDegreesPerSecondValue := parts.physicalAxis.axis_ref.NcToPlc.SetVelo);
+setAcc(newDegreesPerSquareSecondValue := parts.physicalAxis.axis_ref.NcToPlc.SetAcc);
+IF parts.physicalAxis.axis_ref.Status.ExtSetPointGenEnabled THEN
+    targetPos(newDegreesValue := parts.physicalAxis.axis_ref.PlcToNc.ExtSetPos);
+    targetOffset(newDegreesValue := parts.virtualAxis.actPos.degrees.value - targetStart.degrees.value);
+ELSE
+    targetPos(newDegreesValue := parts.physicalAxis.axis_ref.NcToPlc.TargetPos);
+    targetOffset(newDegreesValue := 0.0);
+END_IF
+
+// update the actual torque feedback on the telescope side
+actTorque(newNewtonmeterValue := driveChannel.actualTorqueFeedback.newtonmeter.value * 1440);]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_moveRelative" Id="{b092a129-6f83-40ea-a684-8cb8c3af942b}">
+      <Declaration><![CDATA[METHOD _moveRelative
+VAR_INPUT
+END_VAR
+VAR
+    distanceDegrees : LREAL;
+END_VAR]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF processes.moveRelative.isBusy() THEN
+    
+    IF NOT processes.moveRelative.isStarted() THEN
+        
+        distanceDegrees := AxesMoveUnitsToDeg(units := processes.moveRelative.get.units, value := processes.moveRelative.get.value);
+        
+        parts.virtualAxis.processes.moveRelative.start(distance := distanceDegrees, maxVelocity := config.maxVelocitySetpoint);
+    
+        processes.moveRelative.setStarted();
+    ELSE
+        
+        // update the statuses
+        processes.moveRelative.statuses.healthStatus(
+            isGood := parts.virtualAxis.processes.moveRelative.statuses.healthStatus.isGood,
+            hasWarning := parts.virtualAxis.processes.moveRelative.statuses.healthStatus.hasWarning);
+        processes.moveRelative.setActualStatus(parts.virtualAxis.processes.moveRelative.actualStatus);
+        processes.moveRelative.statuses.busyStatus(isBusy := parts.virtualAxis.processes.moveRelative.statuses.busyStatus.isBusy);
+    
+	END_IF
+END_IF
+(*IF processes.moveRelative.isBusy() THEN
+    
+    IF NOT processes.moveRelative.isStarted() THEN
+        
+        distanceDegrees := AxesMoveUnitsToDeg(units := processes.moveRelative.get.units, value := processes.moveRelative.get.value);
+        
+        _moveRelativeCalculator(
+            distance     := distanceDegrees, 
+            trackingVelo := _setGen.targetVelo,
+            minPos       := config.minPositionLimitVirtualAxis,
+            maxPos       := config.maxPositionLimitVirtualAxis,
+            actPos       := actPos.degrees.value,
+            doMostTravel := processes.moveRelative.get.preferMostTravel);
+        
+        IF _moveRelativeCalculator.outOfRange THEN
+            processes.moveRelative.setFinished();
+            processes.moveRelative.setActualStatus('Out of limits!');
+            processes.moveRelative.setBad();
+        ELSE
+            parts.virtualAxis.processes.moveRelative.start(distance := _moveRelativeCalculator.adjustedDistance, maxVelocity := config.maxVelocitySetpoint);
+            processes.moveRelative.setStarted();
+        END_IF
+        
+    ELSE
+        // update the statuses
+        processes.moveRelative.statuses.busyStatus(isBusy := parts.virtualAxis.processes.moveRelative.statuses.busyStatus.isBusy);
+        processes.moveRelative.statuses.healthStatus(
+            isGood := parts.virtualAxis.processes.moveRelative.statuses.healthStatus.isGood,
+            hasWarning := parts.virtualAxis.processes.moveRelative.statuses.healthStatus.hasWarning);
+        processes.moveRelative.setActualStatus(parts.virtualAxis.processes.moveRelative.actualStatus);
+
+	END_IF
+
+END_IF*)]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_moveAbsolute" Id="{b10ff1ab-e219-479a-a809-2e4b91521eda}">
+      <Declaration><![CDATA[METHOD _moveAbsolute
+VAR_INPUT
+END_VAR
+VAR
+    positionDegrees : LREAL;
+END_VAR]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF processes.moveAbsolute.isBusy() THEN
+    
+    IF NOT processes.moveAbsolute.isStarted() THEN
+        
+        targetStart(newDegreesValue := AxesMoveUnitsToDeg(units := processes.moveAbsolute.get.units, value := processes.moveAbsolute.get.value));
+        
+        parts.virtualAxis.processes.moveAbsolute.start(position := targetStart.degrees.value + processes.moveAbsolute.get.offset, maxVelocity := config.maxVelocitySetpoint);
+
+        processes.moveAbsolute.setStarted();
+        
+    END_IF
+
+    IF parts.virtualAxis.processes.moveAbsolute.isIdle() THEN
+        
+        IF parts.virtualAxis.processes.moveAbsolute.isGood() THEN
+            processes.moveAbsolute.setGood();
+        ELSE
+            processes.moveAbsolute.setBad();
+		END_IF
+        
+        processes.moveAbsolute.setActualStatus(parts.virtualAxis.processes.moveAbsolute.actualStatus);
+        processes.moveAbsolute.setFinished();
+    
+	END_IF
+    
+END_IF
+(*IF processes.moveAbsolute.isBusy() THEN
+    
+    IF NOT processes.moveAbsolute.isStarted() THEN
+        
+        _moveAbsoluteCalculator(
+            targetPos := AxesMoveUnitsToDeg(units := processes.moveAbsolute.get.units, value := processes.moveAbsolute.get.value),
+            trackingVelo := _setGen.targetVelo,
+            minPos := config.minPositionLimitVirtualAxis,
+            maxPos := config.maxPositionLimitVirtualAxis,
+            actPos := parts.virtualAxis.actPos.degrees.value,
+            doMostTravel := FALSE); // get there the quickest possible
+        
+        IF _moveAbsoluteCalculator.outOfRange THEN
+            processes.moveAbsolute.setActualStatus('Out of limits!');
+            processes.moveAbsolute.setBad();
+            processes.moveAbsolute.setFinished();
+        ELSE
+            targetStart(newDegreesValue := _moveAbsoluteCalculator.adjustedPos);
+            parts.virtualAxis.processes.moveAbsolute.start(position := targetStart.degrees.value, maxVelocity := config.maxVelocitySetpoint);
+            processes.moveAbsolute.setStarted();
+		END_IF
+            
+    ELSE
+        // update the statuses
+        processes.moveAbsolute.statuses.busyStatus(isBusy := parts.virtualAxis.processes.moveAbsolute.statuses.busyStatus.isBusy);
+        processes.moveAbsolute.statuses.healthStatus(
+            isGood := parts.virtualAxis.processes.moveAbsolute.statuses.healthStatus.isGood,
+            hasWarning := parts.virtualAxis.processes.moveAbsolute.statuses.healthStatus.hasWarning);
+        processes.moveAbsolute.setActualStatus(parts.virtualAxis.processes.moveAbsolute.actualStatus);
+
+	END_IF
+
+END_IF*)]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_resetting" Id="{fe2fc48c-cb0f-491e-a09e-c16482534f12}">
+      <Declaration><![CDATA[METHOD _resetting : LREAL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF processes.reset.isBusy() THEN
+    
+    IF NOT processes.reset.isStarted() THEN
+        processes.reset._state := 0;
+        processes.reset.setStarted();
+	END_IF
+    
+    CASE processes.reset._state OF
+        0:
+            // reset all processes so that they are green again
+            processes.moveAbsolute.resetIfIdle();
+            processes.moveOutOfLimitSwitch.resetIfIdle();
+            processes.moveRelative.resetIfIdle();
+            processes.moveVelocity.resetIfIdle();
+            processes.powerOff.resetIfIdle();
+            processes.powerOn.resetIfIdle();
+            processes.quickStop.resetIfIdle();
+            processes.setPosition.resetIfIdle();
+            processes.stop.resetIfIdle();
+            
+            processes.reset.setActualStatus('Powering off the axis');
+            // power off the axis
+            processes.powerOff.start();
+            processes.reset._state := 1;
+        1:
+            IF processes.powerOff.isIdle() THEN
+                // regardless of whether power off worked or not, proceed    
+                processes.reset._state := 2;
+			END_IF
+        2:
+            // update the physical axis soft position limit values
+            parts.physicalAxis.processes.writeParameter.start(parameterNumber := MC_AxisParameter.AxisEncoderOffset, value := config.motorEncoderOffset);
+            processes.reset._state := 3;
+        3:
+            IF parts.physicalAxis.processes.writeParameter.isIdle() THEN
+                IF parts.physicalAxis.processes.writeParameter.isGood() THEN
+                    processes.reset._state := 4;
+                ELSE
+                    processes.reset.setActualStatus(CONCAT('Could not set the motor encoder offset: ', parts.physicalAxis.processes.writeParameter.actualStatus));
+                    processes.reset._state := 999;
+				END_IF
+			END_IF
+        4:
+            // update the physical axis soft position limit values
+            parts.physicalAxis.processes.writeParameter.start(parameterNumber := MC_AxisParameter.SWLimitNeg, value := config.minPositionLimitPhysicalAxis);
+            processes.reset._state := 5;
+        5:
+            IF parts.physicalAxis.processes.writeParameter.isIdle() THEN
+                IF parts.physicalAxis.processes.writeParameter.isGood() THEN
+                    processes.reset._state := 6;
+                ELSE
+                    processes.reset.setActualStatus(CONCAT('Could not set the physical SWLimitNeg: ', parts.physicalAxis.processes.writeParameter.actualStatus));
+                    processes.reset._state := 999;
+				END_IF
+			END_IF
+        6:
+            parts.physicalAxis.processes.writeParameter.start(parameterNumber := MC_AxisParameter.SWLimitPos, value := config.maxPositionLimitPhysicalAxis);
+            processes.reset._state := 7;
+        7:
+            IF parts.physicalAxis.processes.writeParameter.isIdle() THEN
+                IF parts.physicalAxis.processes.writeParameter.isGood() THEN
+                    processes.reset._state := 8;
+                ELSE
+                    processes.reset.setActualStatus(CONCAT('Could not set the physical SWLimitPos: ', parts.physicalAxis.processes.writeParameter.actualStatus));
+                    processes.reset._state := 999;
+				END_IF
+			END_IF
+        8:
+            parts.physicalAxis.processes.writeBoolParameter.start(parameterNumber := MC_AxisParameter.EnableLimitNeg, value := TRUE);
+            processes.reset._state := 9;
+        9:
+            IF parts.physicalAxis.processes.writeBoolParameter.isIdle() THEN
+                IF parts.physicalAxis.processes.writeBoolParameter.isGood() THEN
+                    processes.reset._state := 10;
+                ELSE
+                    processes.reset.setActualStatus(CONCAT('Could not set the physical EnableLimitNeg: ', parts.physicalAxis.processes.writeBoolParameter.actualStatus));
+                    processes.reset._state := 999;
+				END_IF
+			END_IF
+        10:
+            parts.physicalAxis.processes.writeBoolParameter.start(parameterNumber := MC_AxisParameter.EnableLimitPos, value := TRUE);
+            processes.reset._state := 11;
+        11:
+            IF parts.physicalAxis.processes.writeBoolParameter.isIdle() THEN
+                IF parts.physicalAxis.processes.writeBoolParameter.isGood() THEN
+                    processes.reset._state := 12;
+                ELSE
+                    processes.reset.setActualStatus(CONCAT('Could not set the physical EnableLimitPos: ', parts.physicalAxis.processes.writeBoolParameter.actualStatus));
+                    processes.reset._state := 999;
+				END_IF
+			END_IF
+        12:
+            // update the virtual axis soft position limit values
+            parts.virtualAxis.processes.writeParameter.start(parameterNumber := MC_AxisParameter.SWLimitNeg, value := config.minPositionLimitVirtualAxis);
+            processes.reset._state := 13;
+        13:
+            IF parts.virtualAxis.processes.writeParameter.isIdle() THEN
+                IF parts.virtualAxis.processes.writeParameter.isGood() THEN
+                    processes.reset._state := 14;
+                ELSE
+                    processes.reset.setActualStatus(CONCAT('Could not set the virtual SWLimitNeg: ', parts.virtualAxis.processes.writeParameter.actualStatus));
+                    processes.reset._state := 999;
+				END_IF
+			END_IF
+        14:
+            parts.virtualAxis.processes.writeParameter.start(parameterNumber := MC_AxisParameter.SWLimitPos, value := config.maxPositionLimitVirtualAxis);
+            processes.reset._state := 15;
+        15:
+            IF parts.virtualAxis.processes.writeParameter.isIdle() THEN
+                IF parts.virtualAxis.processes.writeParameter.isGood() THEN
+                    processes.reset._state := 16;
+                ELSE
+                    processes.reset.setActualStatus(CONCAT('Could not set the virtual SWLimitPos: ', parts.virtualAxis.processes.writeParameter.actualStatus));
+                    processes.reset._state := 999;
+				END_IF
+			END_IF
+        16:
+            parts.virtualAxis.processes.writeBoolParameter.start(parameterNumber := MC_AxisParameter.EnableLimitNeg, value := TRUE);
+            processes.reset._state := 17;
+        17:
+            IF parts.virtualAxis.processes.writeBoolParameter.isIdle() THEN
+                IF parts.virtualAxis.processes.writeBoolParameter.isGood() THEN
+                    processes.reset._state := 18;
+                ELSE
+                    processes.reset.setActualStatus(CONCAT('Could not set the virtual EnableLimitNeg: ', parts.virtualAxis.processes.writeBoolParameter.actualStatus));
+                    processes.reset._state := 999;
+				END_IF
+			END_IF
+        18:
+            parts.virtualAxis.processes.writeBoolParameter.start(parameterNumber := MC_AxisParameter.EnableLimitPos, value := TRUE);
+            processes.reset._state := 19;
+        19:
+            IF parts.virtualAxis.processes.writeBoolParameter.isIdle() THEN
+                IF parts.virtualAxis.processes.writeBoolParameter.isGood() THEN
+                    processes.reset._state := 20;
+                ELSE
+                    processes.reset.setActualStatus(CONCAT('Could not set the virtual EnableLimitPos: ', parts.virtualAxis.processes.writeBoolParameter.actualStatus));
+                    processes.reset._state := 999;
+				END_IF
+			END_IF
+            
+        20:
+            // try to acknowledge the safe state (if present)
+            processes.reset.setActualStatus('Resetting safety');
+            driveChannel.processes.acknowledgeSafetyError.start();
+            processes.reset._state := 21;
+        21:
+            IF driveChannel.processes.acknowledgeSafetyError.isIdle()  THEN
+                IF driveChannel.processes.acknowledgeSafetyError.isGood() THEN
+                    processes.reset._state := 22;
+                ELSE
+                    processes.reset.setActualStatus('Cannot get out of safe state!');
+                    processes.reset._state := 999;
+                END_IF
+            END_IF
+        22:
+            // reset the drive channel
+            processes.reset.setActualStatus('Resetting the drive channel');
+            driveChannel.processes.reset.start();
+            processes.reset._state := 23;
+        23:
+            IF driveChannel.processes.reset.isIdle()  THEN
+                IF driveChannel.processes.reset.isGood() THEN
+                    processes.reset._state := 24;
+                ELSE
+                    processes.reset.setActualStatus('Could not reset the drive channels!');
+                    processes.reset._state := 999;
+                END_IF
+            END_IF
+        24:
+            // update the drive channel
+            processes.reset.setActualStatus('Updating the drive channel');
+            driveChannel.processes.update.start();
+            processes.reset._state := 25;
+        25:
+            IF driveChannel.processes.update.isIdle() AND driveChannel.processes.update.isIdle() THEN
+                IF driveChannel.processes.update.isGood() AND driveChannel.processes.update.isGood() THEN
+                    processes.reset._state := 26;
+                ELSE
+                    processes.reset.setActualStatus('Could not update the drive channel!');
+                    processes.reset._state := 999;
+                END_IF
+            END_IF
+        26:
+            // reset the axis
+            processes.reset.setActualStatus('Resetting the axes');
+            parts.physicalAxis.processes.reset.start();
+            parts.virtualAxis.processes.reset.start();
+            processes.reset._state := 27;
+        27:
+            IF     parts.virtualAxis.processes.reset.isIdle() 
+               AND parts.physicalAxis.processes.reset.isIdle()  THEN
+                IF     parts.virtualAxis.processes.reset.isGood() 
+                   AND parts.physicalAxis.processes.reset.isGood()  THEN
+                    processes.reset._state := 1000;
+                ELSE
+                    processes.reset.setActualStatus('Could not reset the axes');
+                    processes.reset._state := 999;
+                END_IF
+            END_IF
+        999:
+            // error!
+            processes.reset.setBad();
+            processes.reset.setFinished();
+        1000:
+            processes.reset.setActualStatus('Reset');
+            // ok done
+            processes.reset.setFinished();
+            processes.reset.setGood();
+    END_CASE
+    
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+  </POU>
+</TcPlcObject>

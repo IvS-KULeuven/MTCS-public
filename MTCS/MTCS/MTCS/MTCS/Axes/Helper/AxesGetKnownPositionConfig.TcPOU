@@ -1,0 +1,58 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="AxesGetKnownPositionConfig" Id="{a24341c1-8977-4026-8eab-bd3bd4e52446}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION AxesGetKnownPositionConfig : AxesKnownPositionConfig
+VAR_INPUT
+    name : STRING;
+END_VAR
+VAR_IN_OUT
+    config : AxesKnownPositionsConfig;
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[IF name = config.position0.name THEN
+    AxesGetKnownPositionConfig :=  config.position0;
+ELSIF name = config.position1.name THEN
+    AxesGetKnownPositionConfig :=  config.position1;
+ELSIF name = config.position2.name THEN
+    AxesGetKnownPositionConfig :=  config.position2;
+ELSIF name = config.position3.name THEN
+    AxesGetKnownPositionConfig :=  config.position3;
+ELSIF name = config.position4.name THEN
+    AxesGetKnownPositionConfig :=  config.position4;
+ELSIF name = config.position5.name THEN
+    AxesGetKnownPositionConfig :=  config.position5;
+ELSIF name = config.position6.name THEN
+    AxesGetKnownPositionConfig :=  config.position6;
+ELSIF name = config.position7.name THEN
+    AxesGetKnownPositionConfig :=  config.position7;
+ELSIF name = config.position8.name THEN
+    AxesGetKnownPositionConfig :=  config.position8;
+ELSIF name = config.position9.name THEN
+    AxesGetKnownPositionConfig :=  config.position9;
+ELSIF name = config.position10.name THEN
+    AxesGetKnownPositionConfig :=  config.position10;
+ELSIF name = config.position11.name THEN
+    AxesGetKnownPositionConfig :=  config.position11;
+ELSIF name = config.position12.name THEN
+    AxesGetKnownPositionConfig :=  config.position12;
+ELSIF name = config.position13.name THEN
+    AxesGetKnownPositionConfig :=  config.position13;
+ELSIF name = config.position14.name THEN
+    AxesGetKnownPositionConfig :=  config.position14;
+ELSIF name = config.position15.name THEN
+    AxesGetKnownPositionConfig :=  config.position15;
+ELSIF name = config.position16.name THEN
+    AxesGetKnownPositionConfig :=  config.position16;
+ELSIF name = config.position17.name THEN
+    AxesGetKnownPositionConfig :=  config.position17;
+ELSIF name = config.position18.name THEN
+    AxesGetKnownPositionConfig :=  config.position18;
+ELSIF name = config.position19.name THEN
+    AxesGetKnownPositionConfig :=  config.position19;
+END_IF]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

@@ -1,0 +1,171 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="M1AxialSupport" Id="{6851c1b9-a2a1-4357-a271-37dd96b42c26}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK M1AxialSupport EXTENDS SM_M1AxialSupport
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR
+    _unlimitedAutoForceSetpointDaN : LREAL;
+    
+	_executeController : BOOL;
+    _ctrl_pi : FB_CTRL_PI;
+    _params  : ST_CTRL_PI_PARAMS;
+    
+    rawValueSum : LREAL;
+    rawValueCount : INT;
+    rawValueAverage : DINT;
+    
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[_update();
+
+// calculate the average force
+rawValueSum := 0.0;
+rawValueCount := 0;
+IF (NOT mirrorSouthForce.statuses.healthStatus.bad) AND mirrorSouthForce.statuses.enabledStatus.enabled THEN
+    rawValueSum := rawValueSum + DINT_TO_LREAL(mirrorSouthForce.rawValue);
+    rawValueCount := rawValueCount + 1;
+END_IF
+IF (NOT mirrorNorthEastForce.statuses.healthStatus.bad) AND mirrorNorthEastForce.statuses.enabledStatus.enabled THEN
+    rawValueSum := rawValueSum + DINT_TO_LREAL(mirrorNorthEastForce.rawValue);
+    rawValueCount := rawValueCount + 1;
+END_IF
+IF (NOT mirrorNorthWestForce.statuses.healthStatus.bad) AND mirrorNorthWestForce.statuses.enabledStatus.enabled THEN
+    rawValueSum := rawValueSum + DINT_TO_LREAL(mirrorNorthWestForce.rawValue);
+    rawValueCount := rawValueCount + 1;
+END_IF
+
+// watch for division by zero!
+IF rawValueCount = 0 THEN
+    rawValueAverage := 0;
+ELSE
+    rawValueAverage := LREAL_TO_DINT(rawValueSum / rawValueCount);
+END_IF
+
+mirrorAverageForce(
+    rawValue   := rawValueAverage,
+    error      := rawValueCount = 0,
+    underrange := FALSE,
+    overrange  := FALSE,
+    config     := config.mirrorAverageForce);
+
+// apply any method calls ("processes")
+_changePressureSetpointState();
+_changePressureSetpoint();
+
+
+// calculate the automatic force setpoint value in daN
+_unlimitedAutoForceSetpointDaN :=  390.0 // force applied by mirror in daN
+                                      * config.correctionCoefficient // not really needed, normally 1.0
+                                      //* SIN(inclinometer.averageElevation.radians.value)
+                                      * SIN(ABS(tubeAngle.radians.value))
+                                      / 18.0; // number of support pads
+
+// update the controller setpoint
+controllerSetpoint(newNewtonValue := _unlimitedAutoForceSetpointDaN * 10.0);
+
+// only call the _ctrl_pi FB once per task cycle (not once every time the M1AxialSupport FB is called)
+IF _executeController <> GLOBAL.config.PLC_TASK_FLIP THEN
+	_executeController := GLOBAL.config.PLC_TASK_FLIP;
+    
+    _params.tCtrlCycleTime    := GLOBAL.config.PLC_CTRL_TIME;
+    _params.tTaskCycleTime    := GLOBAL.config.PLC_TASK_TIME;
+    _params.bARWOnIPartOnly   := FALSE;
+    _params.fKp               := config.controllerKp; 
+    _params.tTn               := LREAL_TO_TIME(1000 * config.controllerTn); // 1000 for converting sec to msec
+    _params.fOutMaxLimit      := config.controllerLimitMax;
+    _params.fOutMinLimit      := config.controllerLimitMin;
+    
+    
+    // setpoint and actualValue are swapped for inverted action!
+    IF statuses.pressureSetpointStatus.auto THEN
+        _ctrl_pi(
+            fSetpointValue  := mirrorAverageForce.average.decaNewton.value,
+            fActualValue    := _unlimitedAutoForceSetpointDaN,
+            fManSyncValue   := 0.0,
+            bSync           := FALSE,
+            eMode           := E_CTRL_MODE.eCTRL_MODE_ACTIVE,
+            bHold           := FALSE,
+            stParams        := _params);
+    ELSIF statuses.pressureSetpointStatus.manual THEN
+        _ctrl_pi(
+            fSetpointValue  := mirrorAverageForce.average.decaNewton.value,
+            fActualValue    := _unlimitedAutoForceSetpointDaN,
+            fManSyncValue   := 0.0,
+            bSync           := FALSE,
+            eMode           := E_CTRL_MODE.eCTRL_MODE_RESET,
+            bHold           := FALSE,
+            stParams        := _params);
+    END_IF
+    
+    autoPressureSetpoint(newBarValue := _ctrl_pi.fOut);
+END_IF
+    
+IF statuses.pressureSetpointStatus.auto THEN
+    actualPressureSetpoint(newBarValue := autoPressureSetpoint.bar.value);
+    // also update the manualPressureSetpoint
+    manualPressureSetpoint(newBarValue := autoPressureSetpoint.bar.value);
+    actualStatus := 'Automatic setpoint';
+ELSIF statuses.pressureSetpointStatus.manual THEN
+    actualPressureSetpoint(newBarValue := manualPressureSetpoint.bar.value);
+    actualStatus := 'Fixed setpoint';
+END_IF
+
+// update the outputm, but be careful about division-by-zero!
+IF config.pressureRegulatorRange = 0 THEN
+    pressureSetpointOutput := 0;
+ELSE
+    pressureSetpointOutput := LREAL_TO_INT(
+                                MIN(actualPressureSetpoint.bar.value, config.controllerLimitMax) // [0..max] bar
+                                / config.pressureRegulatorRange // e.g. 10 bar
+                                * EXPT(2,15)); // 15 bits resolution
+END_IF
+
+_update();]]></ST>
+    </Implementation>
+    <Method Name="_changePressureSetpoint" Id="{08823ab3-121e-4cc0-8162-3d6f92142b57}">
+      <Declaration><![CDATA[METHOD _changePressureSetpoint
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF processes.changePressureSetpoint.statuses.busyStatus.busy THEN
+	processes.changePressureSetpoint.setStarted();
+    manualPressureSetpoint(newBarValue := processes.changePressureSetpoint.get.setpoint);
+	processes.changePressureSetpoint.setFinished();
+END_IF
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_update" Id="{485f0a48-36ce-458f-8d38-1808ce240c8f}">
+      <Declaration><![CDATA[METHOD _update
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[SUPER^(config 			:= config,
+	   inclinometer 	:= inclinometer,
+	   operatorStatus 	:= operatorStatus,
+	   operatingStatus 	:= operatingStatus,
+       tubeAngle        := tubeAngle);]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_changePressureSetpointState" Id="{6d2b52dc-5901-4950-b61a-83753bd81ee7}">
+      <Declaration><![CDATA[METHOD _changePressureSetpointState
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF SUPER^.processes.changePressureSetpointState.statuses.busyStatus.busy THEN
+	SUPER^.processes.changePressureSetpointState.setStarted();
+	SUPER^.statuses.pressureSetpointStatus(state := SUPER^.processes.changePressureSetpointState.get.state);
+	SUPER^.processes.changePressureSetpointState.setFinished();
+END_IF
+]]></ST>
+      </Implementation>
+    </Method>
+  </POU>
+</TcPlcObject>

@@ -1,0 +1,14 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="M3GotoProcedureStatuses" Id="{e37632e8-e2ec-46e7-842e-099267826865}">
+    <Declaration><![CDATA[TYPE M3GotoProcedureStatuses :
+STRUCT
+	///Is the M3GotoProcedure in a busy state?
+	busyStatus: BusyStatus;
+	///Is the M3GotoProcedure in a healthy state?
+	healthStatus: HealthStatus;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

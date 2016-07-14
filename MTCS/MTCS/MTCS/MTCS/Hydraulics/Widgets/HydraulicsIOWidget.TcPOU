@@ -1,0 +1,27 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.5">
+  <POU Name="HydraulicsIOWidget" Id="{9c5acdd9-bca2-4308-8047-33ed525157cc}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK HydraulicsIOWidget
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR
+	actualStatus : StatusWidget;
+	pumpsGroup : HydraulicsPumpsGroupIOWidget;
+    hydraulicsAndSafety : SafetyHydraulicsAndSafetyIOWidget;
+END_VAR
+VAR_IN_OUT
+	ref : HydraulicsIO;
+	ref_safetyIO : SafetyIO;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[actualStatus(text  := ref.actualStatus,
+             color := HealthToColor(ref.statuses.healthStatus));
+
+pumpsGroup(ref := ref.parts.pumpsGroup);
+hydraulicsAndSafety(ref := ref_safetyIO.parts.hydraulicsAndSafety);]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

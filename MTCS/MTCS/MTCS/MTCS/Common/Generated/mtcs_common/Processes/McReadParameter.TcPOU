@@ -1,0 +1,77 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="McReadParameter" Id="{00518d86-194a-4131-948b-b2a49a18d2c0}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK McReadParameter EXTENDS BaseMcProcess
+VAR_INPUT
+	///Value that was read
+	value: LREAL;
+	///Arguments to be set, before writing do_request TRUE
+	{attribute 'OPC.UA.DA' := '1'}
+	set: McReadParameterArgs;
+END_VAR
+VAR_OUTPUT
+	///Arguments in use by the process, if do_request was accepted
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	get: McReadParameterArgs;
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[IF do_request THEN
+    do_request_result := request( parameterNumber := set.parameterNumber );
+    do_request := FALSE;
+END_IF;
+SUPER^();
+]]></ST>
+    </Implementation>
+    <Method Name="start" Id="{7ac4731c-deb7-4957-a8f9-a67f7614000b}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD start
+VAR_INPUT
+	///Number of the parameter
+	parameterNumber: INT;
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[THIS^.get.parameterNumber := parameterNumber;
+THIS^.statuses.busyStatus( isBusy := TRUE );
+THIS^.statuses.healthStatus( isGood := TRUE );
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="request" Id="{ea289c80-6d2c-4688-bb78-e0d6fe2cb2a9}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD request : RequestResults
+VAR_INPUT
+	///Number of the parameter
+	parameterNumber: INT;
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF THIS^.statuses.enabledStatus.enabled THEN
+    THIS^.start( parameterNumber := parameterNumber );
+    request := RequestResults.ACCEPTED;
+ELSE
+    request := RequestResults.REJECTED;
+END_IF;
+]]></ST>
+      </Implementation>
+    </Method>
+  </POU>
+</TcPlcObject>

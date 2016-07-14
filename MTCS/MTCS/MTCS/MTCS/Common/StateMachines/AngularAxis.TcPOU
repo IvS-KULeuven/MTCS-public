@@ -1,0 +1,17 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.5">
+  <POU Name="AngularAxis" Id="{7cef5983-5996-4c32-8069-f3adb11c518d}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK AngularAxis EXTENDS SM_AngularAxis;
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR
+    _testVar : BOOL;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[SUPER^();]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

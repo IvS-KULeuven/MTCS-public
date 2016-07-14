@@ -1,0 +1,16 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="AxesMoveAbsoluteProcessArgs" Id="{c464bab8-7599-4314-b1be-e9bfc2d6b463}">
+    <Declaration><![CDATA[TYPE AxesMoveAbsoluteProcessArgs :
+STRUCT
+	///Units of the 'value' argument (RADIANS, DEGREES, ARCSECONDS, ...)
+	units: AxesMoveUnits;
+	///Move the axis to this value (which units depends on the 'units' argument) + the optional offset
+	value: LREAL;
+	///Optional extra offset (which will not be added to the 'startPos'
+	offset: LREAL;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

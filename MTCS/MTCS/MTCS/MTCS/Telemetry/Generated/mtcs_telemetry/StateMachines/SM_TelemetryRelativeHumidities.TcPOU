@@ -1,0 +1,40 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="SM_TelemetryRelativeHumidities" Id="{5d824794-8af6-4e84-a5e6-8c9ca00dafdf}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK SM_TelemetryRelativeHumidities
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+	///Current status description
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	actualStatus: STRING;
+	///Relative humidity of the air at the top of the tube
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	topAir: RelativeHumidityMeasurement;
+	///Relative humidity of the air inside the tube
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	insideTube: RelativeHumidityMeasurement;
+	///Statuses of the state machine
+	statuses: TelemetryRelativeHumiditiesStatuses;
+END_VAR
+VAR_IN_OUT
+	///Configuration of the relative humidities
+	{attribute 'OPC.UA.DA' := '0'}
+	config: TelemetryRelativeHumiditiesConfig;
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[topAir( config := config.topAir );
+insideTube( config := config.insideTube );
+statuses.healthStatus(
+    isGood := (topAir.statuses.healthStatus.isGood OR topAir.statuses.enabledStatus.disabled) AND (insideTube.statuses.healthStatus.isGood OR insideTube.statuses.enabledStatus.disabled),
+    hasWarning := topAir.statuses.healthStatus.hasWarning OR insideTube.statuses.healthStatus.hasWarning);
+]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

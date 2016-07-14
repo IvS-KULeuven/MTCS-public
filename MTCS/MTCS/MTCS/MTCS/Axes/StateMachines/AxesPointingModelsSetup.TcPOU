@@ -1,0 +1,176 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="AxesPointingModelsSetup" Id="{4e31e0d6-b349-42aa-b1b9-6fd1198963f9}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK AxesPointingModelsSetup EXTENDS SM_AxesPointingModelsSetup
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR
+	{attribute 'OPC.UA.DA' := '0'}
+    _onFirstStartCurrentAction : INT;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[SUPER^();
+
+_onFirstStart();]]></ST>
+    </Implementation>
+    <Method Name="FB_init" Id="{c6f34d6d-d874-45bc-9115-6b55e41331e2}">
+      <Declaration><![CDATA[METHOD FB_init : BOOL
+VAR_INPUT
+	bInitRetains : BOOL; // if TRUE, the retain variables are initialized (warm start / cold start)
+	bInCopyCode : BOOL;  // if TRUE, the instance afterwards gets moved into the copy code (online change)
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[parts.model0.parts.configManager.configure(
+    editableConfigAddress       := ADR(parts.model0.editableConfig),
+    activeConfigAddress         := ADR(parts.model0.config),
+    configLength                := SIZEOF(parts.model0.editableConfig),
+    editableConfigSymbolName    := CONCAT(CONCAT(GLOBAL.config.AXES_TPOINT_EDITABLE_CONFIG_SYMBOL_PREFIX, 'model0'), GLOBAL.config.AXES_TPOINT_EDITABLE_CONFIG_SYMBOL_SUFFIX),
+    activeConfigSymbolName      := CONCAT(CONCAT(GLOBAL.config.AXES_TPOINT_ACTIVE_CONFIG_SYMBOL_PREFIX, 'model0'), GLOBAL.config.AXES_TPOINT_ACTIVE_CONFIG_SYMBOL_SUFFIX),
+    configFilePath              := CONCAT(CONCAT(GLOBAL.config.AXES_TPOINT_CONFIG_FILE_PATH_PREFIX, 'model0'), GLOBAL.config.AXES_TPOINT_CONFIG_FILE_PATH_SUFFIX));
+    
+parts.model1.parts.configManager.configure(
+    editableConfigAddress       := ADR(parts.model1.editableConfig),
+    activeConfigAddress         := ADR(parts.model1.config),
+    configLength                := SIZEOF(parts.model1.editableConfig),
+    editableConfigSymbolName    := CONCAT(CONCAT(GLOBAL.config.AXES_TPOINT_EDITABLE_CONFIG_SYMBOL_PREFIX, 'model1'), GLOBAL.config.AXES_TPOINT_EDITABLE_CONFIG_SYMBOL_SUFFIX),
+    activeConfigSymbolName      := CONCAT(CONCAT(GLOBAL.config.AXES_TPOINT_ACTIVE_CONFIG_SYMBOL_PREFIX, 'model1'), GLOBAL.config.AXES_TPOINT_ACTIVE_CONFIG_SYMBOL_SUFFIX),
+    configFilePath              := CONCAT(CONCAT(GLOBAL.config.AXES_TPOINT_CONFIG_FILE_PATH_PREFIX, 'model1'), GLOBAL.config.AXES_TPOINT_CONFIG_FILE_PATH_SUFFIX));
+    
+parts.model2.parts.configManager.configure(
+    editableConfigAddress       := ADR(parts.model2.editableConfig),
+    activeConfigAddress         := ADR(parts.model2.config),
+    configLength                := SIZEOF(parts.model2.editableConfig),
+    editableConfigSymbolName    := CONCAT(CONCAT(GLOBAL.config.AXES_TPOINT_EDITABLE_CONFIG_SYMBOL_PREFIX, 'model2'), GLOBAL.config.AXES_TPOINT_EDITABLE_CONFIG_SYMBOL_SUFFIX),
+    activeConfigSymbolName      := CONCAT(CONCAT(GLOBAL.config.AXES_TPOINT_ACTIVE_CONFIG_SYMBOL_PREFIX, 'model2'), GLOBAL.config.AXES_TPOINT_ACTIVE_CONFIG_SYMBOL_SUFFIX),
+    configFilePath              := CONCAT(CONCAT(GLOBAL.config.AXES_TPOINT_CONFIG_FILE_PATH_PREFIX, 'model2'), GLOBAL.config.AXES_TPOINT_CONFIG_FILE_PATH_SUFFIX));
+parts.model3.parts.configManager.configure(
+    editableConfigAddress       := ADR(parts.model3.editableConfig),
+    activeConfigAddress         := ADR(parts.model3.config),
+    configLength                := SIZEOF(parts.model3.editableConfig),
+    editableConfigSymbolName    := CONCAT(CONCAT(GLOBAL.config.AXES_TPOINT_EDITABLE_CONFIG_SYMBOL_PREFIX, 'model3'), GLOBAL.config.AXES_TPOINT_EDITABLE_CONFIG_SYMBOL_SUFFIX),
+    activeConfigSymbolName      := CONCAT(CONCAT(GLOBAL.config.AXES_TPOINT_ACTIVE_CONFIG_SYMBOL_PREFIX, 'model3'), GLOBAL.config.AXES_TPOINT_ACTIVE_CONFIG_SYMBOL_SUFFIX),
+    configFilePath              := CONCAT(CONCAT(GLOBAL.config.AXES_TPOINT_CONFIG_FILE_PATH_PREFIX, 'model3'), GLOBAL.config.AXES_TPOINT_CONFIG_FILE_PATH_SUFFIX));
+parts.model4.parts.configManager.configure(
+    editableConfigAddress       := ADR(parts.model4.editableConfig),
+    activeConfigAddress         := ADR(parts.model4.config),
+    configLength                := SIZEOF(parts.model4.editableConfig),
+    editableConfigSymbolName    := CONCAT(CONCAT(GLOBAL.config.AXES_TPOINT_EDITABLE_CONFIG_SYMBOL_PREFIX, 'model4'), GLOBAL.config.AXES_TPOINT_EDITABLE_CONFIG_SYMBOL_SUFFIX),
+    activeConfigSymbolName      := CONCAT(CONCAT(GLOBAL.config.AXES_TPOINT_ACTIVE_CONFIG_SYMBOL_PREFIX, 'model4'), GLOBAL.config.AXES_TPOINT_ACTIVE_CONFIG_SYMBOL_SUFFIX),
+    configFilePath              := CONCAT(CONCAT(GLOBAL.config.AXES_TPOINT_CONFIG_FILE_PATH_PREFIX, 'model4'), GLOBAL.config.AXES_TPOINT_CONFIG_FILE_PATH_SUFFIX));
+parts.model5.parts.configManager.configure(
+    editableConfigAddress       := ADR(parts.model5.editableConfig),
+    activeConfigAddress         := ADR(parts.model5.config),
+    configLength                := SIZEOF(parts.model5.editableConfig),
+    editableConfigSymbolName    := CONCAT(CONCAT(GLOBAL.config.AXES_TPOINT_EDITABLE_CONFIG_SYMBOL_PREFIX, 'model5'), GLOBAL.config.AXES_TPOINT_EDITABLE_CONFIG_SYMBOL_SUFFIX),
+    activeConfigSymbolName      := CONCAT(CONCAT(GLOBAL.config.AXES_TPOINT_ACTIVE_CONFIG_SYMBOL_PREFIX, 'model5'), GLOBAL.config.AXES_TPOINT_ACTIVE_CONFIG_SYMBOL_SUFFIX),
+    configFilePath              := CONCAT(CONCAT(GLOBAL.config.AXES_TPOINT_CONFIG_FILE_PATH_PREFIX, 'model5'), GLOBAL.config.AXES_TPOINT_CONFIG_FILE_PATH_SUFFIX));
+parts.model6.parts.configManager.configure(
+    editableConfigAddress       := ADR(parts.model6.editableConfig),
+    activeConfigAddress         := ADR(parts.model6.config),
+    configLength                := SIZEOF(parts.model6.editableConfig),
+    editableConfigSymbolName    := CONCAT(CONCAT(GLOBAL.config.AXES_TPOINT_EDITABLE_CONFIG_SYMBOL_PREFIX, 'model6'), GLOBAL.config.AXES_TPOINT_EDITABLE_CONFIG_SYMBOL_SUFFIX),
+    activeConfigSymbolName      := CONCAT(CONCAT(GLOBAL.config.AXES_TPOINT_ACTIVE_CONFIG_SYMBOL_PREFIX, 'model6'), GLOBAL.config.AXES_TPOINT_ACTIVE_CONFIG_SYMBOL_SUFFIX),
+    configFilePath              := CONCAT(CONCAT(GLOBAL.config.AXES_TPOINT_CONFIG_FILE_PATH_PREFIX, 'model6'), GLOBAL.config.AXES_TPOINT_CONFIG_FILE_PATH_SUFFIX));
+parts.model7.parts.configManager.configure(
+    editableConfigAddress       := ADR(parts.model7.editableConfig),
+    activeConfigAddress         := ADR(parts.model7.config),
+    configLength                := SIZEOF(parts.model7.editableConfig),
+    editableConfigSymbolName    := CONCAT(CONCAT(GLOBAL.config.AXES_TPOINT_EDITABLE_CONFIG_SYMBOL_PREFIX, 'model7'), GLOBAL.config.AXES_TPOINT_EDITABLE_CONFIG_SYMBOL_SUFFIX),
+    activeConfigSymbolName      := CONCAT(CONCAT(GLOBAL.config.AXES_TPOINT_ACTIVE_CONFIG_SYMBOL_PREFIX, 'model7'), GLOBAL.config.AXES_TPOINT_ACTIVE_CONFIG_SYMBOL_SUFFIX),
+    configFilePath              := CONCAT(CONCAT(GLOBAL.config.AXES_TPOINT_CONFIG_FILE_PATH_PREFIX, 'model7'), GLOBAL.config.AXES_TPOINT_CONFIG_FILE_PATH_SUFFIX));
+parts.model8.parts.configManager.configure(
+    editableConfigAddress       := ADR(parts.model8.editableConfig),
+    activeConfigAddress         := ADR(parts.model8.config),
+    configLength                := SIZEOF(parts.model8.editableConfig),
+    editableConfigSymbolName    := CONCAT(CONCAT(GLOBAL.config.AXES_TPOINT_EDITABLE_CONFIG_SYMBOL_PREFIX, 'model8'), GLOBAL.config.AXES_TPOINT_EDITABLE_CONFIG_SYMBOL_SUFFIX),
+    activeConfigSymbolName      := CONCAT(CONCAT(GLOBAL.config.AXES_TPOINT_ACTIVE_CONFIG_SYMBOL_PREFIX, 'model8'), GLOBAL.config.AXES_TPOINT_ACTIVE_CONFIG_SYMBOL_SUFFIX),
+    configFilePath              := CONCAT(CONCAT(GLOBAL.config.AXES_TPOINT_CONFIG_FILE_PATH_PREFIX, 'model8'), GLOBAL.config.AXES_TPOINT_CONFIG_FILE_PATH_SUFFIX));
+parts.model9.parts.configManager.configure(
+    editableConfigAddress       := ADR(parts.model9.editableConfig),
+    activeConfigAddress         := ADR(parts.model9.config),
+    configLength                := SIZEOF(parts.model9.editableConfig),
+    editableConfigSymbolName    := CONCAT(CONCAT(GLOBAL.config.AXES_TPOINT_EDITABLE_CONFIG_SYMBOL_PREFIX, 'model9'), GLOBAL.config.AXES_TPOINT_EDITABLE_CONFIG_SYMBOL_SUFFIX),
+    activeConfigSymbolName      := CONCAT(CONCAT(GLOBAL.config.AXES_TPOINT_ACTIVE_CONFIG_SYMBOL_PREFIX, 'model9'), GLOBAL.config.AXES_TPOINT_ACTIVE_CONFIG_SYMBOL_SUFFIX),
+    configFilePath              := CONCAT(CONCAT(GLOBAL.config.AXES_TPOINT_CONFIG_FILE_PATH_PREFIX, 'model9'), GLOBAL.config.AXES_TPOINT_CONFIG_FILE_PATH_SUFFIX));
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_onFirstStart" Id="{cd723773-9b61-4bc0-b45e-1c0eca77e961}">
+      <Declaration><![CDATA[METHOD _onFirstStart
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[CASE _onFirstStartCurrentAction OF
+    0:
+        // start loading the config from XML file
+        parts.model0.parts.configManager.processes.load.start(parts.model0.parts.configManager.processes.load.set.filePath);
+        parts.model1.parts.configManager.processes.load.start(parts.model1.parts.configManager.processes.load.set.filePath);
+        parts.model2.parts.configManager.processes.load.start(parts.model2.parts.configManager.processes.load.set.filePath);
+        parts.model3.parts.configManager.processes.load.start(parts.model3.parts.configManager.processes.load.set.filePath);
+        parts.model4.parts.configManager.processes.load.start(parts.model4.parts.configManager.processes.load.set.filePath);
+        parts.model5.parts.configManager.processes.load.start(parts.model5.parts.configManager.processes.load.set.filePath);
+        parts.model6.parts.configManager.processes.load.start(parts.model6.parts.configManager.processes.load.set.filePath);
+        parts.model7.parts.configManager.processes.load.start(parts.model7.parts.configManager.processes.load.set.filePath);
+        parts.model8.parts.configManager.processes.load.start(parts.model8.parts.configManager.processes.load.set.filePath);
+        parts.model9.parts.configManager.processes.load.start(parts.model9.parts.configManager.processes.load.set.filePath);
+        _onFirstStartCurrentAction := 1;
+    1:
+        // wait until the config has been loaded
+        IF     parts.model0.parts.configManager.processes.load.statuses.busyStatus.idle
+           AND parts.model1.parts.configManager.processes.load.statuses.busyStatus.idle 
+           AND parts.model2.parts.configManager.processes.load.statuses.busyStatus.idle 
+           AND parts.model3.parts.configManager.processes.load.statuses.busyStatus.idle 
+           AND parts.model4.parts.configManager.processes.load.statuses.busyStatus.idle 
+           AND parts.model5.parts.configManager.processes.load.statuses.busyStatus.idle 
+           AND parts.model6.parts.configManager.processes.load.statuses.busyStatus.idle 
+           AND parts.model7.parts.configManager.processes.load.statuses.busyStatus.idle 
+           AND parts.model8.parts.configManager.processes.load.statuses.busyStatus.idle 
+           AND parts.model9.parts.configManager.processes.load.statuses.busyStatus.idle 
+        THEN
+            // some files may have failed to load, because not all models may be present
+            _onFirstStartCurrentAction := 2;
+        END_IF
+    2:
+        // now start activating the configs
+        parts.model0.parts.configManager.processes.activate.start();
+        parts.model1.parts.configManager.processes.activate.start();
+        parts.model2.parts.configManager.processes.activate.start();
+        parts.model3.parts.configManager.processes.activate.start();
+        parts.model4.parts.configManager.processes.activate.start();
+        parts.model5.parts.configManager.processes.activate.start();
+        parts.model6.parts.configManager.processes.activate.start();
+        parts.model7.parts.configManager.processes.activate.start();
+        parts.model8.parts.configManager.processes.activate.start();
+        parts.model9.parts.configManager.processes.activate.start();
+        _onFirstStartCurrentAction := 3;
+    3:
+        // wait until the configs have been activated
+        IF      parts.model0.parts.configManager.processes.activate.statuses.busyStatus.idle 
+            AND parts.model1.parts.configManager.processes.activate.statuses.busyStatus.idle 
+            AND parts.model2.parts.configManager.processes.activate.statuses.busyStatus.idle 
+            AND parts.model3.parts.configManager.processes.activate.statuses.busyStatus.idle 
+            AND parts.model4.parts.configManager.processes.activate.statuses.busyStatus.idle 
+            AND parts.model5.parts.configManager.processes.activate.statuses.busyStatus.idle 
+            AND parts.model6.parts.configManager.processes.activate.statuses.busyStatus.idle 
+            AND parts.model7.parts.configManager.processes.activate.statuses.busyStatus.idle 
+            AND parts.model8.parts.configManager.processes.activate.statuses.busyStatus.idle 
+            AND parts.model9.parts.configManager.processes.activate.statuses.busyStatus.idle 
+        THEN
+            _onFirstStartCurrentAction := 1000;
+        END_IF
+    999:
+        // error, but nothing we can do about it now!
+        ;
+    1000:
+        ; // nothing to do, done
+
+END_CASE]]></ST>
+      </Implementation>
+    </Method>
+  </POU>
+</TcPlcObject>

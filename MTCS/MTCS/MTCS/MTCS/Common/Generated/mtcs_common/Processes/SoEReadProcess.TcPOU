@@ -1,0 +1,94 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="SoEReadProcess" Id="{4b9c3e50-d521-4e2c-a362-770c985508e4}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK SoEReadProcess EXTENDS BaseProcess
+VAR_INPUT
+	///Value that has been read, if noOfBytes is 1
+	value1Byte: USINT;
+	///Value that has been read, if noOfBytes is 2
+	value2Bytes: UINT;
+	///Value that has been read, if noOfBytes is 4
+	value4Bytes: UDINT;
+	///ADS error ID 
+	adsErrorId: UINT;
+	///Sercos error ID 
+	sercosErrorId: UINT;
+	///Arguments to be set, before writing do_request TRUE
+	{attribute 'OPC.UA.DA' := '1'}
+	set: SoEReadProcessArgs;
+END_VAR
+VAR_OUTPUT
+	///Arguments in use by the process, if do_request was accepted
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	get: SoEReadProcessArgs;
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[IF do_request THEN
+    do_request_result := request(
+    index := set.index,
+    noOfBytes := set.noOfBytes);
+    do_request := FALSE;
+END_IF;
+SUPER^();
+]]></ST>
+    </Implementation>
+    <Method Name="start" Id="{4bdf06b6-ee11-4233-96b2-01ae37699f1b}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD start
+VAR_INPUT
+	///SDO Index
+	index: UINT;
+	///Number of bytes to be read
+	noOfBytes: UDINT;
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[THIS^.get.index := index;
+THIS^.get.noOfBytes := noOfBytes;
+THIS^.statuses.busyStatus( isBusy := TRUE );
+THIS^.statuses.healthStatus( isGood := TRUE );
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="request" Id="{ad949dd1-c6b7-4450-8f26-059c2644dd48}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD request : RequestResults
+VAR_INPUT
+	///SDO Index
+	index: UINT;
+	///Number of bytes to be read
+	noOfBytes: UDINT;
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF THIS^.statuses.enabledStatus.enabled THEN
+    THIS^.start(
+        index := index,
+        noOfBytes := noOfBytes);
+    request := RequestResults.ACCEPTED;
+ELSE
+    request := RequestResults.REJECTED;
+END_IF;
+]]></ST>
+      </Implementation>
+    </Method>
+  </POU>
+</TcPlcObject>

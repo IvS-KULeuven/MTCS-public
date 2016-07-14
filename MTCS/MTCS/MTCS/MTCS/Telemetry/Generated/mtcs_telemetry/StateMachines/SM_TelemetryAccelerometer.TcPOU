@@ -1,0 +1,88 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="SM_TelemetryAccelerometer" Id="{ac706936-ada0-4163-b973-af2d540d14be}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK SM_TelemetryAccelerometer
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+	///Current status description
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	actualStatus: STRING;
+	///+X1 (channel 1 of EP1816-3008)
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	X1plus: GForceMeasurement;
+	///+Y1 (channel 2 of EP1816-3008)
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	Y1plus: GForceMeasurement;
+	///-Z1 (channel 3 of EP1816-3008)
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	Z1minus: GForceMeasurement;
+	///+Y2 (channel 4 of EP1816-3008)
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	Y2plus: GForceMeasurement;
+	///-X2 (channel 5 of EP1816-3008)
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	X2minus: GForceMeasurement;
+	///-Z2 (channel 6 of EP1816-3008)
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	Z2minus: GForceMeasurement;
+	///Actual X angle
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	actualXAngle: AngularPosition;
+	///Actual Y angle
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	actualYAngle: AngularPosition;
+	///Average X angle
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	averageXAngle: AngularPosition;
+	///Average Y angle
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	averageYAngle: AngularPosition;
+	///Statuses of the state machine
+	statuses: TelemetryAccelerometerStatuses;
+END_VAR
+VAR_IN_OUT
+	///Reference to the config of the X angle (alarms in degrees)
+	{attribute 'OPC.UA.DA' := '0'}
+	xConfig: MeasurementConfig;
+	///Reference to the config of the Y angle (alarms in degrees)
+	{attribute 'OPC.UA.DA' := '0'}
+	yConfig: MeasurementConfig;
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[statuses.xEnabledStatus( isEnabled := xConfig.enabled );
+statuses.yEnabledStatus( isEnabled := yConfig.enabled );
+statuses.xHealthStatus(
+    superState := statuses.xEnabledStatus.enabled,
+    isGood := NOT(statuses.xAlarmStatus.hiHi OR statuses.xAlarmStatus.loLo),
+    hasWarning := statuses.xAlarmStatus.hi OR statuses.xAlarmStatus.lo);
+statuses.yHealthStatus(
+    superState := statuses.yEnabledStatus.enabled,
+    isGood := NOT(statuses.yAlarmStatus.hiHi OR statuses.yAlarmStatus.loLo),
+    hasWarning := statuses.yAlarmStatus.hi OR statuses.yAlarmStatus.lo);
+statuses.xAlarmStatus(
+    superState := statuses.xEnabledStatus.enabled,
+    config := xConfig.alarms,
+    value := averageXAngle.degrees.value);
+statuses.yAlarmStatus(
+    superState := statuses.yEnabledStatus.enabled,
+    config := yConfig.alarms,
+    value := averageYAngle.degrees.value);
+]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

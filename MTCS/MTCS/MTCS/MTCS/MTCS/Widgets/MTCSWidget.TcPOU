@@ -1,0 +1,120 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="MTCSWidget" Id="{8041c09a-46d1-4cd6-86d9-b85ff0a78365}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK MTCSWidget
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+    actualStatus : StatusWidget;
+    cover : CoverWidget;
+    m1 : M1Widget;
+    m2 : M2Widget;
+    m3 : M3Widget;
+    services : ServicesWidget;
+    telemetry : TelemetryWidget;
+    safety : SafetyWidget;
+    hydraulics : HydraulicsWidget;
+    axes : AxesWidget;
+    activeTab    : MTCSTabs;
+    
+    configManager               : ConfigManagerWidget;
+    configActiveTab             : INT;
+    configInstrumentsActiveTab  : INT;
+    
+    changeInstrumentDialog : MTCSChangeInstrumentDialogWidget;
+	changeInstrumentStatus : StatusWidget;
+END_VAR
+VAR_IN_OUT
+	ref : MTCS;
+END_VAR
+VAR
+	initializationStatus    : InitializationStatusWidget;
+    activityStatus          : ActivityStatusWidget;
+
+    hideDetails      : BOOL := TRUE;
+    button_home      : SystemButtonWidget('Home'       , MTCSTabs.HOME);
+    button_cover     : SystemButtonWidget('Cover'      , MTCSTabs.COVER);
+    button_m1        : SystemButtonWidget('M1'         , MTCSTabs.M1);
+    button_m2        : SystemButtonWidget('M2'         , MTCSTabs.M2);
+    button_m3        : SystemButtonWidget('M3'         , MTCSTabs.M3);
+    button_services  : SystemButtonWidget('Services'   , MTCSTabs.SERVICES);
+    button_telemetry : SystemButtonWidget('Telemetry'  , MTCSTabs.TELEMETRY);
+    button_hydraulics: SystemButtonWidget('Hydraulics' , MTCSTabs.HYDRAULICS);
+    button_safety    : SystemButtonWidget('Safety'     , MTCSTabs.SAFETY);
+    button_axes      : SystemButtonWidget('Axes'       , MTCSTabs.AXES);
+    
+    button_initialize : InitializeButtonWidget;
+    button_activity : ActivityButtonWidget;
+    
+    changeOperatorDialog : MTCSChangeOperatorDialogWidget;
+    blankScreen : MTCSBlankScreenWidget;
+    
+END_VAR]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[actualStatus(text  := ref.actualStatus,
+             color := MTCSToColor(healthStatus := ref.statuses.healthStatus,
+                                  busyStatus   := ref.statuses.busyStatus,
+                                  initializationStatus := ref.statuses.initializationStatus,
+                                  operatorStatus := ref.statuses.operatorStatus));
+
+initializationStatus(status := ref.statuses.initializationStatus);
+activityStatus(status := ref.statuses.activityStatus);
+
+cover(ref := ref.parts.cover);
+m1(ref := ref.parts.m1, ref_tubeAngleMeasurement := ref.parts.telemetry.parts.accelerometers.tube);
+m2(ref := ref.parts.m2, ref_io := ref.parts.m1.parts.io, ref_knownPositionsConfig := ref.parts.m3.config.knownPositions, ref_actualFocalStation := ref.parts.m3.actualKnownPositionID, ref_tech := ref.statuses.operatorStatus.tech);
+m3(m3 := ref.parts.m3);
+services(ref := ref.parts.services);
+telemetry(ref := ref.parts.telemetry);
+hydraulics(ref := ref.parts.hydraulics, ref_safetyIO := ref.parts.safety.parts.io);
+safety(ref := ref.parts.safety, ref_activityStatus := ref.statuses.activityStatus);
+axes(ref := ref.parts.axes, ref_operatorStatus := ref.statuses.operatorStatus);
+
+button_home(        activeTab := activeTab, color := actualStatus.color);
+button_cover(       activeTab := activeTab, color := cover.actualStatus.color);
+button_m1(          activeTab := activeTab, color := m1.actualStatus.color);
+button_m2(          activeTab := activeTab, color := m2.actualStatus.color);
+button_m3(          activeTab := activeTab, color := m3.actualStatus.color);
+button_services(    activeTab := activeTab, color := services.actualStatus.color);
+button_telemetry(   activeTab := activeTab, color := telemetry.actualStatus.color);
+button_hydraulics(  activeTab := activeTab, color := hydraulics.actualStatus.color);
+button_safety(      activeTab := activeTab, color := safety.actualStatus.color);
+button_axes(        activeTab := activeTab, color := axes.actualStatus.color);
+
+changeOperatorDialog(changeOperator       := mtcs.processes.changeOperator,
+                     verifyPassword       := mtcs.processes.verifyPassword, 
+                     operatorStatus       := mtcs.statuses.operatorStatus,
+                     passwordHealthStatus := mtcs.statuses.passwordHealthStatus); 
+                     
+                     
+button_initialize(
+    status  := ref.statuses.initializationStatus, 
+    process := ref.processes.initialize);
+button_activity(status := ref.statuses.activityStatus, goToSleep := ref.processes.goToSleep, wakeUp := ref.processes.wakeUp);
+blankScreen();
+
+configManager(mgr := ref.parts.configManager);
+
+changeInstrumentDialog(cfg := ref.config.instruments, process := ref.processes.changeInstrument);
+
+IF ref.processes.changeInstrument.isBusy() THEN
+    changeInstrumentStatus(text := ref.processes.changeInstrument.actualStatus,
+                           color := HealthBusyToColor(healthStatus := ref.processes.changeInstrument.statuses.healthStatus,
+                                                      busyStatus   := ref.processes.changeInstrument.statuses.busyStatus));   
+ELSIF ref.parts.m3.statuses.busyStatus.busy THEN
+    changeInstrumentStatus(text := 'M3 BUSY',
+                           color := HealthBusyToColor(healthStatus := ref.parts.m3.statuses.healthStatus,
+                                                      busyStatus   := ref.parts.m3.statuses.busyStatus));   
+ELSE
+    changeInstrumentStatus(text := ref.activeInstrumentName);
+    IF ref.isInstrumentActive THEN
+        changeInstrumentStatus.color.fg := Colors.BLACK;
+        changeInstrumentStatus.color.bg := Colors.GREEN;
+    ELSE
+        changeInstrumentStatus.color.fg := Colors.BLACK;
+        changeInstrumentStatus.color.bg := Colors.GRAY;
+	END_IF
+END_IF]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

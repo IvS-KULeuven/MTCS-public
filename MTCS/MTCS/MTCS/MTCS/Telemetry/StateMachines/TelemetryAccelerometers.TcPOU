@@ -1,0 +1,17 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.5">
+  <POU Name="TelemetryAccelerometers" Id="{1f63a301-8918-48e4-9095-5d77aea8bc8c}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK TelemetryAccelerometers EXTENDS SM_TelemetryAccelerometers
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR
+    _testVar_TelemetryDewpoints : BOOL;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[SUPER^(config := config);]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

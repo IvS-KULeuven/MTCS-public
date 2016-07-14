@@ -1,0 +1,44 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="ApertureStatus" Id="{f8965a4f-504b-45ec-bcb3-04abe16982ed}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK ApertureStatus
+VAR_INPUT
+	///Super state (TRUE if the super state is active, or if there is no super state)
+	superState: BOOL := TRUE;
+	///TRUE if the 'open' limit switch is active
+	isOpen: BOOL;
+	///TRUE if the 'open' limit switch is active
+	isClosed: BOOL;
+END_VAR
+VAR_OUTPUT
+	///The aperture is open
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	open: BOOL;
+	///The aperture is closed
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	closed: BOOL;
+	///The aperture is partially open
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	partiallyOpen: BOOL;
+	///The aperture status is undefined
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	undefined: BOOL;
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[open := (isOpen AND (NOT(isClosed))) AND superState;
+undefined := (isOpen AND isClosed) AND superState;
+partiallyOpen := (NOT(isOpen OR isClosed)) AND superState;
+closed := (isClosed AND (NOT(isOpen))) AND superState;
+]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

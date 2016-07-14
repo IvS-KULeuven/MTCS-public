@@ -1,0 +1,20 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="M1Parts" Id="{d8ebfb68-b63b-4f03-89cd-4394a0ef2ff2}">
+    <Declaration><![CDATA[TYPE M1Parts :
+STRUCT
+	///Inclinometer
+	inclinometer: M1Inclinometer;
+	///Radial support
+	radialSupport: M1RadialSupport;
+	///Axial support
+	axialSupport: M1AxialSupport;
+	///I/O modules
+	io: M1M2IO;
+	///The config manager (to load/save/activate configuration data)
+	configManager: ConfigManager;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

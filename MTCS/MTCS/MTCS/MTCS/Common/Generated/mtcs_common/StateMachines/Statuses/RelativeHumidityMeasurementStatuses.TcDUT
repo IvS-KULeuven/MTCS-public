@@ -1,0 +1,16 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="RelativeHumidityMeasurementStatuses" Id="{817c50be-7de5-4154-9f5a-4e9d5d49c1aa}">
+    <Declaration><![CDATA[TYPE RelativeHumidityMeasurementStatuses :
+STRUCT
+	///Is the relative humidity being measured?
+	enabledStatus: EnabledStatus;
+	///Is the measurement OK?
+	healthStatus: HealthStatus;
+	///Alarm status
+	alarmStatus: HiHiLoLoAlarmStatus;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

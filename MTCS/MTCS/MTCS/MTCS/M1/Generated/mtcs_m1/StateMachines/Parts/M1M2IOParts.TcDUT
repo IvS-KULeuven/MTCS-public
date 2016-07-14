@@ -1,0 +1,27 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="M1M2IOParts" Id="{f4482929-118e-4586-a593-0777b21e8609}">
+    <Declaration><![CDATA[TYPE M1M2IOParts :
+STRUCT
+	COU: EtherCatDevice;
+	AI1: EtherCatDevice;
+	AI2: EtherCatDevice;
+	AI3: EtherCatDevice;
+	AO1: EtherCatDevice;
+	DO1: EtherCatDevice;
+	RES1: EtherCatDevice;
+	RES2: EtherCatDevice;
+	RES3: EtherCatDevice;
+	PWR1: EtherCatDevice;
+	SSI1: EtherCatDevice;
+	AI4: EtherCatDevice;
+	INC1: EtherCatDevice;
+	P5V1: EtherCatDevice;
+	DO2: EtherCatDevice;
+	DO3: EtherCatDevice;
+	RE1: EtherCatDevice;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

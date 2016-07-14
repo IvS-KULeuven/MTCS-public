@@ -1,0 +1,27 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="M3RotateProcedureStates" Id="{a4a187be-ad60-4208-aacd-fcd6f8c26491}">
+    <Declaration><![CDATA[TYPE M3RotateProcedureStates :
+(
+	IDLE := 0,
+	ABORTED := 1,
+	PREPARE_PROCESS := 2,
+	DECOUPLING_AXES := 3,
+	ENABLING_AXES := 4,
+	UNDOING_OFFSET := 5,
+	COUPLING_AXES := 6,
+	BOTH_GOING_TO_TARGET_PLUS_OFFSET := 7,
+	DECOUPLING_AXES_AGAIN := 8,
+	MOVING_ABL_TO_FINAL_POSITION := 9,
+	DISABLING_ABL := 10,
+	MOVING_POS_TO_FINAL_POSITION := 11,
+	IMPROVING_POSITION := 12,
+	DISABLING_POS := 13,
+	ERROR := 14,
+	RESETTING := 15,
+	ABORTING := 16
+);
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

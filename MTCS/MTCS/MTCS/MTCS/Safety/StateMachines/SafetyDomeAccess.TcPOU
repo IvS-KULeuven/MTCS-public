@@ -1,0 +1,470 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.5">
+  <POU Name="SafetyDomeAccess" Id="{195dc3d4-00e5-4967-94b0-4f8dd4a07304}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK SafetyDomeAccess EXTENDS SM_SafetyDomeAccess
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR
+    _resetState : INT := 0;
+    _resetTon   : TON;
+    
+    _passwordVerifier : SafetyPasswordVerifier;
+    _bypassingTimer : TON;
+    _bypassingStartTime : LREAL;
+    
+    _unblockButtonEdge : R_TRIG;
+    _returnButtonEdge : R_TRIG;
+    _starKeyEdge : R_TRIG;
+    _starKeyEdgeTime : LREAL;
+    _buzzerAlerter : SafetyAlerter;
+    _telescopeStatusLedAlerter : SafetyAlerter;
+    _personHasEnteredLedAlerter : SafetyAlerter;
+    
+    _doorsHaveBeenOpenedDuringBypass : BOOL;
+    
+    _startedPlayingDisabledAlert : BOOL;
+    _allowByassingPermanently : BOOL;
+    
+    _doorsOpenedEdge : R_TRIG;
+    
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[_update();
+
+// check if the processes are activated
+_process_unblock();
+_process_bypass();
+_process_bypassPermanently();
+_process_stopBypassing();
+_process_reset();
+
+// check some rising edges
+_unblockButtonEdge(CLK := personHasLeftButtonPressed);
+_returnButtonEdge(CLK := returnButtonPressed);
+_starKeyEdge(CLK := keypadKeyStar);
+_doorsOpenedEdge(CLK := NOT(door1Closed AND door2Closed));
+
+// remember the time when the * key was pressed:
+IF _starKeyEdge.Q THEN
+    _starKeyEdgeTime := GLOBAL.config.TIME_NOW_MS;
+END_IF
+
+
+IF config.disabled THEN
+    
+    IF NOT _startedPlayingDisabledAlert THEN
+        _telescopeStatusLedAlerter.play(config.bypassedPermanentlyVisual);
+        _startedPlayingDisabledAlert := TRUE;
+	END_IF
+
+ELSE
+    // don't play the alert to show the disabled state
+    _startedPlayingDisabledAlert := FALSE;
+    
+    // check the password
+    _verifyBypassing();
+    
+    IF sensorsBeingBypassed THEN
+        
+        IF sensorsBypassedPermanently THEN
+            
+            ; // do nothing
+        
+        ELSE
+            // update the timer
+            _bypassingTimer(IN := TRUE, PT := LREAL_TO_TIME(config.bypassTimeAfterPassword * 1000));
+            
+            // find out if the * key is being pressed for 3 seconds
+            IF _starKeyEdgeTime > _bypassingStartTime AND keypadKeyStar AND (GLOBAL.config.TIME_NOW_MS - _starKeyEdgeTime > 3000) AND _allowByassingPermanently THEN
+                _startBypassingPermanently();
+			END_IF
+            
+            // set a flag in case the doors have been opened during the bypass
+            IF NOT (door1Closed AND door2Closed) THEN
+                _doorsHaveBeenOpenedDuringBypass := TRUE;
+            END_IF
+            
+            // if the timer has elapsed OR the doors have been opened and then closed again, then stop bypassing
+            IF _bypassingTimer.Q OR (_doorsHaveBeenOpenedDuringBypass AND door1Closed AND door2Closed) THEN
+                _stopBypassing();
+                // if one or more doors are still open, then we conclude that a person has entered
+                IF NOT (door1Closed AND door2Closed) THEN
+                    _personHasEntered();
+				END_IF
+            END_IF
+            
+            
+            
+        END_IF
+            
+        // stop bypassing if one presses the unblock button
+        IF _unblockButtonEdge.Q THEN
+            _stopBypassing();
+        END_IF
+        
+    ELSE
+        // we're NOT bypassing.
+        
+        // check if the door(s) is (are) open
+        IF door1Closed AND door2Closed THEN
+            
+            // if the return button is pressed, start bypassing temporarily *BUT* don't allow bypassing permanently!
+            IF _returnButtonEdge.Q AND NOT personHasEntered THEN
+                _startBypassingTemporarily(allowByassingPermanently := FALSE);
+			END_IF
+        END_IF
+        
+        IF _doorsOpenedEdge.Q THEN
+            // set the personHasEntered flag and play a sound if needed
+            IF NOT personHasEntered THEN
+                _personHasEntered();
+            ELSE
+                _buzzerAlerter.play(config := config.doorsOpenedWhenLeavingSound);
+                _telescopeStatusLedAlerter.stop();
+                _personHasEnteredLedAlerter.play(config := config.doorsOpenedVisual);
+            END_IF
+        END_IF
+    END_IF
+    
+    IF personHasEntered THEN
+        // when the doors are closed again, and the unblock button is pressed, then reset the doorsOpened flag
+        IF _unblockButtonEdge.Q THEN
+            _unblock();
+        END_IF
+    END_IF
+
+
+END_IF
+
+
+_buzzerAlerter();
+_telescopeStatusLedAlerter();
+_personHasEnteredLedAlerter();
+
+buzzerSounding :=    keypadKey1
+                  OR keypadKey2
+                  OR keypadKey3
+                  OR keypadKey4
+                  OR keypadKey5
+                  OR keypadKey6
+                  OR keypadKey7
+                  OR keypadKey8
+                  OR keypadKey9
+                  OR keypadKeyStar
+                  OR _buzzerAlerter.output;
+
+enteredLedOn   := _personHasEnteredLedAlerter.output;
+movingLedOn    := activityStatus.moving   OR _telescopeStatusLedAlerter.output;
+awakeLedOn     := activityStatus.awake    OR _telescopeStatusLedAlerter.output;
+sleepingLedOn  := activityStatus.sleeping OR _telescopeStatusLedAlerter.output;
+
+_update();
+]]></ST>
+    </Implementation>
+    <Method Name="_stopBypassing" Id="{09df5c10-70b8-4ca9-bd19-662b0fd011ac}">
+      <Declaration><![CDATA[METHOD _stopBypassing
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// reset all related flags
+sensorsBeingBypassed := FALSE;
+sensorsBypassedPermanently := FALSE;
+_doorsHaveBeenOpenedDuringBypass := FALSE;
+_startedPlayingDisabledAlert := FALSE;
+
+// stop the LED alerters
+_telescopeStatusLedAlerter.stop();
+_personHasEnteredLedAlerter.stop();
+
+// play a little sound
+IF door1Closed AND door2Closed THEN
+    _buzzerAlerter.play(config := config.leavingWhenDoorsClosedSound);
+ELSE
+    _buzzerAlerter.play(config := config.leavingWhenDoosOpenedSound);
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_unblock" Id="{0ff01948-95e2-4b53-81c5-9651796a632d}">
+      <Declaration><![CDATA[METHOD _unblock
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[
+
+IF sensorsBeingBypassed THEN
+    _stopBypassing();
+    
+ELSE
+    
+    IF door1Closed AND door2Closed THEN
+        // reset the personHasEntered flag and play an alert
+        personHasEntered := FALSE;
+        _buzzerAlerter.play(config := config.leavingWhenDoorsClosedSound);
+        _personHasEnteredLedAlerter.stop();
+        // turn off the lamps
+        parts.lampsRelay1.processes.setEnabled.start(enabled := FALSE);
+        parts.lampsRelay2.processes.setEnabled.start(enabled := FALSE);
+        parts.lampsRelay3.processes.setEnabled.start(enabled := FALSE);
+        parts.lampsRelay4.processes.setEnabled.start(enabled := FALSE);
+    ELSE
+        // just play an alert to warn that the doors are still open
+        _buzzerAlerter.play(config := config.leavingWhenDoosOpenedSound);
+    END_IF
+
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_personHasEntered" Id="{14869519-6aec-49bc-9fea-cab8f067aa72}">
+      <Declaration><![CDATA[METHOD _personHasEntered
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[personHasEntered := TRUE;
+// play alerts
+_buzzerAlerter.play(config := config.doorsOpenedWhenEnteringSound);
+_telescopeStatusLedAlerter.stop();
+_personHasEnteredLedAlerter.play(config := config.doorsOpenedVisual);
+// turn on the lamps
+parts.lampsRelay1.processes.setEnabled.start(enabled := TRUE);
+parts.lampsRelay2.processes.setEnabled.start(enabled := TRUE);
+parts.lampsRelay3.processes.setEnabled.start(enabled := TRUE);
+parts.lampsRelay4.processes.setEnabled.start(enabled := TRUE);]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_update" Id="{1f21b260-99a6-4a32-b753-a784bce35b52}">
+      <Declaration><![CDATA[METHOD _update
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[SUPER^(operatorStatus := operatorStatus, activityStatus := activityStatus, config := config);
+
+
+IF statuses.busyStatus.busy THEN
+    IF processes.reset.isBusy() THEN
+        actualStatus := 'Resetting...';
+    ELSE
+        actualStatus := 'BUSY';
+	END_IF
+ELSE
+    IF personHasEntered THEN
+        actualStatus := 'Person has entered';
+    ELSIF config.disabled THEN
+        actualStatus := 'Disabled';
+    ELSIF sensorsBeingBypassed THEN
+        actualStatus := 'Bypassing';
+    ELSIF sensorsBypassedPermanently THEN
+        actualStatus := 'Bypassed permanently';
+    ELSIF statuses.healthStatus.good THEN
+        actualStatus := 'No person in dome area';
+    ELSIF statuses.healthStatus.bad THEN
+        actualStatus := 'ERROR';
+    ELSIF statuses.healthStatus.warning THEN
+        actualStatus := 'WARNING';
+    ELSE
+        actualStatus := 'Unknown';
+    END_IF
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_verifyBypassing" Id="{352825e5-14a8-4e79-b746-b0d625e978e0}">
+      <Declaration><![CDATA[METHOD _verifyBypassing
+VAR_INPUT
+END_VAR
+VAR
+    signals : ARRAY[1..9] OF BOOL;
+END_VAR]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[signals[1] := keypadKey1;
+signals[2] := keypadKey2;
+signals[3] := keypadKey3;
+signals[4] := keypadKey4;
+signals[5] := keypadKey5;
+signals[6] := keypadKey6;
+signals[7] := keypadKey7;
+signals[8] := keypadKey8;
+signals[9] := keypadKey9;
+
+_passwordVerifier(signals := signals);
+
+IF _passwordVerifier.correctPasswordEntered THEN
+    
+    // reset the flag
+    _passwordVerifier.acknowledgeCorrectPasswordEntered();
+    
+    // start bypassing temporarily
+    _startBypassingTemporarily(allowByassingPermanently := TRUE);
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_process_bypassPermanently" Id="{40b89d07-b3a0-4ced-84bb-86500f984f21}">
+      <Declaration><![CDATA[METHOD _process_bypassPermanently
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF processes.bypassPermanently.statuses.busyStatus.busy THEN
+    _startBypassingPermanently();
+	// done
+	processes.bypassPermanently.setGood();
+	processes.bypassPermanently.setFinished();
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_process_reset" Id="{7f0b63f9-e066-413d-9478-b6754d91f158}">
+      <Declaration><![CDATA[METHOD _process_reset
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF processes.reset.statuses.busyStatus.busy THEN
+	
+    // do a 0 -> 1 -> 0 pulse at the errorAcknowledge output
+
+    CASE _resetState OF
+        0:
+            errorAcknowledge := FALSE;
+            _resetTon(IN := FALSE);
+            _resetTon(IN := TRUE, PT := T#100MS);
+            _resetState := 1;
+        1:
+            _resetTon(IN := TRUE);
+            IF _resetTon.Q THEN
+                _resetState := 2;
+			END_IF
+        2:
+            
+            errorAcknowledge := TRUE;
+            _resetTon(IN := FALSE);
+            _resetTon(IN := TRUE, PT := T#100MS);
+            _resetState := 3;
+        3:
+            _resetTon(IN := TRUE);
+            IF _resetTon.Q THEN
+                _resetState := 4;
+			END_IF
+        4:
+            errorAcknowledge := FALSE;
+            _resetState := 5;
+        5:
+            _resetTon(IN := FALSE);
+            _resetTon(IN := TRUE, PT := T#100MS);
+            _resetState := 6;
+        6:
+            _resetTon(IN := TRUE);
+            IF _resetTon.Q THEN
+                _resetState := 7;
+			END_IF
+        7:
+            errorAcknowledge := TRUE;
+            _resetTon(IN := FALSE);
+            _resetTon(IN := TRUE, PT := T#100MS);
+            _resetState := 8;
+        8:
+            _resetTon(IN := TRUE);
+            IF _resetTon.Q THEN
+                _resetState := 9;
+			END_IF
+        9:
+            IF groupComError OR groupFBError OR groupOutError THEN
+                processes.reset.setBad();
+                processes.reset.setFinished();
+            ELSE
+                processes.reset.setGood();
+                processes.reset.setFinished();
+			END_IF
+            _resetState := 0;
+    END_CASE 
+
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_startBypassingPermanently" Id="{85a19029-940a-4a50-8887-aee2c17afe10}">
+      <Declaration><![CDATA[METHOD _startBypassingPermanently
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[sensorsBeingBypassed := TRUE;
+sensorsBypassedPermanently := TRUE;
+
+// don't play any sound, only blink the LEDs
+_buzzerAlerter.stop();
+_telescopeStatusLedAlerter.play(config.bypassedPermanentlyVisual);
+_personHasEnteredLedAlerter.stop();]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_process_bypass" Id="{88d5c548-dd41-4cd7-b87d-debbc6259599}">
+      <Declaration><![CDATA[METHOD _process_bypass
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF processes.bypass.statuses.busyStatus.busy THEN
+    _startBypassingTemporarily(allowByassingPermanently := TRUE);
+	// done
+	processes.bypass.setGood();
+	processes.bypass.setFinished();
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_process_unblock" Id="{b29bc74c-b787-4e61-9004-051e9585afe1}">
+      <Declaration><![CDATA[METHOD _process_unblock
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF processes.personHasLeft.statuses.busyStatus.busy THEN
+    _unblock();
+	// done
+	processes.personHasLeft.setGood();
+	processes.personHasLeft.setFinished();
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_startBypassingTemporarily" Id="{b2af0a7f-44bc-4f10-b03f-729e252d8f68}">
+      <Declaration><![CDATA[METHOD _startBypassingTemporarily
+VAR_INPUT
+    allowByassingPermanently : BOOL;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// ok we're now bypassing the sensors
+sensorsBeingBypassed := TRUE;
+
+// set a flag to (dis)allow going from bypassing temporarily to bypassing permanently
+_allowByassingPermanently := allowByassingPermanently;
+
+// start playing the alert
+_buzzerAlerter.play(config := config.bypassingSound);
+_telescopeStatusLedAlerter.stop();
+_personHasEnteredLedAlerter.stop();
+
+// reset the timer and update some flags
+_bypassingTimer(IN := FALSE);
+_doorsHaveBeenOpenedDuringBypass := FALSE;
+_bypassingStartTime := GLOBAL.config.TIME_NOW_MS;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_process_stopBypassing" Id="{c832e567-f969-4a43-8907-fcde28b24651}">
+      <Declaration><![CDATA[METHOD _process_stopBypassing
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF processes.stopBypassing.statuses.busyStatus.busy THEN
+    _stopBypassing();
+	// done
+	processes.stopBypassing.setGood();
+	processes.stopBypassing.setFinished();
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+  </POU>
+</TcPlcObject>

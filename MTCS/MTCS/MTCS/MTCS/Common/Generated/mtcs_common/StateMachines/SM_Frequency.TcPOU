@@ -1,0 +1,32 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="SM_Frequency" Id="{65940737-94f8-4ec2-a9b4-0b63a335b055}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK SM_Frequency
+VAR_INPUT
+	///New frequency in Hz
+	{attribute 'OPC.UA.DA' := '0'}
+	newHertzValue: LREAL;
+END_VAR
+VAR_OUTPUT
+	///Current status description
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	actualStatus: STRING;
+	///Frequency in Hertz
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	hertz: QuantityValue;
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[hertz(
+    value := newHertzValue,
+    unit := Units.HERTZ);
+]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

@@ -1,0 +1,12 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="McPowerProcessArgs" Id="{3fb5e779-27ae-4358-9d21-012ac13e179d}">
+    <Declaration><![CDATA[TYPE McPowerProcessArgs :
+STRUCT
+	///Enable the power or not
+	enable: BOOL;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

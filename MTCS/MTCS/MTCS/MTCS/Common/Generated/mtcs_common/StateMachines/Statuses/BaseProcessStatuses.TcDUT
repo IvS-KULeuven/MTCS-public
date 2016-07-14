@@ -1,0 +1,18 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="BaseProcessStatuses" Id="{057a168b-7766-40e6-8ec1-ac7d4d7c03e8}">
+    <Declaration><![CDATA[TYPE BaseProcessStatuses :
+STRUCT
+	///Is the process enabled or not?
+	enabledStatus: EnabledStatus;
+	///Is the process busy or not?
+	busyStatus: BusyStatus;
+	///Is the process in a healthy state or not?
+	healthStatus: HealthStatus;
+	///Is the process started or not?
+	startedStatus: StartedStatus;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

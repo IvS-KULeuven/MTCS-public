@@ -1,0 +1,25 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.5">
+  <POU Name="AxesMuUnitsToDegPerYear" Id="{c48dc3f8-d507-4ee6-8038-f596f5b9b9a5}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION AxesMuUnitsToDegPerYear : LREAL
+VAR_INPUT
+    units : AxesMuUnits;
+    value : LREAL;
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[CASE units OF
+    AxesMuUnits.ARCSECONDS_PER_YEAR:
+        AxesMuUnitsToDegPerYear := ARCSEC_TO_DEG(value);
+    AxesMuUnits.MILLIARCSECONDS_PER_YEAR:
+        AxesMuUnitsToDegPerYear := MILLIARCSEC_TO_DEG(value);
+    AxesMuUnits.DEGREES_PER_YEAR:
+        AxesMuUnitsToDegPerYear := value;   
+    AxesMuUnits.RADIANS_PER_YEAR:
+        AxesMuUnitsToDegPerYear := RAD_TO_DEG(value);   
+END_CASE]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

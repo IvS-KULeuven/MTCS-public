@@ -1,0 +1,361 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="Cover" Id="{839c456c-6e67-4fce-bfa4-a103b5229510}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK Cover EXTENDS SM_Cover
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR
+    _initializingSubstate : INT := 0;
+    _onFirstStartCurrentAction : INT;
+    _onFirstStartTimer : TON;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[_update();
+
+_onFirstStart();
+_initializing();
+_locking();
+_unlocking();
+_changingOperatingState();
+_opening();
+_closing();
+_aborting();
+
+_update();]]></ST>
+    </Implementation>
+    <Method Name="FB_init" Id="{0d9471d9-f8e4-47b6-a780-415b932e7582}">
+      <Declaration><![CDATA[METHOD FB_init : BOOL
+VAR_INPUT
+	bInitRetains : BOOL; // if TRUE, the retain variables are initialized (warm start / cold start)
+	bInCopyCode : BOOL;  // if TRUE, the instance afterwards gets moved into the copy code (online change)
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[SUPER^.statuses.initializationStatus(state := InitializationStates.SHUTDOWN);
+
+config.top.name := 'TOP';
+config.bottom.name := 'BOTTOM';
+
+config.top.p1.name := 'TOP 1';
+config.top.p2.name := 'TOP 2';
+config.top.p3.name := 'TOP 3';
+config.top.p4.name := 'TOP 4';
+
+config.bottom.p1.name := 'BOTTOM 1';
+config.bottom.p2.name := 'BOTTOM 2';
+config.bottom.p3.name := 'BOTTOM 3';
+config.bottom.p4.name := 'BOTTOM 4';
+
+
+config.top.p1.offset := 0*90;
+config.top.p2.offset := 1*90;
+config.top.p3.offset := 2*90;
+config.top.p4.offset := 3*90;
+config.bottom.p1.offset := 45 + 0*90;
+config.bottom.p2.offset := 45 + 1*90;
+config.bottom.p3.offset := 45 + 2*90;
+config.bottom.p4.offset := 45 + 3*90;
+
+
+parts.configManager.configure(
+    editableConfigAddress       := ADR(editableConfig),
+    activeConfigAddress         := ADR(config),
+    configLength                := SIZEOF(editableConfig),
+    editableConfigSymbolName    := GLOBAL.config.COVER_EDITABLE_CONFIG_SYMBOL_NAME,
+    activeConfigSymbolName      := GLOBAL.config.COVER_ACTIVE_CONFIG_SYMBOL_NAME,
+    configFilePath              := GLOBAL.config.COVER_CONFIG_FILE_PATH);
+    ]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_update" Id="{11bccf9f-1c90-44a0-b9c0-df017f91da80}">
+      <Declaration><![CDATA[METHOD _update
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[SUPER^(operatorStatus := operatorStatus);
+
+IF statuses.initializationStatus.initialized THEN
+    IF statuses.healthStatus.bad THEN
+        actualStatus := 'ERROR';
+    ELSIF statuses.healthStatus.good OR statuses.healthStatus.warning THEN
+        IF statuses.operatingStatus.manual THEN
+            actualStatus := 'MANUAL';
+        ELSIF statuses.operatingStatus.auto THEN
+            IF statuses.busyStatus.busy THEN
+                IF parts.apertureProcedure.statuses.busyStatus.busy THEN
+                    IF parts.apertureProcedure.opening THEN
+                        actualStatus := 'Opening...';
+                    ELSIF parts.apertureProcedure.closing THEN
+                        actualStatus := 'Closing...';
+                    ELSE
+                        actualStatus := parts.apertureProcedure.actualStatus;
+					END_IF
+                ELSE
+                    actualStatus := 'BUSY';
+				END_IF
+            ELSIF statuses.busyStatus.idle THEN
+                IF statuses.apertureStatus.closed THEN
+                    actualStatus := 'Fully closed';
+                ELSIF statuses.apertureStatus.partiallyOpen THEN
+                    actualStatus := 'Partially open';
+                ELSIF statuses.apertureStatus.open THEN
+                    actualStatus := 'Fully open';
+                ELSIF statuses.apertureStatus.undefined THEN
+                    actualStatus := 'Undefined!';
+                ELSE
+                    actualStatus := 'UNKNOWN';
+				END_IF
+            ELSE
+                actualStatus := 'UNKNOWN';
+			END_IF
+        ELSE
+            actualStatus := 'UNKNOWN';
+		END_IF
+    ELSE
+        actualStatus := 'UNKNOWN';
+	END_IF
+ELSE
+    actualStatus := InitializationStatusToString(statuses.initializationStatus);
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_initializing" Id="{1f6d8719-e888-422e-8908-91facd49b7cc}">
+      <Declaration><![CDATA[METHOD _initializing
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF processes.initialize.statuses.busyStatus.busy THEN
+    
+    CASE _initializingSubstate OF
+        0:
+            // we're now initializing
+            statuses.initializationStatus(state := InitializationStates.INITIALIZING);
+            _initializingSubstate := 1;
+        1:
+            // start loading the config from XML file
+            parts.configManager.processes.load.start(parts.configManager.processes.load.set.filePath);
+            _initializingSubstate := 2;
+        2:
+            // wait until the config has been loaded
+            IF parts.configManager.processes.load.statuses.busyStatus.idle THEN
+                IF parts.configManager.processes.load.statuses.healthStatus.good THEN
+                    _initializingSubstate := 3;
+                ELSE
+                    _initializingSubstate := 999;
+                END_IF
+            END_IF
+        3:
+            // now start activating the config
+            parts.configManager.processes.activate.start();
+            _initializingSubstate := 4;
+        4:
+            // wait until the config has been activated
+            IF parts.configManager.processes.activate.statuses.busyStatus.idle THEN
+                IF parts.configManager.processes.activate.statuses.healthStatus.good THEN
+                    _initializingSubstate := 5;
+                ELSE
+                    _initializingSubstate := 999;
+                END_IF
+            END_IF
+        5:
+            processes.changeOperatingState.start(OperatingStates.AUTO);
+		    parts.top.processes.reset.start();
+		    parts.bottom.processes.reset.start();
+            _initializingSubstate := 6;
+        6:
+            IF      processes.changeOperatingState.isIdle()
+                AND parts.top.processes.reset.isIdle()
+                AND parts.bottom.processes.reset.isIdle()
+            THEN
+                IF      processes.changeOperatingState.isGood()
+                    AND parts.top.processes.reset.isGood()
+                    AND parts.bottom.processes.reset.isGood()
+                THEN
+                    _initializingSubstate := 7;
+                ELSE
+                    _initializingSubstate := 999; // error!
+				END_IF
+			END_IF
+        7:
+            IF parts.apertureProcedure.state = CoverApertureProcedureStates.ERROR THEN
+                processes.reset.start();
+                _initializingSubstate := 8;
+            ELSE
+                _initializingSubstate := 1000; // done!
+			END_IF
+        8:
+            IF processes.reset.isIdle() THEN
+                IF processes.reset.isGood() THEN
+                    _initializingSubstate := 1000; // done!
+                ELSE
+                    _initializingSubstate := 999; // error!
+				END_IF
+			END_IF
+        999:
+            // ERROR!
+			// we've finished initialization
+			statuses.initializationStatus(state := InitializationStates.INITIALIZING_FAILED);
+			// done
+			processes.initialize.setBad();
+			processes.initialize.setFinished();
+            _initializingSubstate := 0;
+        1000:
+            // Done, success
+			// we've finished initialization
+			statuses.initializationStatus(state := InitializationStates.INITIALIZED);
+			// done
+			processes.initialize.setGood();
+			processes.initialize.setFinished();
+            _initializingSubstate := 0;
+    END_CASE    
+
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_locking" Id="{2f2a9301-5b36-49fa-a22c-266c8f456490}">
+      <Declaration><![CDATA[METHOD _locking
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF processes.lock.statuses.busyStatus.busy THEN
+	statuses.initializationStatus(state := InitializationStates.LOCKED);
+	
+	// done
+	processes.lock.setGood();
+	processes.lock.setFinished();
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_onFirstStart" Id="{36ac6c9d-42de-453c-9f25-8516d9f4d910}">
+      <Declaration><![CDATA[METHOD _onFirstStart
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[CASE _onFirstStartCurrentAction OF
+    0:
+        // start loading the config from XML file
+        parts.configManager.processes.load.start(parts.configManager.processes.load.set.filePath);
+        _onFirstStartCurrentAction := 1;
+    1:
+        // wait until the config has been loaded
+        IF parts.configManager.processes.load.statuses.busyStatus.idle THEN
+            IF parts.configManager.processes.load.statuses.healthStatus.good THEN
+                _onFirstStartCurrentAction := 2;
+            ELSE
+                _onFirstStartCurrentAction := 999;
+            END_IF
+        END_IF
+    2:
+        // now start activating the config
+        parts.configManager.processes.activate.start();
+        _onFirstStartCurrentAction := 3;
+    3:
+        // wait until the config has been activated
+        IF parts.configManager.processes.activate.statuses.busyStatus.idle THEN
+            IF parts.configManager.processes.activate.statuses.healthStatus.good THEN
+                _onFirstStartCurrentAction := 4;
+            ELSE
+                _onFirstStartCurrentAction := 999;
+            END_IF
+        END_IF
+    4:
+        // nothing to do, done!
+        ;
+    999:
+        // error, but nothing we can do about it now!
+        ;
+
+END_CASE]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_opening" Id="{4b6df829-2ad1-49fe-be34-eaa4391f6a9b}">
+      <Declaration><![CDATA[{attribute 'object_name' := '_opening'}
+METHOD _opening
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF processes.open.isBusy() THEN
+	parts.apertureProcedure.startOpening();
+	processes.open.setFinished();
+END_IF
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_closing" Id="{86cabd99-27aa-47cc-84cd-fe3e72d8db55}">
+      <Declaration><![CDATA[METHOD _closing
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF processes.close.isBusy() THEN
+	parts.apertureProcedure.startClosing();
+    processes.close.setFinished();
+END_IF
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_aborting" Id="{ad800f93-67ec-4da4-9fbc-9549f61c1b7c}">
+      <Declaration><![CDATA[METHOD _aborting
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF processes.abort.isBusy() THEN
+	parts.apertureProcedure.abort();
+    processes.abort.setFinished();
+END_IF
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_resetting" Id="{cd9b095c-ecee-4f95-80b5-a607ebc6c8a6}">
+      <Declaration><![CDATA[METHOD _resetting
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF processes.reset.isBusy() THEN
+	parts.apertureProcedure.reset();
+    processes.reset.setFinished();
+END_IF
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_changingOperatingState" Id="{d3d081d0-a216-46b5-b5a5-63205df3b0ff}">
+      <Declaration><![CDATA[METHOD _changingOperatingState
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF SUPER^.processes.changeOperatingState.statuses.busyStatus.busy THEN
+	SUPER^.processes.changeOperatingState.setStarted();
+	SUPER^.statuses.operatingStatus(state := SUPER^.processes.changeOperatingState.get.state);
+	SUPER^.processes.changeOperatingState.setFinished();
+END_IF
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_unlocking" Id="{de6036cc-f7ee-408e-b824-4e6966b9bdb0}">
+      <Declaration><![CDATA[METHOD _unlocking
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF processes.unlock.statuses.busyStatus.busy THEN
+	statuses.initializationStatus(state := InitializationStates.INITIALIZED);
+	
+	// done
+	processes.unlock.setGood();
+	processes.unlock.setFinished();
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+  </POU>
+</TcPlcObject>

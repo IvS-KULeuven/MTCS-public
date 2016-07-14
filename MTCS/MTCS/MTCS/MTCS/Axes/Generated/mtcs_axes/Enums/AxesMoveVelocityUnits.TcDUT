@@ -1,0 +1,15 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="AxesMoveVelocityUnits" Id="{4329ac26-8138-45b0-9960-82b4c24a7db2}">
+    <Declaration><![CDATA[TYPE AxesMoveVelocityUnits :
+(
+	DEGREES_PER_SECOND := 0,
+	ARCSECONDS_PER_SECOND := 1,
+	RADIANS_PER_SECOND := 2,
+	ARCSECONDS_PER_MINUTE := 3,
+	ARCSECONDS_PER_HOUR := 4
+);
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

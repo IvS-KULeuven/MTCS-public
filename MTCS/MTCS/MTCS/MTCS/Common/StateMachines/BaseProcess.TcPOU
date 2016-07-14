@@ -1,0 +1,188 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="BaseProcess" Id="{e2ab5c41-31ef-48c8-b61a-d57074b4ff3e}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK BaseProcess EXTENDS SM_BaseProcess (* default process *)
+VAR_INPUT
+	_state : INT; // internal state, may or may not be used
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[// we make it easy for ourselves: every time the process is idle, we reset the startedStatus
+IF statuses.busyStatus.idle THEN
+	statuses.startedStatus(isStarted := FALSE);
+END_IF
+
+_update();]]></ST>
+    </Implementation>
+    <Method Name="isIdle" Id="{18d07c2c-58b4-4029-92b8-39a02fd85e95}">
+      <Declaration><![CDATA[METHOD isIdle : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[isIdle := statuses.busyStatus.idle;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_update" Id="{1f2a76d0-b3bd-4061-861d-bc473f71fdc1}">
+      <Declaration><![CDATA[METHOD _update
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[
+IF actualStatus = '' THEN
+    IF statuses.enabledStatus.disabled THEN
+        actualStatus := '';
+    ELSIF statuses.enabledStatus.enabled THEN
+        IF statuses.healthStatus.good THEN
+            IF statuses.busyStatus.busy THEN
+                actualStatus := 'Busy';
+            ELSIF statuses.busyStatus.idle THEN
+                actualStatus := 'Idle';
+            ELSE
+                actualStatus := 'Good but UNKNOWN';
+            END_IF
+        ELSIF statuses.healthStatus.bad THEN
+            IF statuses.busyStatus.busy THEN
+                actualStatus := 'Error (busy)';
+            ELSIF statuses.busyStatus.idle THEN
+                actualStatus := 'Error';
+            ELSE
+                actualStatus := 'Bad but UNKNOWN';
+            END_IF
+        END_IF
+    END_IF
+END_IF
+
+SUPER^();]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="setBad" Id="{4e820251-92ed-4334-82dd-5ee4c71a6c96}">
+      <Declaration><![CDATA[METHOD setBad
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[statuses.healthStatus(isGood := FALSE);]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="resetIfIdle" Id="{500f85e4-9a9f-4942-9eb7-489cf50c14c3}">
+      <Declaration><![CDATA[METHOD resetIfIdle
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF statuses.busyStatus.idle  THEN
+    
+    statuses.healthStatus(isGood := TRUE, hasWarning := FALSE);
+    setActualStatus('Idle');
+    setFinished();
+    
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="setBusy" Id="{66fc4e37-dbac-472c-af1b-eca343a03802}">
+      <Declaration><![CDATA[METHOD setBusy
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[statuses.busyStatus(isBusy := TRUE);]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="setFinished" Id="{957dff39-b430-4be5-85a8-d6ce9b506983}">
+      <Declaration><![CDATA[METHOD setFinished
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[statuses.busyStatus(isBusy := FALSE);
+statuses.startedStatus(isStarted := FALSE);]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="setStarted" Id="{96b5b580-871c-4d81-a317-6d80daeed38b}">
+      <Declaration><![CDATA[METHOD setStarted
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[statuses.startedStatus(isStarted := TRUE);]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="isBusy" Id="{9f1fadd6-1bcf-4c39-a6df-a6ce5df8af37}">
+      <Declaration><![CDATA[METHOD isBusy : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[isBusy := statuses.busyStatus.busy;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="setActualStatus" Id="{af70697a-5f0b-40a9-8564-ac4be8c0aa57}">
+      <Declaration><![CDATA[METHOD setActualStatus
+VAR_INPUT
+    msg : STRING;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[actualStatus := msg;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="reset" Id="{b7caaf6d-f58e-442f-9122-5f4f83cda7fa}">
+      <Declaration><![CDATA[METHOD reset
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[statuses.healthStatus(isGood := TRUE, hasWarning := FALSE);
+statuses.busyStatus(isBusy := FALSE);
+setActualStatus('Idle');
+setFinished();]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="setGood" Id="{c20e0cc3-4234-4706-bb57-b2ed40a729b8}">
+      <Declaration><![CDATA[METHOD setGood
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[statuses.healthStatus(isGood := TRUE);]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="isGood" Id="{d46318a2-0ede-4d9b-9421-53fa21752ea0}">
+      <Declaration><![CDATA[METHOD isGood : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[isGood := statuses.healthStatus.good;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="FB_init" Id="{d735d7c3-8cea-4285-bf52-ff51ef54a516}">
+      <Declaration><![CDATA[METHOD FB_init : BOOL
+VAR_INPUT
+	bInitRetains : BOOL; // if TRUE, the retain variables are initialized (warm start / cold start)
+	bInCopyCode : BOOL;  // if TRUE, the instance afterwards gets moved into the copy code (online change)
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[statuses.busyStatus(isBusy := FALSE);
+statuses.startedStatus(isStarted := FALSE);
+statuses.healthStatus(isGood := TRUE);]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="isStarted" Id="{ff10beff-1a82-4137-81fe-85f8ffdac9d6}">
+      <Declaration><![CDATA[METHOD isStarted : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[isStarted := statuses.startedStatus.started;]]></ST>
+      </Implementation>
+    </Method>
+  </POU>
+</TcPlcObject>

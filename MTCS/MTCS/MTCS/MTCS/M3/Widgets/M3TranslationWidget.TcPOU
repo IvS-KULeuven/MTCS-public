@@ -1,0 +1,72 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.2">
+  <POU Name="M3TranslationWidget" Id="{4e58f684-b539-4bcd-baba-c8b63dcecd24}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK M3TranslationWidget
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+    ref : M3Translation;
+    refCfg : M3TranslationConfig;
+END_VAR
+VAR
+    activeTab       : M3TranslationTabs := M3TranslationTabs.GENERAL;
+    button_general  : SubSubSystemButtonWidget('General' , M3TranslationTabs.GENERAL);
+    button_axis     : SubSubSystemButtonWidget('Axis'    , M3TranslationTabs.AXIS);
+    button_drive    : SubSubSystemButtonWidget('Drive'   , M3TranslationTabs.DRIVE);
+    
+    motorAxis : LinearAxisWidget;
+    motorDrive : FaulhaberDriveWidget;
+    actualStatus : StatusWidget;
+    gotoProcedureStatus : StatusWidget;
+    homingProcedureStatus : StatusWidget;
+    
+    
+    hide_nasmyth : BOOL;
+    hide_cassegrain : BOOL;
+    hide_half : BOOL;
+    hide_increasing : BOOL;
+    hide_decreasing : BOOL;
+    hide_nasmyth_increasing : BOOL;
+    hide_nasmyth_decreasing : BOOL;
+    hide_cassegrain_increasing : BOOL;
+    hide_cassegrain_decreasing : BOOL;
+    hide_half_increasing : BOOL;
+    hide_half_decreasing : BOOL;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[motorAxis(baseRef := ref.parts.motorAxis, ref := ref.parts.motorAxis);
+motorDrive(ref := ref.parts.motorDrive);
+
+button_general( color := actualStatus.color                 , activeTab := activeTab);
+button_axis(    color := motorAxis.base.actualStatus.color  , activeTab := activeTab);
+button_drive(   color := motorDrive.actualStatus.color      , activeTab := activeTab);
+
+actualStatus(text := ref.actualStatus,
+             color := HealthBusyToColor(healthStatus := ref.statuses.healthStatus, 
+                                        busyStatus   := ref.statuses.busyStatus));
+
+gotoProcedureStatus(text := ref.parts.gotoProcedure.actualStatus,
+                    color := HealthBusyToColor( healthStatus := ref.parts.gotoProcedure.statuses.healthStatus, 
+                                                busyStatus   := ref.parts.gotoProcedure.statuses.busyStatus));
+                 
+homingProcedureStatus(text := ref.parts.homingProcedure.actualStatus,
+                      color := HealthBusyToColor( healthStatus := ref.parts.homingProcedure.statuses.healthStatus, 
+                                                  busyStatus   := ref.parts.homingProcedure.statuses.busyStatus));
+                                
+hide_nasmyth                := ref.actualPosition.millimeters.value < refCfg.drawNasmythLimit;
+hide_cassegrain             := ref.actualPosition.millimeters.value > refCfg.drawCassegrainLimit;
+hide_half                   := NOT (hide_nasmyth AND hide_cassegrain);
+hide_increasing             := NOT ref.parts.motorAxis.statuses.motionStatus.forward;
+hide_decreasing             := NOT ref.parts.motorAxis.statuses.motionStatus.backward;
+hide_nasmyth_increasing     := hide_nasmyth OR hide_increasing;
+hide_nasmyth_decreasing     := hide_nasmyth OR hide_decreasing;
+hide_cassegrain_increasing  := hide_cassegrain OR hide_increasing;
+hide_cassegrain_decreasing  := hide_cassegrain OR hide_decreasing;
+hide_half_increasing        := hide_half OR hide_increasing;
+hide_half_decreasing        := hide_half OR hide_decreasing;]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

@@ -1,0 +1,22 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="HydraulicsProcesses" Id="{da2dc48a-f01c-46bb-92f4-a92aea896bd6}">
+    <Declaration><![CDATA[TYPE HydraulicsProcesses :
+STRUCT
+	///Start initializing
+	initialize: Process;
+	///Lock the system
+	lock: Process;
+	///Unlock the system
+	unlock: Process;
+	///Change the operating state (e.g. AUTO, MANUAL, ...)
+	changeOperatingState: ChangeOperatingStateProcess;
+	///Start up the pumps
+	startUpPumps: Process;
+	///Stop the pumps
+	stopPumps: Process;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

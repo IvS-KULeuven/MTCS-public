@@ -1,0 +1,12 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="McMoveVelocityProcessArgs" Id="{41b07af5-f2e2-4d99-86d6-a71f8dcd66fc}">
+    <Declaration><![CDATA[TYPE McMoveVelocityProcessArgs :
+STRUCT
+	///New velocity
+	value: LREAL;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

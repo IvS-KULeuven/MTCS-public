@@ -1,0 +1,23 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.2">
+  <POU Name="McProcessWidget" Id="{b2d965d3-26ff-4fb3-be75-7d0e3f452f93}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK McProcessWidget
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+    actualStatus : StatusWidget;
+END_VAR
+VAR_IN_OUT
+	process : BaseMcProcess;
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[actualStatus(text  := process.actualStatus,
+             color := HealthBusyToColor(healthStatus := process.statuses.healthStatus,
+                                        busyStatus   := process.statuses.busyStatus));
+]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

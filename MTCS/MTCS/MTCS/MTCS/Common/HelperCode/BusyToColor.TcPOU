@@ -1,0 +1,27 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.2">
+  <POU Name="BusyToColor" Id="{7a432385-c568-49ae-a4e6-11c0310d97d4}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION BusyToColor : StatusColor
+VAR_IN_OUT
+    busyStatus : BusyStatus;
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR
+END_VAR
+
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[IF busyStatus.idle THEN
+    BusyToColor.fg := Colors.BLACK;
+    BusyToColor.bg := Colors.GREEN;
+ELSIF busyStatus.busy THEN
+	BusyToColor.fg := Colors.WHITE;
+	BusyToColor.bg := Colors.BLUE;
+ELSE
+	BusyToColor.fg := Colors.BLACK;
+	BusyToColor.bg := Colors.GRAY;
+END_IF]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

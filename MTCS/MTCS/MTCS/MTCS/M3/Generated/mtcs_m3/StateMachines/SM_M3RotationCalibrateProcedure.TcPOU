@@ -1,0 +1,54 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="SM_M3RotationCalibrateProcedure" Id="{d9dddcf4-c3c9-4c02-b8b5-413d04097e14}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK SM_M3RotationCalibrateProcedure
+VAR_INPUT
+	///Current state of the 
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	state: M3CalibrateRotationProcedureStates;
+END_VAR
+VAR_OUTPUT
+	///Current status description
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	actualStatus: STRING;
+	///Statuses of the state machine
+	statuses: M3RotationCalibrateProcedureStatuses;
+END_VAR
+VAR_IN_OUT
+	{attribute 'OPC.UA.DA' := '0'}
+	config: M3RotationConfig;
+	{attribute 'OPC.UA.DA' := '0'}
+	positioningAxis: AngularAxis;
+	{attribute 'OPC.UA.DA' := '0'}
+	antiBacklashAxis: AngularAxis;
+	{attribute 'OPC.UA.DA' := '0'}
+	positioningDrive: FaulhaberDrive;
+	{attribute 'OPC.UA.DA' := '0'}
+	antiBacklashDrive: FaulhaberDrive;
+	{attribute 'OPC.UA.DA' := '0'}
+	positioningHallAxis: AngularAxis;
+	{attribute 'OPC.UA.DA' := '0'}
+	target: M3RotationTarget;
+	{attribute 'OPC.UA.DA' := '0'}
+	actualPosition: AngularPosition;
+	{attribute 'OPC.UA.DA' := '0'}
+	actualPositionError: AngularPosition;
+	{attribute 'OPC.UA.DA' := '0'}
+	actualOffset: AngularPosition;
+	{attribute 'OPC.UA.DA' := '0'}
+	actualOffsetError: AngularPosition;
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[statuses.busyStatus( isBusy := NOT((state = M3CalibrateRotationProcedureStates.IDLE) OR ((state = M3CalibrateRotationProcedureStates.ABORTED) OR (state = M3CalibrateRotationProcedureStates.ERROR))) );
+statuses.healthStatus(
+    isGood := NOT(state = M3CalibrateRotationProcedureStates.ERROR),
+    hasWarning := state = M3CalibrateRotationProcedureStates.ABORTED);
+]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

@@ -1,0 +1,13 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="AxesDialogRotUnits" Id="{2745120e-c200-43e7-8386-53240d826cf5}">
+    <Declaration><![CDATA[TYPE AxesDialogRotUnits :
+(
+	DIALOG_DMS := 0,
+    DIALOG_DEGREES := 1,
+    DIALOG_RADIANS := 2
+);
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

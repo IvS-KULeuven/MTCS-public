@@ -1,0 +1,15 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="HOUR_TO_DEG" Id="{f0500d32-5a74-4de0-b74c-06ec2f5d27c2}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION HOUR_TO_DEG : LREAL
+VAR_INPUT
+    hours : LREAL;
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[HOUR_TO_DEG := hours / 24.0 * 360.0;]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

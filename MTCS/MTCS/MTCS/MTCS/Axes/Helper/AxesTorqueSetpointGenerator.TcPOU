@@ -1,0 +1,142 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="AxesTorqueSetpointGenerator" Id="{975ce05c-3cec-45f6-b435-9802b93b8b87}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK AxesTorqueSetpointGenerator
+VAR_INPUT
+    ablMaxTorqueRiseSpeed : LREAL; // Nm/s
+    ablMaxTorqueFallSpeed : LREAL; // Nm/s
+    maxAccelerationSetpoint : LREAL; // degrees/sec^2
+    ablMaxTorque : LREAL; // Nm
+    ablMinTorque : LREAL; // Nm
+    ablZeroAccTorque : LREAL; // Nm
+    ablTorqueOutputOverride : LREAL; // fraction (not percent!)
+    aziAndAblSameDirection : BOOL;
+    ablPositiveTorque : BOOL;
+END_VAR
+VAR_OUTPUT
+    output : LREAL;
+END_VAR
+VAR_IN_OUT
+    physicalAxis : AngularAxis;
+    virtualAxis : AngularAxis;
+    ablAxis : AngularAxis;
+END_VAR
+VAR
+    previousTorqueSetpoint : LREAL;
+    
+    torqueSetpointUnlimited : LREAL;
+    torqueSetpointLimitedByMinMaxTorque : LREAL;
+    torqueSetpoint : LREAL;
+    
+    running : BOOL;
+    deltaTime : LREAL; // seconds
+    torqueChangeUnlimited : LREAL;
+    ZERO_TORQUE : LREAL := 0.0;
+    
+    aziAccelerationSign : INT;
+    torqueSign : INT;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[
+deltaTime := TIME_TO_LREAL(GLOBAL.config.PLC_FAST_TASK_TIME) / 1000.0;
+
+IF aziAndAblSameDirection THEN
+    aziAccelerationSign := 1;
+ELSE
+    aziAccelerationSign := -1;
+END_IF
+
+IF ablPositiveTorque THEN
+    torqueSign := 1;
+ELSE
+    torqueSign := -1;
+END_IF
+
+IF     (physicalAxis.axis_ref.NcToPlc.StateDWord.0 = TRUE) (* first bit = Operational *) 
+   AND (ablAxis.axis_ref.NcToPlc.StateDWord.0 = TRUE) (* first bit = Operational *)
+   AND running THEN
+    
+    // axis is operational!
+    
+    ablMaxTorqueRiseSpeed := ABS(ablMaxTorqueRiseSpeed);
+    ablMaxTorqueFallSpeed := ABS(ablMaxTorqueFallSpeed);
+    maxAccelerationSetpoint := ABS(maxAccelerationSetpoint);
+    
+    IF maxAccelerationSetpoint <> 0  THEN
+        
+        IF physicalAxis.axis_ref.NcToPlc.SetAcc > 0 THEN
+            // accelerating
+            torqueSetpointUnlimited := ablZeroAccTorque + aziAccelerationSign * ABS(  (ablMaxTorque - ablZeroAccTorque) * (physicalAxis.axis_ref.NcToPlc.SetAcc / maxAccelerationSetpoint)  );
+        ELSE
+            // decelerating
+            torqueSetpointUnlimited := ablZeroAccTorque - aziAccelerationSign * ABS(  (ablMinTorque - ablZeroAccTorque) * (physicalAxis.axis_ref.NcToPlc.SetAcc / maxAccelerationSetpoint)  );
+        END_IF
+    
+    END_IF
+    
+    
+    // limit by the min/max torque values
+    // ----------------------------------
+    IF torqueSetpointUnlimited > ablMaxTorque THEN
+        torqueSetpointLimitedByMinMaxTorque := ablMaxTorque;
+    ELSIF torqueSetpointUnlimited < ablMinTorque THEN
+        torqueSetpointLimitedByMinMaxTorque := ablMinTorque;
+    ELSE
+        torqueSetpointLimitedByMinMaxTorque := torqueSetpointUnlimited;
+    END_IF
+
+ELSE
+    
+    torqueSetpointUnlimited := ZERO_TORQUE;
+    torqueSetpointLimitedByMinMaxTorque := ZERO_TORQUE;
+
+END_IF
+
+// limit by the rate of torque change
+// ----------------------------------
+
+
+IF deltaTime <> 0 THEN
+    torqueChangeUnlimited := (torqueSetpointLimitedByMinMaxTorque - previousTorqueSetpoint) / deltaTime; // Nm/s on the telescope axis
+ELSE
+    torqueChangeUnlimited := 0.0; // ignore
+END_IF
+
+IF torqueChangeUnlimited > ablMaxTorqueRiseSpeed THEN
+    torqueSetpoint := previousTorqueSetpoint + ablMaxTorqueRiseSpeed * deltaTime;
+ELSIF torqueChangeUnlimited < - ablMaxTorqueFallSpeed THEN
+    torqueSetpoint := previousTorqueSetpoint - ablMaxTorqueFallSpeed * deltaTime;
+ELSE
+    torqueSetpoint := torqueSetpointLimitedByMinMaxTorque;
+END_IF
+
+// send the new setpoint to the drive
+// ----------------------------------
+output := torqueSetpoint * ablTorqueOutputOverride * torqueSign;
+
+
+// finally, update the previousTorqueSetpoint for the next cycle
+// -------------------------------------------------------------
+previousTorqueSetpoint := torqueSetpoint;]]></ST>
+    </Implementation>
+    <Method Name="start" Id="{804e9f44-1993-4b22-ab2b-fc54d31ef0d4}">
+      <Declaration><![CDATA[METHOD start
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[running := TRUE;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="stop" Id="{c3db0c6a-2fb2-40b1-9c7f-332ca6696e9e}">
+      <Declaration><![CDATA[METHOD stop
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[running := FALSE;]]></ST>
+      </Implementation>
+    </Method>
+  </POU>
+</TcPlcObject>

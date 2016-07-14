@@ -1,0 +1,87 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="AxesImageWidget" Id="{6966a500-ae05-4302-9eb0-00ee88fa218b}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK AxesImageWidget
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+    azi : LREAL;
+    ele : LREAL;
+    roc : LREAL;
+    ron : LREAL;
+    aziTopTubShown : INT;
+    aziTarget : LREAL;
+    eleTarget : LREAL;
+    rocTarget : LREAL;
+    ronTarget : LREAL;
+    aziTargetInvisible : BOOL;
+    eleTargetInvisible : BOOL;
+    rocTargetInvisible : BOOL;
+    ronTargetInvisible : BOOL;
+    ronName : STRING;
+    rocName : STRING;
+    rocStationName : STRING;
+    ronStationName : STRING;
+END_VAR
+VAR_IN_OUT
+	ref : Axes;
+END_VAR
+VAR
+    mark10Degrees : LREAL := 10; // used to make a 'mark' every 10 degrees on the graphical telescope image
+    
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[azi := ref.parts.azi.actPos.degrees.value;
+ele := ref.parts.ele.actPos.degrees.value - 90.0;
+roc := - (ref.parts.roc.actPos.degrees.value + ref.config.rocGuiAngle);
+ron := - (ref.parts.ron.actPos.degrees.value + ref.config.ronGuiAngle);
+aziTarget := ref.target.aziPos.degrees.value;
+eleTarget := ref.target.elePos.degrees.value - 90.0;
+rocTarget := ref.target.paPos.degrees.value * ref.config.rocPositionAngleSign;
+ronTarget := ref.target.paPos.degrees.value * ref.config.ronPositionAngleSign;
+rocName := ref.config.cassegrainRotatorName;
+ronName := ref.config.nasmythRotatorName;
+rocStationName := 'Cassegrain';
+ronStationName := 'Nasmyth';
+
+
+aziTargetInvisible := NOT(ref.target.isValid AND ref.target.isGiven);
+eleTargetInvisible := NOT(ref.target.isValid AND ref.target.isGiven);
+rocTargetInvisible := NOT(ref.target.isValid AND ref.target.isGiven);
+ronTargetInvisible := NOT(ref.target.isValid AND ref.target.isGiven);
+
+IF ref.parts.ele.actPos.degrees.value > 87 THEN
+    aziTopTubShown := 0;
+ELSIF ref.parts.ele.actPos.degrees.value > 84 THEN
+    aziTopTubShown := 1;
+ELSIF ref.parts.ele.actPos.degrees.value > 78 THEN
+    aziTopTubShown := 2;
+ELSIF ref.parts.ele.actPos.degrees.value > 72 THEN
+    aziTopTubShown := 3;
+ELSIF ref.parts.ele.actPos.degrees.value > 66 THEN
+    aziTopTubShown := 4;
+ELSIF ref.parts.ele.actPos.degrees.value > 60 THEN
+    aziTopTubShown := 5;
+ELSIF ref.parts.ele.actPos.degrees.value > 54 THEN
+    aziTopTubShown := 6;
+ELSIF ref.parts.ele.actPos.degrees.value > 48 THEN
+    aziTopTubShown := 7;
+ELSIF ref.parts.ele.actPos.degrees.value > 42 THEN
+    aziTopTubShown := 8;
+ELSIF ref.parts.ele.actPos.degrees.value > 35 THEN
+    aziTopTubShown := 9;
+ELSIF ref.parts.ele.actPos.degrees.value > 28 THEN
+    aziTopTubShown := 10;
+ELSIF ref.parts.ele.actPos.degrees.value > 22 THEN
+    aziTopTubShown := 11;
+ELSIF ref.parts.ele.actPos.degrees.value > 17 THEN
+    aziTopTubShown := 12;
+ELSIF ref.parts.ele.actPos.degrees.value > 12 THEN
+    aziTopTubShown := 13;
+ELSE
+    aziTopTubShown := 14;
+END_IF]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

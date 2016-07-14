@@ -1,0 +1,141 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="SM_AxesTarget" Id="{cdd21577-8507-45f8-9fe8-607a69ac5e38}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK SM_AxesTarget
+VAR_INPUT
+	///True if the target is given, false if not
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	isGiven: BOOL;
+	///True if the target is valid, false if not
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	isValid: BOOL;
+	///True if the target is too low to calculate, false if not
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	isTooLow: BOOL;
+	///The alpha coordinate (Right Ascention)
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	alpha: AngularPosition;
+	///The delta coordinate (Declination)
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	delta: AngularPosition;
+	///Right ascention proper motion, in arcseconds/year (not multiplied by cos(delta)!)
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	muAlpha: LREAL;
+	///Declination proper motion, in arcseconds/year
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	muDelta: LREAL;
+	///Object parallax, in arcseconds
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	parallax: LREAL;
+	///Object radial velocity, in km/s
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	radialVelocity: LREAL;
+	///Epoch, e.g. 2000.0
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	epoch: LREAL;
+	///Additional target velocity (e.g. for solar system objects) in alpha direction
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	alphaVelocity: AngularVelocity;
+	///Additional target velocity (e.g. for solar system objects) in delta direction
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	deltaVelocity: AngularVelocity;
+	///Alpha traveled so far due to the alphaVelocity
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	alphaTravelled: AngularPosition;
+	///Delta traveled so far due to the deltaVelocity
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	deltaTravelled: AngularPosition;
+	///Alpha offsetted so far due to the alphaOffset
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	alphaOffsetted: AngularPosition;
+	///Delta offsetted so far due to the deltaOffset
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	deltaOffsetted: AngularPosition;
+	///Original alpha without traveling (=alpha - alphaTraveled - alphaOffsetted)
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	alphaStart: AngularPosition;
+	///Original delta without traveling (=delta - deltaTraveled - deltaOffsetted)
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	deltaStart: AngularPosition;
+	///The azimuth target position, as calculated by SLALIB, corrected by the TPoint model
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	aziPos: AngularPosition;
+	///The azimuth target velocity, as calculated by SLALIB
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	aziVelo: AngularVelocity;
+	///The azimuth target acceleration, as calculated by SLALIB
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	aziAcc: AngularAcceleration;
+	///The elevation target position, as calculated by SLALIB, corrected by the TPoint model
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	elePos: AngularPosition;
+	///The elevation target velocity, as calculated by SLALIB
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	eleVelo: AngularVelocity;
+	///The elevation target acceleration, as calculated by SLALIB
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	eleAcc: AngularAcceleration;
+	///The position angle target position, as calculated by SLALIB, corrected by the TPoint model
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	paPos: AngularPosition;
+	///The position angle target velocity, as calculated by SLALIB
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	paVelo: AngularVelocity;
+	///The position angle target acceleration, as calculated by SLALIB
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	paAcc: AngularAcceleration;
+	///The azimuth pointing model offset calculated by the TPoint model
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	aziPointingModelOffset: AngularPosition;
+	///The elevation pointing model offset calculated by the TPoint model
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	elePointingModelOffset: AngularPosition;
+END_VAR
+VAR_OUTPUT
+	///Current status description
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	actualStatus: STRING;
+	///Statuses of the state machine
+	statuses: AxesTargetStatuses;
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[statuses.healthStatus( isGood := isValid OR (NOT(isGiven)) );
+]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

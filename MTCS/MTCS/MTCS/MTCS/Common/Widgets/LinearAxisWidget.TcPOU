@@ -1,0 +1,23 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.2">
+  <POU Name="LinearAxisWidget" Id="{7f0c20a6-8a2b-49c4-8db7-9f23c20ca525}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK LinearAxisWidget
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+    positionSymbol : STRING := 'mm';
+    velocitySymbol : STRING := 'mm/s';
+END_VAR
+VAR_IN_OUT
+    baseRef : LinearAxis;
+    ref : LinearAxis;
+END_VAR
+VAR
+    base : BaseAxisWidget;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[base(ref := baseRef);]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

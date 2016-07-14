@@ -1,0 +1,77 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.5">
+  <POU Name="AxesSetPositionHelper" Id="{b7201ab7-69be-4478-84a6-d8ab16b6ff88}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK AxesSetPositionHelper
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+    setpointGenerator : AxesExternalSetpointGenerator;
+    setPosition :  AxesSetpositionProcess;;
+    virtual : AngularAxis;
+    physical : AngularAxis;
+END_VAR
+VAR
+    _ton : TON;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[IF setPosition.isBusy() THEN
+    
+    IF NOT setPosition.isStarted() THEN
+        setPosition._state := 0;
+        setPosition.setStarted();
+	END_IF
+    
+    CASE setPosition._state OF
+        0:
+            setPosition.setActualStatus('Setting the position'); 
+            IF physical.axis_ref.Status.ExtSetPointGenEnabled THEN
+                setPosition.setActualStatus('Cannot set position if ExtSetGen is enabled!');
+                setPosition._state := 999;
+            ELSE
+                setPosition._state := 1;
+			END_IF
+        1:
+             // set the positions
+             virtual.processes.setPosition.start(value := setPosition.get.value);
+             physical.processes.setPosition.start(value := setPosition.get.value);
+             setpointGenerator.setPosition(setPosition.get.value);
+             // WARNING: even if setPosition becomes idle, then the ActPos of the axis is not adjusted yet for 2 cycles!
+             // So it takes some more cycles after setPosition, for the ActPos to become the new value
+             // Therefore, we wait a small time 
+             _ton(IN := FALSE);
+             _ton(IN := TRUE, PT := T#50MS);
+             setPosition._state := 2;
+        2:
+             _ton(IN := TRUE);
+             IF _ton.Q THEN
+                 // wait for the new positions to be set
+                 IF physical.processes.setPosition.isIdle() AND virtual.processes.setPosition.isIdle() THEN
+                     IF physical.processes.setPosition.isGood() AND virtual.processes.setPosition.isGood() THEN
+                        setPosition._state := 1000;
+                     ELSE
+                        setPosition.setActualStatus('Could not set physical and virtual position');
+                        setPosition._state := 999;
+                     END_IF
+                 END_IF
+			 END_IF
+        999:
+            // error!
+            // try to power off the motors
+            setPosition.setBad();
+            setPosition.setFinished();
+        1000:
+            // ok done
+            setPosition.setFinished();
+            setPosition.setGood();
+            setPosition.setActualStatus('Position was set');
+
+            
+    END_CASE
+    
+END_IF]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

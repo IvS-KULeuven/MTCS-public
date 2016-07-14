@@ -1,0 +1,18 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="M2MoveStepsProcessArgs" Id="{6a916efa-eff5-4179-8cbf-ae92d0ab1fbb}">
+    <Declaration><![CDATA[TYPE M2MoveStepsProcessArgs :
+STRUCT
+	///The axis to move
+	axis: M2Axes;
+	///Move a certain number of steps
+	steps: UDINT;
+	///True if the axis should be moved in CW (negative) direction
+	cw: BOOL;
+	///True if the axis should be moved fast (only used in case of Z-axis!)
+	fast: BOOL;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

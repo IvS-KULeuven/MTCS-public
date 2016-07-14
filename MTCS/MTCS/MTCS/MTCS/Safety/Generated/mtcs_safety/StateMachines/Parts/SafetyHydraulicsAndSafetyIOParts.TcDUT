@@ -1,0 +1,36 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="SafetyHydraulicsAndSafetyIOParts" Id="{ddc2d1bf-14d9-416a-8a68-c5d7d02a6f87}">
+    <Declaration><![CDATA[TYPE SafetyHydraulicsAndSafetyIOParts :
+STRUCT
+	///HS:COU (EK1101)
+	COU: EtherCatDevice;
+	///HS:DO1 (EL2008)
+	DO1: EtherCatDevice;
+	///HS:SI1 (EL1904)
+	SI1: EtherCatDevice;
+	///HS:SI2 (EL1904)
+	SI2: EtherCatDevice;
+	///HS:SI3 (EL1904)
+	SI3: EtherCatDevice;
+	///HS:SI4 (EL1904)
+	SI4: EtherCatDevice;
+	///HS:SL (EL6900)
+	SL: EtherCatDevice;
+	///HS:SO1 (EL2904)
+	SO1: EtherCatDevice;
+	///HS:AI1 (EL3102)
+	AI1: EtherCatDevice;
+	///HS:AI2 (EL3152)
+	AI2: EtherCatDevice;
+	///HS:RTD1 (EL3202-0010)
+	RTD1: EtherCatDevice;
+	///HS:PWR1 (EL9410)
+	PWR1: EtherCatDevice;
+	///HS:AO1 (EL4132)
+	AO1: EtherCatDevice;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

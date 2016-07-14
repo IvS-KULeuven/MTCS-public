@@ -1,0 +1,14 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="M3RotationGotoArgs" Id="{2c53ee27-50e4-42b1-ae27-2f5092bc2bbb}">
+    <Declaration><![CDATA[TYPE M3RotationGotoArgs :
+STRUCT
+	///Position setpoint of the rotation stage, in degrees
+	position: LREAL;
+	///Offset setpoint between the motors of the rotation stage, in degrees
+	offset: LREAL;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

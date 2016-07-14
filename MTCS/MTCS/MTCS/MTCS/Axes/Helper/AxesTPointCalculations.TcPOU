@@ -1,0 +1,215 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="AxesTPointCalculations" Id="{3c4c39a6-685e-4526-b3dd-848199f3e056}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK AxesTPointCalculations
+VAR_INPUT
+    azi : LREAL; // radians
+    ele : LREAL; // radians
+    active : BOOL; // TRUE if the model is active
+    
+    
+    aziSign : INT;
+    eleSign : INT;
+    deltaAziSign : INT;
+    deltaEleSign : INT;
+    oldFormulas : BOOL;
+    
+END_VAR
+VAR_OUTPUT
+    deltaAzi : LREAL; // arcseconds
+    deltaEle : LREAL; // arcseconds
+END_VAR
+VAR_IN_OUT
+    model : AxesPointingModelConfig;
+    
+    
+END_VAR
+VAR
+    A : LREAL;  // radians, according to TPOINT conventions: azimuth increases anticlockwise!
+    E : LREAL;  // radians, according to TPOINT conventions
+    
+    Z : LREAL;
+    cosA : LREAL;
+    cosE : LREAL;
+    sinA : LREAL;
+    sinE : LREAL;
+    tanE : LREAL;
+    secE : LREAL;
+    cotE : LREAL;
+    sinZ : LREAL;
+    tanZ : LREAL;
+    
+    offsetA : AxesPointingModelConfig;
+    offsetE : AxesPointingModelConfig;
+    
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[IF active THEN
+   
+    // convert azi en ele to TPOINT conventions
+    A := -azi * aziSign;
+    E := LIMIT(0.0873,  ele, 1.557) * eleSign; // limit the elevation between [1 and 89.2 degrees], so that the tanE does not go to INF
+    
+    // we say zenith distance (on sky) is approx. PI/2 - E (on mount)
+    Z := PI/2.0 - E;
+    
+    // pre-compute sin/cos/tan/...
+    cosA := COS(A);
+    cosE := COS(E);
+    sinA := SIN(A);
+    sinE := SIN(E);
+    tanE := TAN(E);
+    IF cosE <> 0.0 THEN // always watch for division by zero (crashes the PLC!)
+        secE := 1.0 / cosE;
+    ELSE
+        secE := 0.0;
+    END_IF
+    IF tanE <> 0.0 THEN // always watch for division by zero (crashes the PLC!)
+        cotE := 1.0 / tanE;
+    ELSE
+        cotE := 0.0;
+    END_IF
+    sinZ := SIN(Z);
+    tanZ := TAN(Z);
+    
+    IF oldFormulas THEN
+        // compute the offsets for each parameter
+        // ACEC
+        offsetA.ACEC := model.ACEC * cosA;
+        offsetE.ACEC := 0.0;
+        // ACES
+        offsetA.ACES := model.ACES * sinA;
+        offsetE.ACES := 0.0;
+        // AN
+        offsetA.AN   := model.AN * sinA * tanE;
+        offsetE.AN   := model.AN * cosA;
+        // AW
+        offsetA.AW   := - model.AW * cosA * tanE;
+        offsetE.AW   := model.AW * sinA;
+        // CA
+        offsetA.CA   := model.CA * secE;
+        offsetE.CA   := 0.0;
+        // ECEC
+        offsetA.ECEC := 0.0;
+        offsetE.ECEC := model.ECEC * cosE;
+        // ECES
+        offsetA.ECES := 0.0;
+        offsetE.ECES := model.ECES * sinE;
+        // IA
+        offsetA.IA   := model.IA;
+        offsetE.IA   := 0.0;
+        // IE
+        offsetA.IE   := 0.0;
+        offsetE.IE   := model.IE;
+        // NPAE
+        offsetA.NPAE := model.NPAE * tanE;
+        offsetE.NPAE := 0.0;
+        // NRX
+        offsetA.NRX  := model.NRX;
+        offsetE.NRX  := - model.NRX * sinE;
+        // NRY
+        offsetA.NRY  := model.NRY * tanE;
+        offsetE.NRY  := model.NRY * cosE;
+        // TF
+        offsetA.TF   := 0.0;
+        offsetE.TF   := - model.TF * cosE;
+        // TX
+        offsetA.TX   := 0.0;
+        offsetE.TX   := - model.TX * cotE;
+        // FLOP
+        offsetA.FLOP := 0.0;
+        offsetE.FLOP := -model.FLOP; // delta Z = -delta A
+        // POX and POY
+        // ????
+    ELSE
+        // compute the offsets for each parameter
+        // ACEC
+        offsetA.ACEC := model.ACEC * cosA;
+        offsetE.ACEC := 0.0;
+        // ACES
+        offsetA.ACES := -model.ACES * sinA;
+        offsetE.ACES := 0.0;
+        // AN
+        offsetA.AN   := -model.AN * sinA * tanE;
+        offsetE.AN   := -model.AN * cosA;
+        // AW
+        offsetA.AW   := - model.AW * cosA * tanE;
+        offsetE.AW   := model.AW * sinA;
+        // CA
+        offsetA.CA   := - model.CA * secE;
+        offsetE.CA   := 0.0;
+        // ECEC
+        offsetA.ECEC := 0.0;
+        offsetE.ECEC := model.ECEC * cosE;
+        // ECES
+        offsetA.ECES := 0.0;
+        offsetE.ECES := model.ECES * sinE;
+        // IA
+        offsetA.IA   := -model.IA;
+        offsetE.IA   := 0.0;
+        // IE
+        offsetA.IE   := 0.0;
+        offsetE.IE   := model.IE;
+        // NPAE
+        offsetA.NPAE := -model.NPAE * tanE;
+        offsetE.NPAE := 0.0;
+        // NRX
+        offsetA.NRX  := - model.NRX;
+        offsetE.NRX  := - model.NRX * sinE;
+        // NRY
+        offsetA.NRY  := - model.NRY * tanE;
+        offsetE.NRY  := model.NRY * cosE;
+        // TF
+        offsetA.TF   := 0.0;
+        offsetE.TF   := - model.TF * sinZ; // DeltaZ = + TF * sinZ
+        // TX
+        offsetA.TX   := 0.0;
+        offsetE.TX   := - model.TX * tanZ; // DeltaZ = + TX * tanZ
+        // FLOP
+        offsetA.FLOP := 0.0;
+        offsetE.FLOP := -model.FLOP; // delta Z = -delta A
+        // POX and POY
+        // ????
+	END_IF
+    
+    // convert offsets again from TPOINT conventions to standard conventions
+    deltaAzi := - sumOfOffset(offsetA) * deltaAziSign;
+    deltaEle := sumOfOffset(offsetE) * deltaEleSign;
+
+ELSE
+    
+    deltaAzi := 0.0;
+    deltaEle := 0.0;
+    
+END_IF
+]]></ST>
+    </Implementation>
+    <Method Name="sumOfOffset" Id="{22e23b50-f78b-4ba9-a044-a32105a5103a}">
+      <Declaration><![CDATA[METHOD sumOfOffset : LREAL
+VAR_INPUT
+END_VAR
+VAR_IN_OUT
+    offset : AxesPointingModelConfig;
+END_VAR]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[sumOfOffset :=    offset.ACEC 
+                + offset.ACES 
+                + offset.AN 
+                + offset.AW 
+                + offset.CA 
+                + offset.ECEC 
+                + offset.ECES 
+                + offset.IA 
+                + offset.IE 
+                + offset.NPAE 
+                + offset.NRX 
+                + offset.NRY 
+                + offset.TF 
+                + offset.TX
+                + offset.FLOP;
+]]></ST>
+      </Implementation>
+    </Method>
+  </POU>
+</TcPlcObject>

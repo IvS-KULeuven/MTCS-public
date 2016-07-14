@@ -1,0 +1,16 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="AxesIOParts" Id="{35bad0d6-c4b2-461a-94cd-1fa4616994f9}">
+    <Declaration><![CDATA[TYPE AxesIOParts :
+STRUCT
+	///The AX5000 drive for the AZI en ROC motors
+	aziDrive: AX52XXDrive;
+	///The AX5000 drive for the ABL en RON motors
+	ablDrive: AX52XXDrive;
+	///The AX5000 drive for the ELE en FW motors
+	eleDrive: AX52XXDrive;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

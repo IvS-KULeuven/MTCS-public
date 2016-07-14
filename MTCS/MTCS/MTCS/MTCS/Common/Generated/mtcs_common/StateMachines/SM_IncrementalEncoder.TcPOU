@@ -1,0 +1,138 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="SM_IncrementalEncoder" Id="{de637dc6-355c-4823-9384-8e676dbf272d}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK SM_IncrementalEncoder
+VAR_INPUT
+	///Is control enabled?
+	{attribute 'OPC.UA.DA' := '0'}
+	isEnabled: BOOL;
+	///Actual counter value
+	{attribute 'OPC.UA.DA' := '0'}
+	counterValue AT %I*: UDINT;
+	///Status
+	{attribute 'OPC.UA.DA' := '0'}
+	status AT %I*: UINT;
+	///Counter value to be set
+	{attribute 'OPC.UA.DA' := '0'}
+	setCounterValue AT %Q*: UDINT;
+	///Counter value to be set
+	{attribute 'OPC.UA.DA' := '0'}
+	setCounter AT %Q*: BOOL;
+	///Enable latch C
+	{attribute 'OPC.UA.DA' := '0'}
+	enableLatchC AT %Q*: BOOL;
+END_VAR
+VAR_OUTPUT
+	///Current status description
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	actualStatus: STRING;
+	///Bit 0: Latch C valid
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	latchCValid: BOOL;
+	///Bit 1: Latch extern valid
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	latchExternValid: BOOL;
+	///Bit 2: Set counter done
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	setCounterDone: BOOL;
+	///Bit 3: Counter undeflow
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	counterUnderflow: BOOL;
+	///Bit 4: Counter overflow
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	counterOverflow: BOOL;
+	///Bit 5: Status of input status
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	statusOfInputStatus: BOOL;
+	///Bit 6: Open circuit
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	openCircuit: BOOL;
+	///Bit 7: Extrapolation stall
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	extrapolationStall: BOOL;
+	///Bit 8: Status of input A
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	statusOfInputA: BOOL;
+	///Bit 9: Status of input B
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	statusOfInputB: BOOL;
+	///Bit 10: Status of input C
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	statusOfInputC: BOOL;
+	///Bit 11: Status of input gate
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	statusOfInputGate: BOOL;
+	///Bit 12: Status of external latch
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	statusOfExternLatch: BOOL;
+	///Bit 13: Sync error
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	syncError: BOOL;
+	///Statuses of the state machine
+	statuses: IncrementalEncoderStatuses;
+	///Processes of the state machine
+	processes: IncrementalEncoderProcesses;
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[statuses.healthStatus( isGood := NOT((NOT(statusOfInputStatus)) OR (openCircuit OR (extrapolationStall OR syncError))) );
+statuses.busyStatus( isBusy := processes.enableCounterResetC.statuses.busyStatus.busy OR processes.disableCounterResetC.statuses.busyStatus.busy );
+processes.enableCounterResetC( isEnabled := isEnabled );
+processes.disableCounterResetC( isEnabled := isEnabled );
+]]></ST>
+    </Implementation>
+    <Method Name="disableCounterResetC" Id="{399aa365-cbc5-4b63-9315-988d38381557}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD disableCounterResetC : RequestResults
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[disableCounterResetC := THIS^.processes.disableCounterResetC.request();
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="enableCounterResetC" Id="{d103663b-377a-48c0-8d34-1a75e649eaf3}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD enableCounterResetC : RequestResults
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[enableCounterResetC := THIS^.processes.enableCounterResetC.request();
+]]></ST>
+      </Implementation>
+    </Method>
+  </POU>
+</TcPlcObject>

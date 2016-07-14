@@ -1,0 +1,13 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.2">
+  <DUT Name="M3TranslationTabs" Id="{f5581506-5f87-4e47-a913-3eaa902eb916}">
+    <Declaration><![CDATA[TYPE M3TranslationTabs :
+(
+    GENERAL   := 0,
+	AXIS  := 1,
+	DRIVE := 2
+);
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

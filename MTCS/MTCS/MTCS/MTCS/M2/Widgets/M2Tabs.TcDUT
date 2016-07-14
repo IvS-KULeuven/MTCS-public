@@ -1,0 +1,15 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.5">
+  <DUT Name="M2Tabs" Id="{0ee6456e-6f84-44da-8594-994394862708}">
+    <Declaration><![CDATA[TYPE M2Tabs :
+(
+	OVERVIEW := 0,
+    AXES := 1,
+    TECHNICAL := 2,
+    IO := 3,
+    CONFIG := 4
+);
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

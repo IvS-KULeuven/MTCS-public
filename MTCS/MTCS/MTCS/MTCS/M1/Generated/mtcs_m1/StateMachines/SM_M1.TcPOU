@@ -1,0 +1,142 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="SM_M1" Id="{cf4d7acb-dc14-4424-ad19-5fca602f59ee}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK SM_M1
+VAR_INPUT
+	///Editable configuration of the M1 subsystem
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	editableConfig: M1Config;
+END_VAR
+VAR_OUTPUT
+	///Current status description
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	actualStatus: STRING;
+	///Active configuration of the M1 subsystem
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	config: M1Config;
+	///Pressure measurement of the pneumatic supply
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	pneumaticSupplyPressure: PressureMeasurement;
+	///Statuses of the state machine
+	statuses: M1Statuses;
+	///Parts of the state machine
+	parts: M1Parts;
+	///Processes of the state machine
+	processes: M1Processes;
+END_VAR
+VAR_IN_OUT
+	///Shared operator status
+	{attribute 'OPC.UA.DA' := '0'}
+	operatorStatus: OperatorStatus;
+	///Accelerometer box angle measurement
+	{attribute 'OPC.UA.DA' := '0'}
+	tubeAngleMeasurement: TelemetryAccelerometer;
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[pneumaticSupplyPressure(
+    config := config.pneumaticSupplyPressure,
+    conversionFactor := config.pneumaticSupplySensorFullScale / 32768.0);
+parts.inclinometer( config := config.inclinometerVoltage );
+parts.radialSupport(
+    config := config.radialSupport,
+    inclinometer := parts.inclinometer,
+    operatorStatus := operatorStatus,
+    operatingStatus := statuses.operatingStatus);
+parts.axialSupport(
+    config := config.axialSupport,
+    inclinometer := parts.inclinometer,
+    operatorStatus := operatorStatus,
+    operatingStatus := statuses.operatingStatus,
+    tubeAngle := tubeAngleMeasurement.averageYAngle);
+parts.io();
+parts.configManager( isEnabled := operatorStatus.tech );
+statuses.initializationStatus();
+statuses.healthStatus(
+    isGood := parts.radialSupport.statuses.healthStatus.isGood AND (parts.axialSupport.statuses.healthStatus.isGood AND (parts.io.statuses.healthStatus.isGood AND parts.configManager.statuses.healthStatus.isGood)),
+    hasWarning := parts.radialSupport.statuses.healthStatus.hasWarning OR (parts.axialSupport.statuses.healthStatus.hasWarning OR (parts.io.statuses.healthStatus.hasWarning OR parts.configManager.statuses.healthStatus.hasWarning)));
+statuses.busyStatus( isBusy := statuses.initializationStatus.initializing OR (parts.radialSupport.statuses.busyStatus.busy OR (parts.axialSupport.statuses.busyStatus.busy OR parts.configManager.statuses.busyStatus.busy)) );
+statuses.operatingStatus( superState := statuses.initializationStatus.initialized );
+processes.initialize( isEnabled := statuses.initializationStatus.shutdown OR (statuses.initializationStatus.initializingFailed OR statuses.initializationStatus.initialized) );
+processes.lock( isEnabled := operatorStatus.tech AND statuses.initializationStatus.initialized );
+processes.unlock( isEnabled := operatorStatus.tech AND statuses.initializationStatus.locked );
+processes.changeOperatingState( isEnabled := statuses.busyStatus.idle AND (statuses.initializationStatus.initialized AND operatorStatus.tech) );
+]]></ST>
+    </Implementation>
+    <Method Name="changeOperatingState" Id="{26392fa4-515d-4462-b4e5-b7e43e3d43ad}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD changeOperatingState : RequestResults
+VAR_INPUT
+	state: OperatingStates;
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[changeOperatingState := THIS^.processes.changeOperatingState.request( state := state );
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="unlock" Id="{76d0d16e-fa96-498c-b2fd-7b6a28a9b14c}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD unlock : RequestResults
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[unlock := THIS^.processes.unlock.request();
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="initialize" Id="{ae0a7c48-0003-4a3f-9d23-d6f7d7316082}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD initialize : RequestResults
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[initialize := THIS^.processes.initialize.request();
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="lock" Id="{b7072956-3d51-4fa2-9686-f9f4f9777fac}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD lock : RequestResults
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[lock := THIS^.processes.lock.request();
+]]></ST>
+      </Implementation>
+    </Method>
+  </POU>
+</TcPlcObject>

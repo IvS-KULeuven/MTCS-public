@@ -1,0 +1,34 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="AxesElevationAxisProcesses" Id="{2e35edb8-bad7-4283-9fb2-30ed4bd24042}">
+    <Declaration><![CDATA[TYPE AxesElevationAxisProcesses :
+STRUCT
+	///Move the axis in an absolute way
+	moveAbsolute: AxesMoveAbsoluteProcess;
+	///Move the axis relative to the current position
+	moveRelative: AxesMoveRelativeProcess;
+	///Move the axis endlessly with the given velocity
+	moveVelocity: AxesMoveVelocityProcess;
+	///Reset the axis (no homing)
+	reset: Process;
+	///Move out of a limit switch
+	moveOutOfLimitSwitch: AxesMoveOutOfLimitSwitchProcess;
+	///Power on the axis
+	powerOn: AxesPowerOnProcess;
+	///Power off the axis
+	powerOff: AxesPowerOffProcess;
+	///Do a homing of the axis
+	doHoming: AxesDoHomingProcess;
+	///Stop the axis (i.e. stop pointing, tracking, moving, ...)
+	stop: AxesStopProcess;
+	///Quickly stop the axes (i.e. stop pointing, tracking, moving, ...)
+	quickStop: AxesStopProcess;
+	///Set the axis to the given position
+	setPosition: AxesSetPositionProcess;
+	///Temporarily unlock the brake
+	unlockBrake: AxesUnlockBrakeProcess;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

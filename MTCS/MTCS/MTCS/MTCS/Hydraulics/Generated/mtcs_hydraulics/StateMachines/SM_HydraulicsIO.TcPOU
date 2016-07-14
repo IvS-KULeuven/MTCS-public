@@ -1,0 +1,33 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="SM_HydraulicsIO" Id="{af80b3f6-597e-4f90-b048-eb37b2d9b118}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK SM_HydraulicsIO
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+	///Current status description
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	actualStatus: STRING;
+	///Statuses of the state machine
+	statuses: HydraulicsIOStatuses;
+	///Parts of the state machine
+	parts: HydraulicsIOParts;
+END_VAR
+VAR_IN_OUT
+	///The safety I/O
+	{attribute 'OPC.UA.DA' := '0'}
+	safetyIO: SafetyIO;
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[parts.pumpsGroup();
+statuses.healthStatus(
+    isGood := safetyIO.statuses.healthStatus.isGood AND parts.pumpsGroup.statuses.healthStatus.isGood,
+    hasWarning := safetyIO.statuses.healthStatus.hasWarning OR parts.pumpsGroup.statuses.healthStatus.hasWarning);
+]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

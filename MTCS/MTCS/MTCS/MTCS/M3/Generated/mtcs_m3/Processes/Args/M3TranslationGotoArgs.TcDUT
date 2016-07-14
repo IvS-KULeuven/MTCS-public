@@ -1,0 +1,12 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="M3TranslationGotoArgs" Id="{ed933b0c-7fe5-4ce8-9aac-84c77088823e}">
+    <Declaration><![CDATA[TYPE M3TranslationGotoArgs :
+STRUCT
+	///Position setpoint of the translation stage, in millimeters
+	position: LREAL;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

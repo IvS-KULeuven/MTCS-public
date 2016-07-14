@@ -1,0 +1,12 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="ServicesTimingTimeSource" Id="{a00371b8-b877-4ef5-9933-fbc08121a9b9}">
+    <Declaration><![CDATA[TYPE ServicesTimingTimeSource :
+(
+	LOCAL_CLOCK := 0,
+	PTP_IEEE_1588 := 1
+);
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

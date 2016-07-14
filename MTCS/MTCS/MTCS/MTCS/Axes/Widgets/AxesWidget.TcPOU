@@ -1,0 +1,169 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="AxesWidget" Id="{ffe5ae2e-3202-4d64-85e9-9958e5fb32cd}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK AxesWidget
+VAR_INPUT
+    activeTab : AxesTabs := AxesTabs.OVERVIEW;
+    activeConfigTab : INT;
+    activeConfigPosition : INT;
+    
+END_VAR
+VAR_OUTPUT
+    configManager           : ConfigManagerWidget;
+	actualStatus            : StatusWidget;
+	initializationStatus    : InitializationStatusWidget;
+    isDerotatorActive : BOOL;
+    name : STRING := 'Axes';
+END_VAR
+VAR_IN_OUT
+	ref : Axes;
+    ref_operatorStatus : OperatorStatus;
+END_VAR
+VAR
+    axes : AxesAxesWidget;
+    tpoint : AxesPointingModelsSetupWidget;
+    io : AxesIOWidget;
+    image : AxesImageWidget;
+    target : AxesTargetWidget;
+    feedback : AxesFeedbackWidget;
+
+    manual : AxesManualWidget;
+    
+    button_initialize : InitializeButtonWidget;
+    button_operating  : OperatingButtonWidget;
+    button_locking    : LockingButtonWidget;
+    
+    button_overview         : SubSystemButtonWidget('Overview'	, AxesTabs.OVERVIEW);
+    button_manual           : SubSystemButtonWidget('Manual'    , Axestabs.MANUAL);
+    button_axes             : SubSystemButtonWidget('Axes'      , AxesTabs.AXES);
+    button_target           : SubSystemButtonWidget('Target'    , Axestabs.TARGET);
+    button_tpoint           : SubSystemButtonWidget('TPoint'  	, AxesTabs.TPOINT);
+    button_advanced         : SubSystemButtonWidget('Advanced'  , AxesTabs.ADVANCED);
+    button_io               : SubSystemButtonWidget('I/O'     	, Axestabs.IO);
+    button_config           : SubSystemButtonWidget('Config'  	, AxesTabs.CONFIG);
+    
+    
+    cppAxesErrorString : STRING;
+    
+    targetHealthStatus : HealthStatus;
+    
+    quickElevation : AxesAngleWidget;
+    last : AxesAlphaWidget;
+    ha : AxesAlphaWidget;
+    
+    setTarget : AxesSetTargetDialogWidget;
+    point : AxesPointDialogWidget;
+    
+    activePointingModelString : STRING;
+    activeRotatorString : STRING;
+    
+    processes_powerOnStatus : StatusWidget;
+    processes_powerOffStatus : StatusWidget;
+    processes_resetStatus : StatusWidget;
+    processes_doHomingStatus : StatusWidget;
+    processes_stopStatus : StatusWidget;
+    processes_quickStopStatus : StatusWidget;
+    processes_pointStatus : StatusWidget;
+    
+    processes_powerOnArgs : AxesMultiPowerOnProcessArgs;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[initializationStatus(status := ref.statuses.initializationStatus);
+configManager(mgr := ref.parts.configManager);
+axes(ref_azi := ref.parts.azi,
+     ref_ele := ref.parts.ele,
+     ref_roc := ref.parts.roc,
+     ref_ron := ref.parts.ron,
+     ref_io  := ref.parts.io); // TODO
+tpoint(ref          := ref.parts.tpoint, 
+       ref_enable   := ref.processes.enablePointingModel, 
+       ref_disable  := ref.processes.disablePointingModel);
+io(ref := ref.parts.io);
+image(ref := ref);
+manual(ref := ref, ref_operatorStatus := ref_operatorStatus);
+target(ref := ref.target);
+feedback(ref := ref.feedback);
+
+targetHealthStatus(isGood := ref.fromCppAxes.error = TmcAxesErrors.AXES_NO_ERROR);
+isDerotatorActive := ref.activeRotator <> AxesRotatorActivity.NONE_ACTIVE;
+
+button_initialize(status := ref.statuses.initializationStatus, process := ref.processes.initialize);
+button_operating(status := ref.statuses.operatingStatus, process := ref.processes.changeOperatingState);
+button_locking(status := ref.statuses.initializationStatus, lock := ref.processes.lock, unlock := ref.processes.unlock);
+
+button_overview(        color := actualStatus.color                 , activeTab := activeTab);
+button_manual(          color := actualStatus.color                 , activeTab := activeTab);
+button_axes(            color := axes.commonStatusColor             , activeTab := activeTab);
+button_target(          color := HealthToColor(targetHealthStatus)  , activeTab := activeTab);
+button_tpoint(          color := tpoint.actualStatus.color          , activeTab := activeTab);
+button_advanced(        color := actualStatus.color                 , activeTab := activeTab);
+button_io(              color := io.actualStatus.color              , activeTab := activeTab);
+button_config(          color := configManager.actualStatus.color   , activeTab := activeTab);
+
+actualStatus(text  := ref.actualStatus,
+             color := SystemToColor(healthStatus := ref.statuses.healthStatus,
+                                    busyStatus   := ref.statuses.busyStatus,
+                                    initializationStatus := ref.statuses.initializationStatus,
+                                    operatingStatus := ref.statuses.operatingStatus));
+
+cppAxesErrorString := TmcAxesErrorsToString(ref.fromCppAxes.error);
+
+
+ha(radians := ref.fromCppAxes.ha);
+last(radians := ref.fromCppAxes.last);
+quickElevation(degrees := RAD_TO_DEG(ref.fromCppAxes.object.quick.el));
+
+// dialogs
+setTarget(process := ref.processes.setTarget);
+point(process := ref.processes.point);
+
+IF ref.isPointingModelActive THEN
+    activePointingModelString := ref.activePointingModel.name;
+ELSE
+    activePointingModelString := '';
+END_IF
+
+CASE ref.activeRotator OF
+    AxesRotatorActivity.NONE_ACTIVE:
+        activeRotatorString := 'None';
+    AxesRotatorActivity.ROC_ACTIVE:
+        activeRotatorString := CONCAT(ref.config.cassegrainRotatorName, ' (ROC)');
+    AxesRotatorActivity.RON_ACTIVE:
+        activeRotatorString := CONCAT(ref.config.cassegrainRotatorName, ' (RON)');
+END_CASE
+
+
+processes_powerOffStatus(
+    text  := ref.processes.powerOff.actualStatus,
+    color := HealthBusyToColor(healthStatus := ref.processes.powerOff.statuses.healthStatus, 
+                               busyStatus   := ref.processes.powerOff.statuses.busyStatus));
+processes_powerOnStatus(
+    text  := ref.processes.powerOn.actualStatus,
+    color := HealthBusyToColor(healthStatus := ref.processes.powerOn.statuses.healthStatus, 
+                               busyStatus   := ref.processes.powerOn.statuses.busyStatus));
+
+processes_resetStatus(
+    text  := ref.processes.reset.actualStatus,
+    color := HealthBusyToColor(healthStatus := ref.processes.reset.statuses.healthStatus, 
+                               busyStatus   := ref.processes.reset.statuses.busyStatus));
+processes_doHomingStatus(
+    text  := ref.processes.doHoming.actualStatus,
+    color := HealthBusyToColor(healthStatus := ref.processes.doHoming.statuses.healthStatus, 
+                               busyStatus   := ref.processes.doHoming.statuses.busyStatus));            
+processes_stopStatus(
+    text  := ref.processes.stop.actualStatus,
+    color := HealthBusyToColor(healthStatus := ref.processes.stop.statuses.healthStatus, 
+                               busyStatus   := ref.processes.stop.statuses.busyStatus));        
+processes_quickStopStatus(
+    text  := ref.processes.quickStop.actualStatus,
+    color := HealthBusyToColor(healthStatus := ref.processes.quickStop.statuses.healthStatus, 
+                               busyStatus   := ref.processes.quickStop.statuses.busyStatus));    
+processes_pointStatus(
+    text  := ref.processes.point.actualStatus,
+    color := HealthBusyToColor(healthStatus := ref.processes.point.statuses.healthStatus, 
+                               busyStatus   := ref.processes.point.statuses.busyStatus));
+                         ]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

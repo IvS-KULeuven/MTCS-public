@@ -1,0 +1,198 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="AxesPointProcess" Id="{5d4eac10-19e2-4bb0-9b73-d6619873f2e0}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK AxesPointProcess EXTENDS BaseProcess
+VAR_INPUT
+	///State of the process
+	state: INT;
+	///Arguments to be set, before writing do_request TRUE
+	{attribute 'OPC.UA.DA' := '1'}
+	set: AxesPointProcessArgs;
+END_VAR
+VAR_OUTPUT
+	///Arguments in use by the process, if do_request was accepted
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	get: AxesPointProcessArgs;
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[IF do_request THEN
+    do_request_result := request(
+    alphaUnits := set.alphaUnits,
+    alpha := set.alpha,
+    deltaUnits := set.deltaUnits,
+    delta := set.delta,
+    muUnits := set.muUnits,
+    muAlpha := set.muAlpha,
+    muDelta := set.muDelta,
+    parallax := set.parallax,
+    radialVelocity := set.radialVelocity,
+    epoch := set.epoch,
+    tracking := set.tracking,
+    rotUnits := set.rotUnits,
+    rotOffset := set.rotOffset,
+    rocOffset := set.rocOffset,
+    ronOffset := set.ronOffset,
+    doRotOffset := set.doRotOffset,
+    doRocOffset := set.doRocOffset,
+    doRonOffset := set.doRonOffset);
+    do_request := FALSE;
+END_IF;
+SUPER^();
+]]></ST>
+    </Implementation>
+    <Method Name="start" Id="{85371fa4-be63-452a-bfab-8f731f3ed63c}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD start
+VAR_INPUT
+	///The units in which alpha is given
+	alphaUnits: AxesAlphaUnits;
+	///Right ascention, in the units of the alphaUnits argument
+	alpha: LREAL;
+	///The units in which delta is given
+	deltaUnits: AxesDeltaUnits;
+	///Declination, in the units of the deltaUnits argument
+	delta: LREAL;
+	///The units in which muAlpha and muDelta are given
+	muUnits: AxesMuUnits;
+	///Right ascention proper motion, the units of muUmits (do not multiply by cos(delta)!)
+	muAlpha: LREAL;
+	///Declination proper motion, in radians/year
+	muDelta: LREAL;
+	///Object parallax, in arcseconds
+	parallax: LREAL;
+	///Object radial velocity, in km/s
+	radialVelocity: LREAL;
+	///Epoch, e.g. 2000.0
+	epoch: LREAL := 2000;
+	///True to start tracking the object, false to Only do a pointing
+	tracking: BOOL := TRUE;
+	///Units of the 'rot', 'roc' and 'ron' arguments (RADIANS, DEGREES, ARCSECONDS, ...)
+	rotUnits: AxesMoveUnits;
+	///Offset to move the currently active rotator (incompatible with 'roc' and 'ron' args)
+	rotOffset: LREAL;
+	///Offset to move the cassegrain rotation axis (incompatible with 'rot' arg)
+	rocOffset: LREAL;
+	///Offset to move the nasmyth rotation axis (incompatible with 'rot' arg)
+	ronOffset: LREAL;
+	///True to move the currently active rotator, false to leave it untouched
+	doRotOffset: BOOL;
+	///True to move the cassegrain rotation axis, false to leave it untouched
+	doRocOffset: BOOL;
+	///True to move the nasmyth rotation axis, false to leave it untouched
+	doRonOffset: BOOL;
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[THIS^.get.alphaUnits := alphaUnits;
+THIS^.get.alpha := alpha;
+THIS^.get.deltaUnits := deltaUnits;
+THIS^.get.delta := delta;
+THIS^.get.muUnits := muUnits;
+THIS^.get.muAlpha := muAlpha;
+THIS^.get.muDelta := muDelta;
+THIS^.get.parallax := parallax;
+THIS^.get.radialVelocity := radialVelocity;
+THIS^.get.epoch := epoch;
+THIS^.get.tracking := tracking;
+THIS^.get.rotUnits := rotUnits;
+THIS^.get.rotOffset := rotOffset;
+THIS^.get.rocOffset := rocOffset;
+THIS^.get.ronOffset := ronOffset;
+THIS^.get.doRotOffset := doRotOffset;
+THIS^.get.doRocOffset := doRocOffset;
+THIS^.get.doRonOffset := doRonOffset;
+THIS^.statuses.busyStatus( isBusy := TRUE );
+THIS^.statuses.healthStatus( isGood := TRUE );
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="request" Id="{89b066be-66da-4c03-b5bc-aeb80e718558}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD request : RequestResults
+VAR_INPUT
+	///The units in which alpha is given
+	alphaUnits: AxesAlphaUnits;
+	///Right ascention, in the units of the alphaUnits argument
+	alpha: LREAL;
+	///The units in which delta is given
+	deltaUnits: AxesDeltaUnits;
+	///Declination, in the units of the deltaUnits argument
+	delta: LREAL;
+	///The units in which muAlpha and muDelta are given
+	muUnits: AxesMuUnits;
+	///Right ascention proper motion, the units of muUmits (do not multiply by cos(delta)!)
+	muAlpha: LREAL;
+	///Declination proper motion, in radians/year
+	muDelta: LREAL;
+	///Object parallax, in arcseconds
+	parallax: LREAL;
+	///Object radial velocity, in km/s
+	radialVelocity: LREAL;
+	///Epoch, e.g. 2000.0
+	epoch: LREAL := 2000;
+	///True to start tracking the object, false to Only do a pointing
+	tracking: BOOL := TRUE;
+	///Units of the 'rot', 'roc' and 'ron' arguments (RADIANS, DEGREES, ARCSECONDS, ...)
+	rotUnits: AxesMoveUnits;
+	///Offset to move the currently active rotator (incompatible with 'roc' and 'ron' args)
+	rotOffset: LREAL;
+	///Offset to move the cassegrain rotation axis (incompatible with 'rot' arg)
+	rocOffset: LREAL;
+	///Offset to move the nasmyth rotation axis (incompatible with 'rot' arg)
+	ronOffset: LREAL;
+	///True to move the currently active rotator, false to leave it untouched
+	doRotOffset: BOOL;
+	///True to move the cassegrain rotation axis, false to leave it untouched
+	doRocOffset: BOOL;
+	///True to move the nasmyth rotation axis, false to leave it untouched
+	doRonOffset: BOOL;
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF THIS^.statuses.enabledStatus.enabled THEN
+    THIS^.start(
+        alphaUnits := alphaUnits,
+        alpha := alpha,
+        deltaUnits := deltaUnits,
+        delta := delta,
+        muUnits := muUnits,
+        muAlpha := muAlpha,
+        muDelta := muDelta,
+        parallax := parallax,
+        radialVelocity := radialVelocity,
+        epoch := epoch,
+        tracking := tracking,
+        rotUnits := rotUnits,
+        rotOffset := rotOffset,
+        rocOffset := rocOffset,
+        ronOffset := ronOffset,
+        doRotOffset := doRotOffset,
+        doRocOffset := doRocOffset,
+        doRonOffset := doRonOffset);
+    request := RequestResults.ACCEPTED;
+ELSE
+    request := RequestResults.REJECTED;
+END_IF;
+]]></ST>
+      </Implementation>
+    </Method>
+  </POU>
+</TcPlcObject>

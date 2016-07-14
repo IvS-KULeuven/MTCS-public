@@ -1,0 +1,50 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.2">
+  <POU Name="SimpleRelay" Id="{813bf4c8-d588-42a3-94d7-69ffc697bd98}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK SimpleRelay EXTENDS SM_SimpleRelay
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR
+    testVar : INT;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[_update();
+_switching();
+_update();]]></ST>
+    </Implementation>
+    <Method Name="_update" Id="{79909a61-c6dd-4de5-a106-e4b2e9a97ada}">
+      <Declaration><![CDATA[METHOD _update
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[SUPER^();
+
+IF digitalOutput THEN
+    actualStatus := 'Enabled';
+ELSE
+    actualStatus := 'Disabled';
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_switching" Id="{ae4ee04b-e071-4667-97f1-f2ff29622115}">
+      <Declaration><![CDATA[METHOD _switching
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF processes.setEnabled.isBusy() THEN
+    
+    digitalOutput := processes.setEnabled.get.enabled;
+
+    processes.setEnabled.setGood();
+    processes.setEnabled.setFinished();
+    
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+  </POU>
+</TcPlcObject>

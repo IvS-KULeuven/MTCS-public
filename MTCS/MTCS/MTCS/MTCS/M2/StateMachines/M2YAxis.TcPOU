@@ -1,0 +1,26 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.5">
+  <POU Name="M2YAxis" Id="{0c7470fb-3ad6-4274-87e7-1b906956c704}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK M2YAxis EXTENDS SM_M2YAxis
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR
+    _lastRawValue : INT;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[
+IF powered THEN
+    _lastRawValue := SUPER^.position.rawValue;
+ELSE
+   SUPER^.position.rawValue := _lastRawValue;
+END_IF
+
+statuses.healthStatus(isGood := TRUE);
+
+SUPER^(config := SUPER^.config, axisConfig := SUPER^.axisConfig);]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

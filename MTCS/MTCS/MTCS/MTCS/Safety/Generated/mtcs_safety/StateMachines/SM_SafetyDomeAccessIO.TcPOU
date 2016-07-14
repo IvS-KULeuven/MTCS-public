@@ -1,0 +1,50 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="SM_SafetyDomeAccessIO" Id="{5a899427-7345-4252-9dac-e1dd1e381d96}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK SM_SafetyDomeAccessIO
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+	///Current status description
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	actualStatus: STRING;
+	///Statuses of the state machine
+	statuses: SafetyDomeAccessIOStatuses;
+	///Parts of the state machine
+	parts: SafetyDomeAccessIOParts;
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[parts.COU(
+    id := 'DA:COU',
+    typeId := 'EK1101');
+parts.DI1(
+    id := 'DA:DI1',
+    typeId := 'EL1008');
+parts.DI2(
+    id := 'DA:DI2',
+    typeId := 'EL1008');
+parts.DO1(
+    id := 'DA:DO1',
+    typeId := 'EL2008');
+parts.SI1(
+    id := 'DA:SI1',
+    typeId := 'EL1904');
+parts.RE1(
+    id := 'DA:RE1',
+    typeId := 'EL2622');
+parts.RE2(
+    id := 'DA:RE2',
+    typeId := 'EL2622');
+statuses.healthStatus(
+    isGood := parts.COU.statuses.healthStatus.isGood AND (parts.DI1.statuses.healthStatus.isGood AND (parts.DI2.statuses.healthStatus.isGood AND (parts.DO1.statuses.healthStatus.isGood AND (parts.SI1.statuses.healthStatus.isGood AND (parts.RE1.statuses.healthStatus.isGood AND parts.RE2.statuses.healthStatus.isGood))))),
+    hasWarning := parts.COU.statuses.healthStatus.hasWarning OR (parts.DI1.statuses.healthStatus.hasWarning OR (parts.DI2.statuses.healthStatus.hasWarning OR (parts.DO1.statuses.healthStatus.hasWarning OR (parts.SI1.statuses.healthStatus.hasWarning OR (parts.RE1.statuses.healthStatus.hasWarning OR parts.RE2.statuses.healthStatus.hasWarning))))));
+]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

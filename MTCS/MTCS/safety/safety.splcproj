@@ -1,0 +1,116 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project Crc="508945033" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="4.0">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{8ceaf228-4cc2-4e8f-b88f-af15bc876381}</ProjectGuid>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>TwinCAT3SafePlcProject</RootNamespace>
+    <AssemblyName>TwinCAT3SafePlcProject</AssemblyName>
+    <FileUpgradeFlags />
+    <UpgradeBackupLocation />
+    <OldToolsVersion>2.0</OldToolsVersion>
+    <TargetSystem>EL6900</TargetSystem>
+    <ProgrammingLanguage>Graphical Editor</ProgrammingLanguage>
+    <Worker>wim</Worker>
+    <IntProjName />
+    <NextSdsId>110</NextSdsId>
+    <SPlcProjVersion>1.1.0.0</SPlcProjVersion>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
+    <DebugSymbols>false</DebugSymbols>
+    <OutputPath>bin\Release\</OutputPath>
+    <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
+    <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
+  </PropertyGroup>
+  <ItemGroup>
+    <None Include="DomeAccessGroup\Alias Devices\ComErr.sds" />
+    <None Include="DomeAccessGroup\Alias Devices\DA_SI1_EL1904.sds" />
+    <None Include="DomeAccessGroup\Alias Devices\ErrorAcknowledgement.sds" />
+    <None Include="DomeAccessGroup\Alias Devices\FbErr.sds" />
+    <None Include="DomeAccessGroup\Alias Devices\SafeAccess.sds" />
+    <None Include="DomeAccessGroup\Alias Devices\OutErr.sds" />
+    <None Include="DomeAccessGroup\DomeAccessGroup.sal" />
+    <None Include="DomeAccessGroup\DomeAccessGroup.sal.diagram">
+      <Visible>false</Visible>
+      <DependentUpon>DomeAccessGroup\DomeAccessGroup.sal</DependentUpon>
+    </None>
+    <None Include="EmergencyStopsGroup\Alias Devices\HS_SI3_EL1904.sds" />
+    <None Include="EmergencyStopsGroup\Alias Devices\HS_SI4_EL1904.sds" />
+    <None Include="HydraulicsGroup\Alias Devices\HS_SI1_EL1904.sds" />
+    <None Include="HydraulicsGroup\Alias Devices\HS_SI2_EL1904.sds" />
+    <None Include="HydraulicsGroup\Alias Devices\NoOverpressure.sds" />
+    <None Include="HydraulicsGroup\Alias Devices\PG_SI1_EL1904.sds" />
+    <None Include="HydraulicsGroup\Alias Devices\PG_SI2_EL1904.sds" />
+    <None Include="HydraulicsGroup\Alias Devices\PG_SI3_EL1904.sds" />
+    <None Include="HydraulicsGroup\Alias Devices\PressureNotRising.sds" />
+    <None Include="HydraulicsGroup\Alias Devices\PumpsFrequencyNotRising.sds" />
+    <None Include="HydraulicsGroup\Alias Devices\PumpsReleased.sds" />
+    <None Include="HydraulicsGroup\Alias Devices\PumpsRunning.sds" />
+    <None Include="HydraulicsGroup\Alias Devices\PumpsStartingUp.sds" />
+    <None Include="HydraulicsGroup\Alias Devices\PumpsStopped.sds" />
+    <None Include="HydraulicsGroup\Alias Devices\UnderpressureError.sds" />
+    <None Include="MotionBlockingGroup\Alias Devices\ABL_RON_Safety %28AX5805%29 - Module 1 %28Safety Process Data, 2 axis%29.sds" />
+    <None Include="MotionBlockingGroup\Alias Devices\AX5805_ErrorAck_ABLD_chA.sds" />
+    <None Include="MotionBlockingGroup\Alias Devices\AX5805_ErrorAck_ABLD_chB.sds" />
+    <None Include="MotionBlockingGroup\Alias Devices\AX5805_ErrorAck_AZID_chA.sds" />
+    <None Include="MotionBlockingGroup\Alias Devices\AX5805_ErrorAck_AZID_chB.sds" />
+    <None Include="MotionBlockingGroup\Alias Devices\AX5805_ErrorAck_ELED_chA.sds" />
+    <None Include="MotionBlockingGroup\Alias Devices\AX5805_ErrorAck_ELED_chB.sds" />
+    <None Include="MotionBlockingGroup\Alias Devices\AZI_ROC_Safety %28AX5805%29 - Module 1 %28Safety Process Data, 2 axis%29.sds" />
+    <None Include="MotionBlockingGroup\Alias Devices\ELE_FW_Safety %28AX5805%29 - Module 1 %28Safety Process Data, 2 axis%29.sds" />
+    <None Include="MotionBlockingGroup\Alias Devices\HS_SO1_EL2904.sds" />
+    <None Include="MotionBlockingGroup\Alias Devices\MotionAllowed.sds" />
+    <None Include="MotionBlockingGroup\Alias Devices\TelescopeAzimuthReleaseOK.sds" />
+    <None Include="MotionBlockingGroup\Alias Devices\ComErr.sds" />
+    <None Include="MotionBlockingGroup\Alias Devices\ErrorAcknowledgement.sds" />
+    <None Include="MotionBlockingGroup\Alias Devices\FbErr.sds" />
+    <None Include="MotionBlockingGroup\Alias Devices\OutErr.sds" />
+    <None Include="MotionBlockingGroup\Alias Devices\TelescopeElevationReleaseOK.sds" />
+    <None Include="MotionBlockingGroup\Alias Devices\TelescopeRotationReleaseOK.sds" />
+    <None Include="MotionBlockingGroup\MotionBlockingGroup.sal" />
+    <None Include="MotionBlockingGroup\MotionBlockingGroup.sal.diagram">
+      <Visible>false</Visible>
+      <DependentUpon>MotionBlockingGroup\MotionBlockingGroup.sal</DependentUpon>
+    </None>
+    <None Include="EmergencyStopsGroup\Alias Devices\ComErr.sds" />
+    <None Include="EmergencyStopsGroup\Alias Devices\EmergencyStopsDiscrepancyError.sds" />
+    <None Include="EmergencyStopsGroup\Alias Devices\EmergencyStopsOK.sds" />
+    <None Include="EmergencyStopsGroup\Alias Devices\EmergencyStopsRestart.sds" />
+    <None Include="EmergencyStopsGroup\Alias Devices\ErrorAcknowledgement.sds" />
+    <None Include="EmergencyStopsGroup\Alias Devices\FbErr.sds" />
+    <None Include="EmergencyStopsGroup\Alias Devices\OutErr.sds" />
+    <None Include="EmergencyStopsGroup\EmergencyStopsGroup.sal" />
+    <None Include="EmergencyStopsGroup\EmergencyStopsGroup.sal.diagram">
+      <Visible>false</Visible>
+      <DependentUpon>EmergencyStopsGroup\EmergencyStopsGroup.sal</DependentUpon>
+    </None>
+    <None Include="HydraulicsGroup\Alias Devices\ComErr.sds" />
+    <None Include="HydraulicsGroup\Alias Devices\FbErr.sds" />
+    <None Include="HydraulicsGroup\Alias Devices\HydraulicsOK.sds" />
+    <None Include="HydraulicsGroup\Alias Devices\ResetErrors.sds" />
+    <None Include="HydraulicsGroup\Alias Devices\PumpsRestart.sds" />
+    <None Include="HydraulicsGroup\Alias Devices\OutErr.sds" />
+    <None Include="HydraulicsGroup\Alias Devices\NoUnderpressureNoDelay.sds" />
+    <None Include="HydraulicsGroup\Alias Devices\NoUnderpressure.sds" />
+    <None Include="HydraulicsGroup\HydraulicsGroup.sal" />
+    <None Include="HydraulicsGroup\HydraulicsGroup.sal.diagram">
+      <DependentUpon>HydraulicsGroup\HydraulicsGroup.sal</DependentUpon>
+      <Visible>false</Visible>
+    </None>
+    <None Include="TargetSystemConfig.xml">
+      <Visible>false</Visible>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="DomeAccessGroup" />
+    <Folder Include="DomeAccessGroup\Alias Devices" />
+    <Folder Include="MotionBlockingGroup" />
+    <Folder Include="MotionBlockingGroup\Alias Devices" />
+    <Folder Include="EmergencyStopsGroup" />
+    <Folder Include="EmergencyStopsGroup\Alias Devices" />
+    <Folder Include="HydraulicsGroup" />
+    <Folder Include="HydraulicsGroup\Alias Devices" />
+    <None Include="HydraulicsGroup\Alias Devices\ErrorAcknowledgement.sds" />
+  </ItemGroup>
+</Project>

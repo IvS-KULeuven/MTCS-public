@@ -1,0 +1,41 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.2">
+  <POU Name="CoverPanelWidget" Id="{fd0ead3b-ccf7-414c-b077-1b12a69cecee}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK CoverPanelWidget
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+    actualStatus : StatusWidget;
+	// percentages
+	percentClosed : LREAL;
+	percentOpen : LREAL;
+	
+	drawingRange : LREAL := 251.0; // range of a panel in degrees (according to the drawing)
+	drawingAngle : LREAL;
+END_VAR
+VAR_IN_OUT
+	panel : CoverPanel;
+	panelConfig : CoverPanelConfig;
+END_VAR
+VAR
+    axis : AngularAxisWidget;
+    motorRelay : SimpleRelayWidget;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[percentClosed := 100*(panelConfig.openPosition - panel.parts.axis.actPos.degrees.value) 
+                 / (panelConfig.openPosition - panelConfig.closedPosition);
+percentOpen := 100*(panel.parts.axis.actPos.degrees.value - panelConfig.closedPosition) 
+                 / (panelConfig.openPosition - panelConfig.closedPosition);
+
+drawingAngle := - (percentOpen / 100.0 * drawingRange);
+			
+actualStatus(text := panel.actualStatus, 
+             color := HealthBusyToColor(panel.statuses.healthStatus, busyStatus := panel.statuses.busyStatus));
+
+axis(baseRef := panel.parts.axis, ref := panel.parts.axis);
+
+motorRelay(ref := panel.parts.motorRelay);]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

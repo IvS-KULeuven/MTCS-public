@@ -1,0 +1,39 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="SM_Fraction" Id="{e2846a41-1274-41b8-9636-d3a6542d43c4}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK SM_Fraction
+VAR_INPUT
+	///New fraction (between 0 and 1)
+	{attribute 'OPC.UA.DA' := '0'}
+	newFractionValue: LREAL;
+END_VAR
+VAR_OUTPUT
+	///Current status description
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	actualStatus: STRING;
+	///Fraction as a unitless value between 0 and 1
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	unitless: QuantityValue;
+	///Fraction as a percentage value between 0 and 100
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	percent: QuantityValue;
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[unitless(
+    value := newFractionValue,
+    unit := Units.UNITLESS);
+percent(
+    value := newFractionValue * 100.0,
+    unit := Units.PERCENT);
+]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

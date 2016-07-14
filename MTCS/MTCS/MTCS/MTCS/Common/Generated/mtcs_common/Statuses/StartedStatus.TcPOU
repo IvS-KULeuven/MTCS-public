@@ -1,0 +1,32 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="StartedStatus" Id="{e9f3157b-9554-4fd5-8fee-020581598985}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK StartedStatus
+VAR_INPUT
+	///Super state (TRUE if the super state is active, or if there is no super state)
+	superState: BOOL := TRUE;
+	///TRUE if started
+	isStarted: BOOL;
+END_VAR
+VAR_OUTPUT
+	///The subject is started
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	started: BOOL;
+	///The subject is started
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	notStarted: BOOL;
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[notStarted := (NOT(isStarted)) AND superState;
+started := isStarted AND superState;
+]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

@@ -1,0 +1,93 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="SM_ConfigManager" Id="{1ddb544c-f56f-4b50-a021-1ca06420a891}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK SM_ConfigManager
+VAR_INPUT
+	///Full path of the config filename
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	filePath: STRING;
+	///Is control enabled?
+	{attribute 'OPC.UA.DA' := '0'}
+	isEnabled: BOOL;
+END_VAR
+VAR_OUTPUT
+	///Current status description
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	actualStatus: STRING;
+	///Statuses of the state machine
+	statuses: ConfigManagerStatuses;
+	///Processes of the state machine
+	processes: ConfigManagerProcesses;
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[statuses.busyStatus( isBusy := processes.save.statuses.busyStatus.busy OR (processes.load.statuses.busyStatus.busy OR processes.activate.statuses.busyStatus.busy) );
+statuses.healthStatus(
+    isGood := processes.save.statuses.healthStatus.isGood AND (processes.load.statuses.healthStatus.isGood AND processes.activate.statuses.healthStatus.isGood),
+    hasWarning := processes.save.statuses.healthStatus.hasWarning OR (processes.load.statuses.healthStatus.hasWarning OR processes.activate.statuses.healthStatus.hasWarning));
+processes.save( isEnabled := isEnabled AND statuses.busyStatus.idle );
+processes.load( isEnabled := isEnabled AND statuses.busyStatus.idle );
+processes.activate( isEnabled := isEnabled AND statuses.busyStatus.idle );
+]]></ST>
+    </Implementation>
+    <Method Name="save" Id="{013d31be-6059-4004-9adf-7ce5205486bf}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD save : RequestResults
+VAR_INPUT
+	filePath: STRING;
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[save := THIS^.processes.save.request( filePath := filePath );
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="load" Id="{586993c7-fb5f-432b-9139-bc2c3a480ba3}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD load : RequestResults
+VAR_INPUT
+	filePath: STRING;
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[load := THIS^.processes.load.request( filePath := filePath );
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="activate" Id="{b13119fa-e6db-4681-9e18-83b6b7980b90}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD activate : RequestResults
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[activate := THIS^.processes.activate.request();
+]]></ST>
+      </Implementation>
+    </Method>
+  </POU>
+</TcPlcObject>

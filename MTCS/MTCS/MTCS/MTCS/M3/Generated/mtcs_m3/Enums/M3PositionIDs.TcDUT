@@ -1,0 +1,21 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="M3PositionIDs" Id="{b5d4f460-bc1f-45f0-a7e2-bf9e2bfdfdc3}">
+    <Declaration><![CDATA[TYPE M3PositionIDs :
+(
+	UNKNOWN := 0,
+	CASSEGRAIN := 1,
+	NASMYTH_A := 2,
+	NASMYTH_B := 3,
+	NASMYTH_C := 4,
+	NASMYTH_D := 5,
+	OTHER_0 := 6,
+	OTHER_1 := 7,
+	OTHER_2 := 8,
+	OTHER_3 := 9,
+	OTHER_4 := 10
+);
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

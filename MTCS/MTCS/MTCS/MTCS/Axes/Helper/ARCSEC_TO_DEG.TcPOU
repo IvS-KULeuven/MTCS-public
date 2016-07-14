@@ -1,0 +1,15 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.5">
+  <POU Name="ARCSEC_TO_DEG" Id="{d61448e5-a157-42c9-8736-33420434d66e}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION ARCSEC_TO_DEG : LREAL
+VAR_INPUT
+    arcsec : LREAL;
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[ARCSEC_TO_DEG := arcsec / 3600.0;]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

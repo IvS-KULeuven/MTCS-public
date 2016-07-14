@@ -1,0 +1,118 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.5">
+  <POU Name="ServicesTiming" Id="{b1a36234-26d3-4642-ae27-71f40118f240}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK ServicesTiming EXTENDS SM_ServicesTiming
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR
+    _utc64 : ULINT;
+    _nanosecondsSinceTimestamps : ULINT;
+    _utcStruct : DCTIMESTRUCT;
+    _initializingCurrentAction : INT;
+    _onFirstStartCurrentAction : INT;
+    
+    //_pointingDateTime AT %I* : PointingDateTime;
+    
+    _formatString : FB_FormatString;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[
+
+_update();
+]]></ST>
+    </Implementation>
+    <Method Name="_update" Id="{c488aba0-2a9c-4184-8a2d-e42ef4faf14a}">
+      <Declaration><![CDATA[METHOD _update
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[SUPER^(operatorStatus := operatorStatus, config := config);
+
+_update_utc();
+_update_timestamps();
+
+toCppTiming.alwaysUseLocalClock := config.alwaysUseLocalClock;
+toCppTiming.dut := config.dut;
+toCppTiming.leapSeconds := config.leapSeconds;
+
+
+IF statuses.healthStatus.bad THEN
+    actualStatus := 'ERROR';
+ELSIF statuses.healthStatus.good THEN
+    IF statuses.busyStatus.busy THEN
+        actualStatus := 'BUSY';
+    ELSIF statuses.busyStatus.idle THEN
+        actualStatus := 'OK';
+    ELSE
+        actualStatus := 'UNKNOWN';
+    END_IF
+ELSE
+    actualStatus := 'UNKNOWN';
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_update_timestamps" Id="{d0ff462d-dc6c-400d-8baf-6c200ec727e8}">
+      <Declaration><![CDATA[METHOD _update_timestamps
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[internalTimestampString := DCTIME64_TO_STRING(fromEL6688.internalTimestamp);
+externalTimestampString := DCTIME64_TO_STRING(fromEL6688.externalTimestamp);]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_update_utc" Id="{e9f35394-9189-4e70-ae7d-c147984b6bdc}">
+      <Declaration><![CDATA[METHOD _update_utc
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[
+_formatString(
+    sFormat := '%d-%.2d-%.2d', 
+    arg1    := F_DINT(fromCppTiming.utc.dateTime.years), 
+    arg2    := F_DINT(fromCppTiming.utc.dateTime.months), 
+    arg3    := F_DINT(fromCppTiming.utc.dateTime.days), 
+    sOut    => utcDateString);
+
+_formatString(
+    sFormat := '%.2d:%.2d:%.2d.%.6d', 
+    arg1    := F_DINT(fromCppTiming.utc.dateTime.hours), 
+    arg2    := F_DINT(fromCppTiming.utc.dateTime.minutes), 
+    arg3    := F_DINT(fromCppTiming.utc.dateTime.seconds), 
+    arg4    := F_DINT(fromCppTiming.utc.dateTime.microseconds), 
+    sOut    => utcTimeString);
+
+(*IF actualTimeSource = ServicesTimingTimeSource.LOCAL_CLOCK THEN
+    _utc64 := F_GetActualDcTime64();
+ELSIF actualTimeSource = ServicesTimingTimeSource.PTP_IEEE_1588 THEN
+    _nanosecondsSinceTimestamps := F_GetActualDcTime64() - internalTimeStamp;
+    _utc64 := externalTimestamp                                 // external timestamp in TAI
+              + INT_TO_ULINT(config.TAI_to_UTC) * 1000000000    // external timestamp in UTC
+              + _nanosecondsSinceTimestamps;                    // time now in UTC 
+ELSE
+    _utc64 := 0;
+END_IF
+
+_utcStruct := DCTIME64_TO_DCTIMESTRUCT(_utc64);
+
+utc_years   := WORD_TO_UINT(_utcStruct.wYear);
+utc_months  := WORD_TO_USINT(_utcStruct.wMonth);
+utc_days    := WORD_TO_USINT(_utcStruct.wDay);
+utc_hours   := WORD_TO_USINT(_utcStruct.wHour);
+utc_minutes := WORD_TO_USINT(_utcStruct.wMinute);
+utc_seconds :=   WORD_TO_LREAL(_utcStruct.wSecond)
+               + WORD_TO_LREAL(_utcStruct.wMilliseconds) / 1000.0
+               + WORD_TO_LREAL(_utcStruct.wMicroseconds) / 1000000.0
+               + WORD_TO_LREAL(_utcStruct.wNanoseconds)  / 1000000000.0;
+
+utc_dateString := LEFT(DCTIME64_TO_STRING(_utc64), 10);
+utc_timeString := MID(DCTIME64_TO_STRING(_utc64), 10, 12);*)]]></ST>
+      </Implementation>
+    </Method>
+  </POU>
+</TcPlcObject>

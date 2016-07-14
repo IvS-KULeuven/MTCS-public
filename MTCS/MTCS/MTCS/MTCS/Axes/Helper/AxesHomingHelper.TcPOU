@@ -1,0 +1,348 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="AxesHomingHelper" Id="{35cf3056-c25b-412b-ba80-586529af6726}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK AxesHomingHelper
+VAR_INPUT
+    id : AxesIds;
+    homingStartAbsEncPosition : LREAL;
+    homingVelocity : LREAL;
+    homingRange : LREAL;
+    homingGotoStartVelocity : LREAL;
+    homingHomePosition : LREAL;
+    absoluteEncoderPosition : LREAL;
+    lidasInvert : BOOL;
+    lidaAveragePosition : LREAL;
+    lida1Position : LREAL;
+    pLida1 : POINTER TO IncrementalEncoder := 0;
+    pLida2 : POINTER TO IncrementalEncoder := 0;
+    pLida3 : POINTER TO IncrementalEncoder := 0;
+    pLida4 : POINTER TO IncrementalEncoder := 0;
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+    setpointGenerator : AxesExternalSetpointGenerator;
+    doHoming : AxesDoHomingProcess;
+    stop     : AxesStopProcess;
+    setPosition  : AxesSetpositionProcess;
+    virtual : AngularAxis;
+    physical : AngularAxis;
+END_VAR
+VAR
+    homeTon : TON;
+    
+    lida1PositionAfterZeroing : LREAL;
+    truePositionAfterZeroing : LREAL;
+    trueValueAfterZeroing : UDINT;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[IF doHoming.isBusy() THEN
+    
+    IF NOT doHoming.isStarted() THEN
+        doHoming.state := 0;
+        doHoming.setStarted();
+	END_IF
+    
+    CASE doHoming.state OF
+        0:
+            doHoming.setActualStatus('Now homing');
+            stop.start();
+            doHoming.state := 1;
+        1:
+            IF stop.isIdle() THEN
+                IF stop.isGood() THEN
+                    // ok, the axes are stopped
+                    doHoming.state := 2;
+                ELSE
+                    doHoming.setActualStatus('Could not stop the axes');
+                    doHoming.state := 999;
+				END_IF
+			END_IF
+        2:
+            // verify the axis
+            IF NOT physical.axis_ref.Status.ExtSetPointGenEnabled THEN
+                doHoming.setActualStatus('External setpoint generator disabled! Power on needed!');
+                doHoming.state := 999;
+            ELSIF physical.axis_ref.Status.Disabled OR virtual.axis_ref.Status.Disabled THEN
+                doHoming.setActualStatus('Axis is disabled! Power on needed!');
+                doHoming.state := 999;
+            ELSIF NOT hasLida1() THEN
+                doHoming.setActualStatus('At least one LIDA is needed!');
+            ELSE
+                doHoming.state := 3;
+			END_IF
+        3:
+            // reset the homing flag
+            physical.processes.resetCalibration.start();
+            // stop monitoring slip between the external encoder and the motor encoder
+            doHoming.state := 4;
+        4:
+            IF physical.processes.resetCalibration.isIdle() THEN
+                IF physical.processes.resetCalibration.isGood() THEN
+                    doHoming.state := 5;
+                ELSE
+                    doHoming.setActualStatus('Could not reset the calibration flag');
+                    doHoming.state := 999;
+				END_IF
+			END_IF
+        5:
+            // disable the 'enableLatchC' output, so we can turn in on further on
+            // When enableLatchC will be set to TRUE (further on), then the latchCValid flag will be raised when the C signal gets activated, in other words, when the counter gets reset
+            pLida1^.updateEnableLatchC(FALSE);
+            doHoming.setActualStatus('Moving to the homing start');
+            virtual.processes.moveRelative.start(
+                distance := homingStartAbsEncPosition - absoluteEncoderPosition,
+                maxVelocity := homingGotoStartVelocity);
+            doHoming.state := 6;
+        6:
+             // wait for the positioning to be finished
+             IF virtual.processes.moveRelative.isIdle() THEN
+                 IF virtual.processes.moveRelative.isGood() THEN
+                    doHoming.state := 7;
+                 ELSE
+                    doHoming.setActualStatus('Could not move to homing start');
+                    doHoming.state := 999;
+				 END_IF
+			 END_IF
+        7:
+            // disable the external setpoint generator
+           physical.processes.disableExtSetGen.start();
+           doHoming.state := 8;
+        8:
+             // wait for the external setpoint generator to be disabled
+             IF physical.processes.disableExtSetGen.isIdle() THEN
+                 IF physical.processes.disableExtSetGen.isGood() THEN
+                    doHoming.state := 9;
+                 ELSE
+                    doHoming.setActualStatus('Could not disable the external setpoint generator');
+                    doHoming.state := 999;
+				 END_IF
+			 END_IF
+        9:
+            doHoming.setActualStatus('Enabling LIDA 1 C reset');
+            pLida1^.processes.enableCounterResetC.start();
+            doHoming.state := 10;
+        10:
+            IF pLida1^.processes.enableCounterResetC.isIdle() THEN
+                IF pLida1^.processes.disableCounterResetC.isGood() THEN
+                    doHoming.state := 11;
+                ELSE
+                    doHoming.setActualStatus('Could not enable LIDA 1 C reset');
+                    doHoming.state := 999;
+				END_IF
+			END_IF
+        11:
+            doHoming.setActualStatus('Moving until LIDA 1 zero is found');
+            pLida1^.updateEnableLatchC(TRUE); // now we can start monitoring the latchCValid flag
+            physical.processes.moveRelative.start(distance := homingRange, maxVelocity := homingVelocity);
+            doHoming.state := 12;
+        12:
+            IF pLida1^.latchCValid THEN
+                // OK, the counter has been reset!
+                physical.processes.stop.start();
+                doHoming.state := 13;
+            ELSIF physical.processes.moveRelative.isIdle() THEN
+                // the end of the range was reached, but the latchCValid was not raised :(
+                doHoming.setActualStatus('Could not find the zero mark');
+                doHoming.state := 999;
+			END_IF
+        13:
+             // wait for the stop to be finished
+             IF virtual.processes.stop.isIdle() THEN
+                 IF virtual.processes.stop.isGood() THEN
+                    doHoming.state := 14;
+                 ELSE
+                    doHoming.setActualStatus('Could not stop while traversing the homing range');
+                    doHoming.state := 999;
+				 END_IF
+			 END_IF
+        14:
+            // disable C latch and C reset 
+            doHoming.setActualStatus('Disabling LIDA 1 C reset');
+            pLida1^.updateEnableLatchC(FALSE);
+            pLida1^.processes.disableCounterResetC.start();
+            doHoming.state := 15;
+        15:
+            IF pLida1^.processes.disableCounterResetC.isIdle() THEN
+                IF pLida1^.processes.disableCounterResetC.isGood() THEN
+                    doHoming.state := 16;
+                ELSE
+                    doHoming.setActualStatus('Could not disable LIDA 1 C reset');
+                    doHoming.state := 999;
+				END_IF
+			END_IF
+        16:
+            doHoming.setActualStatus('Moving back to the zero position');
+            physical.processes.moveRelative.start(
+                distance := -lida1Position,
+                maxVelocity := homingGotoStartVelocity);
+            doHoming.state := 17;
+        17:
+             // wait for the motion to be finished
+             IF physical.processes.moveRelative.isIdle() THEN
+                 IF physical.processes.moveRelative.isGood() THEN
+                    doHoming.state := 18;
+                 ELSE
+                    doHoming.setActualStatus('Could not move back to the home position');
+                    doHoming.state := 999;
+				 END_IF
+			 END_IF
+        18:
+            // lida1Position will be now (close to, but not exactly) 0
+            // But, it must not be (close to) 0, it must be (close to) the homingHomePosition!
+            lida1PositionAfterZeroing := AxesLidaValueToPosition(id := id, encoderValue := pLida1^.counterValue, invert := lidasInvert);
+            truePositionAfterZeroing := homingHomePosition + lida1PositionAfterZeroing;
+            trueValueAfterZeroing := AxesLidaPositionToValue(id := id, position := truePositionAfterZeroing, invert := lidasInvert);
+            
+            doHoming.setActualStatus('Synchronizing LIDAs');
+            // set the counter FALSE --100ms--> TRUE --100ms--> FALSE
+            pLida1^.updateSetCounterValue(trueValueAfterZeroing);
+            pLida1^.updateSetCounter(FALSE);
+            IF hasLida2() THEN
+                pLida2^.updateSetCounterValue(trueValueAfterZeroing);
+                pLida2^.updateSetCounter(FALSE);
+			END_IF
+            IF hasLida3() THEN
+                pLida3^.updateSetCounterValue(trueValueAfterZeroing);
+                pLida3^.updateSetCounter(FALSE);
+			END_IF
+            IF hasLida4() THEN
+                pLida4^.updateSetCounterValue(trueValueAfterZeroing);
+                pLida4^.updateSetCounter(FALSE);
+			END_IF
+            
+            homeTon(IN := FALSE);
+            homeTon(IN := TRUE, PT := T#100MS);
+            doHoming.state := 19;
+        19:
+            homeTon(IN := TRUE);
+            IF homeTon.Q THEN
+                pLida1^.updateSetCounter(TRUE);
+                IF hasLida2() THEN
+                    pLida2^.updateSetCounter(TRUE);
+                END_IF
+                IF hasLida3() THEN
+                    pLida3^.updateSetCounter(TRUE);
+                END_IF
+                IF hasLida4() THEN
+                    pLida4^.updateSetCounter(TRUE);
+                END_IF
+                homeTon(IN := FALSE);
+                homeTon(IN := TRUE, PT := T#100MS);
+                doHoming.state := 20;
+			END_IF
+        20:
+            homeTon(IN := TRUE);
+            IF homeTon.Q THEN
+                pLida1^.updateSetCounter(FALSE);
+                IF hasLida2() THEN
+                    pLida2^.updateSetCounter(FALSE);
+                END_IF
+                IF hasLida3() THEN
+                    pLida3^.updateSetCounter(FALSE);
+                END_IF
+                IF hasLida4() THEN
+                    pLida4^.updateSetCounter(FALSE);
+                END_IF
+                doHoming.state := 21;
+			END_IF
+        21:
+             // synchronize everything with the LIDAs
+             setPosition.start(value := lidaAveragePosition);
+             doHoming.state := 22;
+        22:
+             // wait for the new positions to be set
+             IF setPosition.isIdle() THEN
+                 IF setPosition.isGood() THEN
+                    doHoming.state := 23;
+                 ELSE
+                    doHoming.setActualStatus('Could not update the axis position');
+                    doHoming.state := 999;
+                 END_IF
+             END_IF
+        23:     
+            // enable the external setpoint generator
+            physical.processes.enableExtSetGen.start();
+            doHoming.state := 24;
+        24:
+             // wait for the external setpoint generator to be enabled 
+             IF physical.processes.enableExtSetGen.isIdle() THEN
+                 IF physical.processes.enableExtSetGen.isGood() THEN
+                    doHoming.state := 25;
+                 ELSE
+                    doHoming.setActualStatus('Could not enable the external setpoint generator');
+                    doHoming.state := 999;
+				 END_IF
+			 END_IF
+        25:
+            // set the homing flag to TRUE
+            physical.processes.forceCalibration.start();
+            doHoming.state := 26;
+        26:
+             // wait for the homing flag to be forced to TRUE
+             IF physical.processes.forceCalibration.isIdle() THEN
+                 IF physical.processes.forceCalibration.isGood() THEN
+                    doHoming.state := 27;
+                 ELSE
+                    doHoming.setActualStatus('Could not force the calibration flag');
+                    doHoming.state := 999;
+				 END_IF
+			 END_IF
+        27:
+            // done!
+            doHoming.setActualStatus('Homing finished successfully');
+            doHoming.state := 1000;
+        999:
+            // error!
+            doHoming.setBad();
+            doHoming.setFinished();
+            // stop all axes!
+            stop.start();
+        1000:
+            // all done!
+            doHoming.setGood();
+            doHoming.setFinished();
+		
+    END_CASE
+    
+END_IF]]></ST>
+    </Implementation>
+    <Method Name="hasLida3" Id="{0e5d9a7a-12fc-4a9e-8f7e-004a36d0049e}">
+      <Declaration><![CDATA[METHOD hasLida3 : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[hasLida3 := pLida3 <> 0;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="hasLida4" Id="{965aea0a-aef0-4c35-9044-727cca387dde}">
+      <Declaration><![CDATA[METHOD hasLida4 : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[hasLida4 := pLida4 <> 0;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="hasLida2" Id="{a6e7a3e3-9d09-4e71-ba6c-57ee7ab86bd8}">
+      <Declaration><![CDATA[METHOD hasLida2 : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[hasLida2 := pLida2 <> 0;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="hasLida1" Id="{d132c6a1-67d0-4f23-bf39-a1f648de9fcc}">
+      <Declaration><![CDATA[METHOD hasLida1 : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[hasLida1 := pLida1 <> 0;]]></ST>
+      </Implementation>
+    </Method>
+  </POU>
+</TcPlcObject>

@@ -1,0 +1,14 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="ServicesTimingParts" Id="{d87db6e9-5a27-4f95-bded-01693ce1db67}">
+    <Declaration><![CDATA[TYPE ServicesTimingParts :
+STRUCT
+	///I/O modules
+	io: ServicesTimingIO;
+	///Info acquired by serial link
+	serialInfo: ServicesTimingSerialInfo;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

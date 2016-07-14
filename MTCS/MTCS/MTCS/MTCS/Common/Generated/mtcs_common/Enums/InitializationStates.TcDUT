@@ -1,0 +1,15 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="InitializationStates" Id="{60b5e1a7-ed54-4b56-b487-1e9acea05be0}">
+    <Declaration><![CDATA[TYPE InitializationStates :
+(
+	SHUTDOWN := 0,
+	INITIALIZING := 1,
+	INITIALIZING_FAILED := 2,
+	INITIALIZED := 3,
+	LOCKED := 4
+);
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

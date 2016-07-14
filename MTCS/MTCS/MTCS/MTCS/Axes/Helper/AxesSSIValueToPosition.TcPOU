@@ -1,0 +1,25 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.5">
+  <POU Name="AxesSSIValueToPosition" Id="{1c92eec7-b423-4754-8694-6ea4b59af3f8}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION AxesSSIValueToPosition : LREAL
+VAR_INPUT
+    reduction : LREAL;
+    encoderValue : UDINT;
+    zeroOffset : LREAL;
+END_VAR
+VAR
+    BITS_PER_ENCODER_REVOLUTION : LREAL := 8192; // 13-bit
+    ENCODER_BIT_RANGE : LREAL := 33554432; // 25-bit
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[// we go from unsigned raw value, to signed position in degrees:
+IF encoderValue.24 THEN
+    AxesSSIValueToPosition := (UDINT_TO_LREAL(encoderValue) - ENCODER_BIT_RANGE) / BITS_PER_ENCODER_REVOLUTION / reduction * 360.0 + zeroOffset;
+ELSE
+    AxesSSIValueToPosition := UDINT_TO_LREAL(encoderValue) / BITS_PER_ENCODER_REVOLUTION / reduction * 360.0 + zeroOffset;
+END_IF
+]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

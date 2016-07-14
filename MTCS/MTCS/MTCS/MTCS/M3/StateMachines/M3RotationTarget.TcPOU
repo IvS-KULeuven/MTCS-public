@@ -1,0 +1,107 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.2">
+  <POU Name="M3RotationTarget" Id="{746f35ed-d25c-4411-9ad7-45884949555d}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK M3RotationTarget EXTENDS SM_M3RotationTarget
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR
+    _formatString : FB_FormatString;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[
+IF isTargetGiven THEN
+    
+    // set the name
+    IF _equals(newPositionDegrees, newOffsetDegrees, knownPositions.cassegrain) THEN
+        name := knownPositions.cassegrain.name;
+    ELSIF _equals(newPositionDegrees, newOffsetDegrees, knownPositions.nasmythA) THEN
+        name := knownPositions.nasmythA.name;
+    ELSIF _equals(newPositionDegrees, newOffsetDegrees, knownPositions.nasmythB) THEN
+        name := knownPositions.nasmythB.name;
+    ELSIF _equals(newPositionDegrees, newOffsetDegrees, knownPositions.nasmythC) THEN
+        name := knownPositions.nasmythC.name;
+    ELSIF _equals(newPositionDegrees, newOffsetDegrees, knownPositions.nasmythD) THEN
+        name := knownPositions.nasmythD.name;
+    ELSIF _equals(newPositionDegrees, newOffsetDegrees, knownPositions.other0) THEN
+        name := knownPositions.other0.name;
+    ELSIF _equals(newPositionDegrees, newOffsetDegrees, knownPositions.other1) THEN
+        name := knownPositions.other1.name;
+    ELSIF _equals(newPositionDegrees, newOffsetDegrees, knownPositions.other2) THEN
+        name := knownPositions.other2.name;
+    ELSIF _equals(newPositionDegrees, newOffsetDegrees, knownPositions.other3) THEN
+        name := knownPositions.other3.name;
+    ELSIF _equals(newPositionDegrees, newOffsetDegrees, knownPositions.other4) THEN
+        name := knownPositions.other4.name;
+    ELSE
+        name := '';
+	END_IF
+    
+    IF name = '' THEN
+        position(newDegreesValue := newPositionDegrees);
+        statuses.targetStatus(state := M3TargetStates.NEW_POSITION);
+    ELSE
+        position(newDegreesValue := newPositionDegrees);
+        statuses.targetStatus(state := M3TargetStates.KNOWN_POSITION);
+	END_IF
+    
+ELSE
+    statuses.targetStatus(state := M3TargetStates.NO_TARGET_GIVEN);
+END_IF
+
+_update();]]></ST>
+    </Implementation>
+    <Method Name="FB_init" Id="{1153f0a3-5819-4d12-b16e-65a5d00d0d5b}">
+      <Declaration><![CDATA[METHOD FB_init : BOOL
+VAR_INPUT
+	bInitRetains : BOOL; // if TRUE, the retain variables are initialized (warm start / cold start)
+	bInCopyCode : BOOL;  // if TRUE, the instance afterwards gets moved into the copy code (online change)
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[statuses.targetStatus(state := M3TargetStates.NO_TARGET_GIVEN);]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_update" Id="{a7c0facc-c0d9-46d1-8506-0d872c6c233d}">
+      <Declaration><![CDATA[METHOD _update
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF statuses.targetStatus.newPosition THEN
+    IF offset.degrees.value < 0 THEN
+        _formatString(sFormat := '%.4f° - %.0f°', 
+                      arg1 := F_LREAL(position.degrees.value),
+                      arg2 := F_LREAL(offset.degrees.value),
+                      sOut => actualStatus);
+    ELSE
+        _formatString(sFormat := '%.4f° + %.0f°', 
+                      arg1 := F_LREAL(position.degrees.value),
+                      arg2 := F_LREAL(offset.degrees.value),
+                      sOut => actualStatus);
+    END_IF
+ELSIF statuses.targetStatus.knownPosition THEN
+        actualStatus := name;
+ELSE
+    actualStatus := 'NONE';
+END_IF
+
+SUPER^(knownPositions := knownPositions);]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_equals" Id="{c98c3f2b-389e-45d5-9f76-63aeac400728}">
+      <Declaration><![CDATA[METHOD _equals : BOOL
+VAR_INPUT
+    newPositionDegrees : LREAL;
+    newOffsetDegrees : LREAL;
+    knownPosition : M3PositionConfig;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[_equals := newPositionDegrees = knownPosition.rotationPosition AND knownPosition.doRotation AND newOffsetDegrees = knownPosition.rotationOffset;]]></ST>
+      </Implementation>
+    </Method>
+  </POU>
+</TcPlcObject>

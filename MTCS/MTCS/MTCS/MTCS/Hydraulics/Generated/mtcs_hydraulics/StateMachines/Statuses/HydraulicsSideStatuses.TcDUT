@@ -1,0 +1,14 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="HydraulicsSideStatuses" Id="{2dedb58f-d25d-4539-b8e3-daf4aae98730}">
+    <Declaration><![CDATA[TYPE HydraulicsSideStatuses :
+STRUCT
+	///Is the hydraulics side in a healthy state? Good=RUN, Bad=safe stopped
+	healthStatus: HealthStatus;
+	///Is the hydraulics side busy?
+	busyStatus: BusyStatus;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

@@ -1,0 +1,58 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="AxesElevationConfig" Id="{6ba9acd0-d75f-4f72-85f3-23dfb97caeac}">
+    <Declaration><![CDATA[TYPE AxesElevationConfig :
+STRUCT
+	///Offset in degrees, of the absolute encoder, w.r.t. zero
+	absoluteEncoderOffset: LREAL;
+	///TRUE to invert the counting direction
+	absoluteEncoderInvert: BOOL;
+	///TRUE to invert the counting direction of the LIDAs
+	lidasInvert: BOOL;
+	///How many degrees should the moveOutOfLimitSwitch process try to move?
+	moveOutOfLimitSwitchDistance: LREAL;
+	///Which input (0-7) represents the positive limit switch?
+	positiveLimitSwitchInput: SINT;
+	///Which input (0-7) represents the negative limit switch?
+	negativeLimitSwitchInput: SINT;
+	///Limit the minimum position of the axis to this value in degrees, of the virtual axis
+	minPositionLimitVirtualAxis: LREAL;
+	///Limit the maximum position of the axis to this value in degrees, of the virtual axis
+	maxPositionLimitVirtualAxis: LREAL;
+	///Limit the minimum position of the axis to this value in degrees, of the physical axis
+	minPositionLimitPhysicalAxis: LREAL;
+	///Limit the maximum position of the axis to this value in degrees, of the physical axis
+	maxPositionLimitPhysicalAxis: LREAL;
+	///Limit the velocity of the axis to this value in degrees/sec
+	velocityLimit: LREAL;
+	///Limit the acceleration (or deceleration) of the axis to this value in degrees/sec^2
+	accelerationLimit: LREAL;
+	///The minimum position setpoint of the axis in degrees
+	minPositionSetpoint: LREAL;
+	///The maximum position setpoint of the axis in degrees
+	maxPositionSetpoint: LREAL;
+	///The maximum velocity setpoint of the axis in degrees/sec
+	maxVelocitySetpoint: LREAL;
+	///The maximum acceleration setpoint of the axis in degrees/sec^2
+	maxAccelerationSetpoint: LREAL;
+	///If the difference between the LIDA-encoder and motor-encoder positions is above this value in degrees, then we have detected slip
+	slipLimit: LREAL;
+	///The position of the homing mark (in degrees), with respect to the absolute zero
+	homingHomePosition: LREAL;
+	///Absolute encoder position where the homing should go to first, in degrees
+	homingStartAbsEncPosition: LREAL;
+	///Velocity when going to the start position, in degrees/sec
+	homingGotoStartVelocity: LREAL;
+	///Velocity to search for the homing mark, in degrees/sec
+	homingVelocity: LREAL;
+	///Maximum distance to be covered while searching for the homing mark, in degrees
+	homingRange: LREAL;
+	///Quick stop deceleration, in degrees/sec2
+	quickStopDeceleration: LREAL;
+	///Quick stop jerk, in degrees/sec3
+	quickStopJerk: LREAL;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

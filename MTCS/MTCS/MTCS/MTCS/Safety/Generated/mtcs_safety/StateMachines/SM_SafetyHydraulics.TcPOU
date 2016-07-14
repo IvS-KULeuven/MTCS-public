@@ -1,0 +1,198 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="SM_SafetyHydraulics" Id="{1e95b73d-e85a-4f65-8f8e-354791a3024d}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK SM_SafetyHydraulics
+VAR_INPUT
+	///TwinSAFE group communication error
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	groupComError AT %I*: BOOL;
+	///TwinSAFE group function block error
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	groupFbError AT %I*: BOOL;
+	///TwinSAFE group output error
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	groupOutError AT %I*: BOOL;
+	///TRUE if the pumps are powered
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	pumpsPowered AT %I*: BOOL;
+	///TRUE if the oil return filter has an overpressure
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	returnFilterOverpressure AT %I*: BOOL;
+	///TRUE if the pumps run at a minimum frequency (frequency > QMin)
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	pumpsMinFrequency AT %I*: BOOL;
+	///TRUE if the frequency of the pumps is not rising after a startup command
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	pumpsFrequencyNotRising AT %I*: BOOL;
+	///TRUE if the pressure is not rising after the frequency is rising
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	pressureNotRising AT %I*: BOOL;
+	///TRUE if there is no underpressure for Top pipe 1
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	top1NoUnderpressure AT %I*: BOOL;
+	///TRUE if there is no underpressure for Top pipe 2
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	top2NoUnderpressure AT %I*: BOOL;
+	///TRUE if there is no underpressure for Top pipe 3
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	top3NoUnderpressure AT %I*: BOOL;
+	///TRUE if there is no underpressure for Top pipe 4
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	top4NoUnderpressure AT %I*: BOOL;
+	///TRUE if there is no underpressure for Bottom pipe 5
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	bottom5NoUnderpressure AT %I*: BOOL;
+	///TRUE if there is no underpressure for Bottom pipe 6
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	bottom6NoUnderpressure AT %I*: BOOL;
+	///TRUE if there is no underpressure for Bottom pipe 7
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	bottom7NoUnderpressure AT %I*: BOOL;
+	///TRUE if there is no underpressure for Bottom pipe 8
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	bottom8NoUnderpressure AT %I*: BOOL;
+	///TRUE if there is no overpressure for the Top pipes
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	topNoOverpressure AT %I*: BOOL;
+	///TRUE if there is no overpressure for the Bottom pipes
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	bottomNoOverpressure AT %I*: BOOL;
+	///TRUE if there is no TRIP error for the top drive
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	topTripOK AT %I*: BOOL;
+	///TRUE if there is no overpressure for the botton drive
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	bottomTripOK AT %I*: BOOL;
+	///TRUE if there is no underpressure for all 8 pipes
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	noUnderpressure AT %I*: BOOL;
+	///TRUE if there is no underpressure for all 8 pipes (even momentarily, without delay)
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	noUnderpressureNoDelay AT %I*: BOOL;
+	///TRUE if there is an underpressure problem (e.g. when the pumps are running and there is an underpressure)
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	underpressureError AT %I*: BOOL;
+	///TRUE if there is no overpressure for all 8 pipes
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	noOverpressure AT %I*: BOOL;
+	///TRUE if the pumps are restarting
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	pumpsStartingUp AT %I*: BOOL;
+	///TRUE if the pumps are stopped
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	pumpsStopped AT %I*: BOOL;
+	///TRUE if the pumps are running
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	pumpsRunning AT %I*: BOOL;
+	///TRUE if the pumps are released (RFR 'ReglerFreigabe' high)
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	pumpsRelease AT %I*: BOOL;
+	///TRUE if the hydraulics are OK
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	allOK AT %I*: BOOL;
+END_VAR
+VAR_OUTPUT
+	///Current status description
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	actualStatus: STRING;
+	///Output to restart the pumps
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	restartPumpsOutput AT %Q*: BOOL;
+	///Output to reset the errors
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	resetErrorsOutput AT %Q*: BOOL;
+	///Output to restart the TwinSAFE group
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	errorAcknowledge AT %Q*: BOOL;
+	///Statuses of the state machine
+	statuses: SafetyHydraulicsStatuses;
+	///Processes of the state machine
+	processes: SafetyHydraulicsProcesses;
+END_VAR
+VAR_IN_OUT
+	///Shared operator status
+	{attribute 'OPC.UA.DA' := '0'}
+	operatorStatus: OperatorStatus;
+	///Shared activity status
+	{attribute 'OPC.UA.DA' := '0'}
+	activityStatus: ActivityStatus;
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[statuses.healthStatus( isGood := allOK AND (NOT(groupComError OR (groupFbError OR groupOutError))) );
+statuses.busyStatus( isBusy := processes.startupPumps.statuses.busyStatus.busy OR processes.reset.statuses.busyStatus.busy );
+processes.startupPumps( isEnabled := (NOT(pumpsStartingUp OR processes.startupPumps.statuses.busyStatus.busy)) AND operatorStatus.tech );
+processes.reset( isEnabled := NOT(processes.reset.statuses.busyStatus.busy) );
+]]></ST>
+    </Implementation>
+    <Method Name="reset" Id="{6723d5e7-7462-40be-9f97-6650c600133e}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD reset : RequestResults
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[reset := THIS^.processes.reset.request();
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="startupPumps" Id="{c7de4c0e-e25a-4fb9-8d32-585e099844d5}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD startupPumps : RequestResults
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[startupPumps := THIS^.processes.startupPumps.request();
+]]></ST>
+      </Implementation>
+    </Method>
+  </POU>
+</TcPlcObject>

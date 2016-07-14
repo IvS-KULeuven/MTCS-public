@@ -1,0 +1,14 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="M3TranslationHomingProcedureStatuses" Id="{b2efa4cf-5090-487d-bc40-ef25f2aebe39}">
+    <Declaration><![CDATA[TYPE M3TranslationHomingProcedureStatuses :
+STRUCT
+	///Is the M3GotoProcedure in a busy state?
+	busyStatus: BusyStatus;
+	///Is the M3GotoProcedure in a healthy state?
+	healthStatus: HealthStatus;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

@@ -1,0 +1,26 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.5">
+  <POU Name="DriveOperatingModesToString" Id="{4fc7bd17-6ec2-43ad-b516-f822d5b5ec0a}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION DriveOperatingModesToString : STRING
+VAR_INPUT
+    mode : DriveOperatingModes;
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[CASE mode OF
+    
+    DriveOperatingModes.OPERATING_MODE_NONE:
+        DriveOperatingModesToString := 'None';
+    DriveOperatingModes.OPERATING_MODE_TORQUE_CONTROL:
+        DriveOperatingModesToString := 'Torque control';
+    DriveOperatingModes.OPERATING_MODE_VELOCITY_CONTROL:
+        DriveOperatingModesToString := 'Velocity control';
+    DriveOperatingModes.OPERATING_MODE_POSITION_CONTROL:
+        DriveOperatingModesToString := 'Position control';
+
+END_CASE]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

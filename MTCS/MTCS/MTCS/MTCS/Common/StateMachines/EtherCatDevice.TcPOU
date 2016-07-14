@@ -1,0 +1,24 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.2">
+  <POU Name="EtherCatDevice" Id="{9c0828ff-c601-44f3-b01a-d1ae04f427f7}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK EtherCatDevice EXTENDS SM_EtherCatDevice
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR
+    testVar : INT;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[IF GLOBAL.CONFIG.SIMULATION_ACTIVE THEN
+    SUPER^.infoData := 8;
+    SUPER^.wcState := FALSE;
+END_IF
+
+SUPER^();
+
+actualStatus := F_ConvStateToString(UINT_TO_WORD(infoData));]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

@@ -1,0 +1,12 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="M3RotationStatuses" Id="{c8cb4859-540c-44b1-a055-d3014478be05}">
+    <Declaration><![CDATA[TYPE M3RotationStatuses :
+STRUCT
+	healthStatus: HealthStatus;
+	busyStatus: BusyStatus;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

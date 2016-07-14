@@ -1,0 +1,14 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="M1AxialSupportStatuses" Id="{3e83089b-7112-4623-8050-a3113b9b5d8e}">
+    <Declaration><![CDATA[TYPE M1AxialSupportStatuses :
+STRUCT
+	///Operating status of the radial pressure setpoint
+	pressureSetpointStatus: OperatingStatus;
+	healthStatus: HealthStatus;
+	busyStatus: BusyStatus;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

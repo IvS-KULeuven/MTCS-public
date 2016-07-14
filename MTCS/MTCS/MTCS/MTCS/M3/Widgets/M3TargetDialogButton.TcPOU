@@ -1,0 +1,59 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.2">
+  <POU Name="M3TargetDialogButton" Id="{f15bc6ca-4753-498e-8223-0c93f95fe83a}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK M3TargetDialogButton
+VAR_INPUT
+    big : BOOL;
+END_VAR
+VAR_OUTPUT
+    text : STRING;
+    deactivate : BOOL;
+    fontSize : INT;
+    fontFlags : INT;
+END_VAR
+VAR_IN_OUT
+    cfg : M3PositionConfig;
+	process : M3GotoKnownPosition;
+END_VAR
+VAR
+    altName : STRING;
+    do_request : BOOL := FALSE;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[IF cfg.name = '' THEN
+    text := altName;
+ELSE
+    text := cfg.name;
+END_IF
+
+deactivate := (NOT (cfg.doRotation OR cfg.doTranslation)) OR process.statuses.enabledStatus.disabled;
+
+IF do_request THEN
+    process.request(name := cfg.name);
+    do_request := FALSE;
+END_IF]]></ST>
+    </Implementation>
+    <Method Name="FB_init" Id="{dfd6efb9-a9c8-4ae2-b532-e6f5767c70cf}">
+      <Declaration><![CDATA[METHOD FB_init : BOOL
+VAR_INPUT
+	bInitRetains : BOOL; // if TRUE, the retain variables are initialized (warm start / cold start)
+	bInCopyCode : BOOL;  // if TRUE, the instance afterwards gets moved into the copy code (online change)
+    name : STRING;
+    big : BOOL;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF big THEN
+    fontSize := 13;
+    fontFlags := 2;
+ELSE
+    fontSize := 11;
+    fontFlags := 0;
+END_IF
+
+altName := name;]]></ST>
+      </Implementation>
+    </Method>
+  </POU>
+</TcPlcObject>

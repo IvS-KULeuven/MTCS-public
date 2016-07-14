@@ -1,0 +1,91 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="AxesSetAlphaDeltaVelocityProcess" Id="{5acd9289-1302-40d6-a892-bc48939c35c9}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK AxesSetAlphaDeltaVelocityProcess EXTENDS BaseProcess
+VAR_INPUT
+	///Arguments to be set, before writing do_request TRUE
+	{attribute 'OPC.UA.DA' := '1'}
+	set: AxesSetAlphaDeltaVelocityProcessArgs;
+END_VAR
+VAR_OUTPUT
+	///Arguments in use by the process, if do_request was accepted
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	get: AxesSetAlphaDeltaVelocityProcessArgs;
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[IF do_request THEN
+    do_request_result := request(
+    units := set.units,
+    alphaVelocity := set.alphaVelocity,
+    deltaVelocity := set.deltaVelocity);
+    do_request := FALSE;
+END_IF;
+SUPER^();
+]]></ST>
+    </Implementation>
+    <Method Name="start" Id="{2620d2ed-1903-491d-ab2e-07231132ce46}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD start
+VAR_INPUT
+	///Units of the alphaVelocity and deltaVelocity
+	units: AxesMoveVelocityUnits;
+	///Velocity in alpha direction
+	alphaVelocity: LREAL;
+	///Velocity in delta direction
+	deltaVelocity: LREAL;
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[THIS^.get.units := units;
+THIS^.get.alphaVelocity := alphaVelocity;
+THIS^.get.deltaVelocity := deltaVelocity;
+THIS^.statuses.busyStatus( isBusy := TRUE );
+THIS^.statuses.healthStatus( isGood := TRUE );
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="request" Id="{31c5f226-bf88-42a8-a483-8bd297116c4b}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD request : RequestResults
+VAR_INPUT
+	///Units of the alphaVelocity and deltaVelocity
+	units: AxesMoveVelocityUnits;
+	///Velocity in alpha direction
+	alphaVelocity: LREAL;
+	///Velocity in delta direction
+	deltaVelocity: LREAL;
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF THIS^.statuses.enabledStatus.enabled THEN
+    THIS^.start(
+        units := units,
+        alphaVelocity := alphaVelocity,
+        deltaVelocity := deltaVelocity);
+    request := RequestResults.ACCEPTED;
+ELSE
+    request := RequestResults.REJECTED;
+END_IF;
+]]></ST>
+      </Implementation>
+    </Method>
+  </POU>
+</TcPlcObject>

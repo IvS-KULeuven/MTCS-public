@@ -1,0 +1,30 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="MTCSParts" Id="{d3867b5b-f3d4-4ba8-98b7-859c033ae67c}">
+    <Declaration><![CDATA[TYPE MTCSParts :
+STRUCT
+	///The telemetry
+	telemetry: Telemetry;
+	///The Cover of the telescope
+	cover: Cover;
+	///The primary mirror of the telescope
+	m1: M1;
+	///The secondary mirror of the telescope
+	m2: M2;
+	///The tertiary mirror of the telescope
+	m3: M3;
+	///The Services system
+	services: Services;
+	///The safety
+	safety: Safety;
+	///The hydraulics
+	hydraulics: Hydraulics;
+	///The axes
+	axes: Axes;
+	///The config manager (to load/save/activate configuration data)
+	configManager: ConfigManager;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

@@ -1,0 +1,34 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.2">
+  <POU Name="M3IOWidget" Id="{7637a8fe-8efa-469d-8fa4-71826c4d29f5}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK M3IOWidget
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR
+	actualStatus : StatusWidget;
+	canOpenBus : CANopenBusWidget;
+	coupler : EtherCatDeviceWidget;
+	slot1 : EtherCatDeviceWidget;
+	slot2 : EtherCatDeviceWidget;
+	slot3 : EtherCatDeviceWidget;
+	slot4 : EtherCatDeviceWidget;
+END_VAR
+VAR_IN_OUT
+	ref : M3IO;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[actualStatus(text  := ref.actualStatus,
+             color := HealthToColor(ref.statuses.healthStatus));
+
+canOpenBus(ref := ref.parts.canOpenBus);
+coupler(device := ref.parts.coupler);
+slot1(device := ref.parts.slot1);
+slot2(device := ref.parts.slot2);
+slot3(device := ref.parts.slot3);
+slot4(device := ref.parts.slot4);]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

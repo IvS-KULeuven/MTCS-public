@@ -1,0 +1,68 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="SM_SafetyHydraulicsAndSafetyIO" Id="{58f65abb-6dbf-4a9a-bc2d-6552a374cb65}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK SM_SafetyHydraulicsAndSafetyIO
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+	///Current status description
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	actualStatus: STRING;
+	///Statuses of the state machine
+	statuses: SafetyHydraulicsAndSafetyIOStatuses;
+	///Parts of the state machine
+	parts: SafetyHydraulicsAndSafetyIOParts;
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[parts.COU(
+    id := 'HS:COU',
+    typeId := 'EK1101');
+parts.DO1(
+    id := 'HS:DI1',
+    typeId := 'EL2008');
+parts.SI1(
+    id := 'HS:SI1',
+    typeId := 'EL1904');
+parts.SI2(
+    id := 'HS:SI2',
+    typeId := 'EL1904');
+parts.SI3(
+    id := 'HS:SI3',
+    typeId := 'EL1904');
+parts.SI4(
+    id := 'HS:SI3',
+    typeId := 'EL1904');
+parts.SL(
+    id := 'HS:SL',
+    typeId := 'EL6900');
+parts.SO1(
+    id := 'HS:SO1',
+    typeId := 'EL2904');
+parts.AI1(
+    id := 'HS:AI1',
+    typeId := 'EL3102');
+parts.AI2(
+    id := 'HS:AI2',
+    typeId := 'EL3152');
+parts.RTD1(
+    id := 'HS:RTD1',
+    typeId := 'EL3202-0010');
+parts.PWR1(
+    id := 'HS:PWR1',
+    typeId := 'EL9410');
+parts.AO1(
+    id := 'HS:AO1',
+    typeId := 'EL4132');
+statuses.healthStatus(
+    isGood := parts.COU.statuses.healthStatus.isGood AND (parts.DO1.statuses.healthStatus.isGood AND (parts.SI1.statuses.healthStatus.isGood AND (parts.SI2.statuses.healthStatus.isGood AND (parts.SI3.statuses.healthStatus.isGood AND (parts.SI4.statuses.healthStatus.isGood AND (parts.SL.statuses.healthStatus.isGood AND (parts.SO1.statuses.healthStatus.isGood AND (parts.AI1.statuses.healthStatus.isGood AND (parts.AI2.statuses.healthStatus.isGood AND (parts.RTD1.statuses.healthStatus.isGood AND (parts.PWR1.statuses.healthStatus.isGood AND parts.AO1.statuses.healthStatus.isGood))))))))))),
+    hasWarning := parts.COU.statuses.healthStatus.hasWarning OR (parts.DO1.statuses.healthStatus.hasWarning OR (parts.SI1.statuses.healthStatus.hasWarning OR (parts.SI2.statuses.healthStatus.hasWarning OR (parts.SI3.statuses.healthStatus.hasWarning OR (parts.SI4.statuses.healthStatus.hasWarning OR (parts.SL.statuses.healthStatus.hasWarning OR (parts.SO1.statuses.healthStatus.hasWarning OR (parts.AI1.statuses.healthStatus.hasWarning OR (parts.AI2.statuses.healthStatus.hasWarning OR (parts.RTD1.statuses.healthStatus.hasWarning OR (parts.PWR1.statuses.healthStatus.hasWarning OR parts.AO1.statuses.healthStatus.hasWarning))))))))))));
+]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

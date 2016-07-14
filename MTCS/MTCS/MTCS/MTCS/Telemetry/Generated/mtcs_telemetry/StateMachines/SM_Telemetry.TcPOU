@@ -1,0 +1,128 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="SM_Telemetry" Id="{c8dd9036-3ce7-4bac-a965-0e5326506c04}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK SM_Telemetry
+VAR_INPUT
+	///Editable configuration of the Telemetry subsystem
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	editableConfig: TelemetryConfig;
+END_VAR
+VAR_OUTPUT
+	///Current status description
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	actualStatus: STRING;
+	///Active configuration of the Telemetry subsystem
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	config: TelemetryConfig;
+	///Statuses of the state machine
+	statuses: TelemetryStatuses;
+	///Parts of the state machine
+	parts: TelemetryParts;
+	///Processes of the state machine
+	processes: TelemetryProcesses;
+END_VAR
+VAR_IN_OUT
+	///Shared operator status
+	{attribute 'OPC.UA.DA' := '0'}
+	operatorStatus: OperatorStatus;
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[parts.temperatures( config := config.temperatures );
+parts.relativeHumidities( config := config.relativeHumidities );
+parts.dewpoints(
+    config := config.dewpoints,
+    temperatures := parts.temperatures,
+    relativeHumidities := parts.relativeHumidities);
+parts.accelerometers( config := config.accelerometers );
+parts.io();
+parts.flatfieldLeds( isEnabled := statuses.initializationStatus.initialized AND statuses.operatingStatus.manual );
+parts.configManager( isEnabled := operatorStatus.tech );
+statuses.initializationStatus();
+statuses.healthStatus(
+    isGood := parts.temperatures.statuses.healthStatus.isGood AND (parts.relativeHumidities.statuses.healthStatus.isGood AND (parts.dewpoints.statuses.healthStatus.isGood AND (parts.accelerometers.statuses.healthStatus.isGood AND (parts.io.statuses.healthStatus.isGood AND parts.configManager.statuses.healthStatus.isGood)))),
+    hasWarning := parts.temperatures.statuses.healthStatus.hasWarning OR (parts.relativeHumidities.statuses.healthStatus.hasWarning OR (parts.dewpoints.statuses.healthStatus.hasWarning OR (parts.accelerometers.statuses.healthStatus.hasWarning OR (parts.io.statuses.healthStatus.hasWarning OR parts.configManager.statuses.healthStatus.hasWarning)))));
+statuses.busyStatus( isBusy := statuses.initializationStatus.initializing OR (parts.flatfieldLeds.statuses.busyStatus.busy OR parts.configManager.statuses.busyStatus.busy) );
+statuses.operatingStatus( superState := statuses.initializationStatus.initialized );
+processes.initialize( isEnabled := statuses.initializationStatus.shutdown OR (statuses.initializationStatus.initializingFailed OR statuses.initializationStatus.initialized) );
+processes.lock( isEnabled := operatorStatus.tech AND statuses.initializationStatus.initialized );
+processes.unlock( isEnabled := operatorStatus.tech AND statuses.initializationStatus.locked );
+processes.changeOperatingState( isEnabled := statuses.busyStatus.idle AND statuses.initializationStatus.initialized );
+]]></ST>
+    </Implementation>
+    <Method Name="unlock" Id="{317f5cba-f810-4465-8ce4-05a0c9ac4481}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD unlock : RequestResults
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[unlock := THIS^.processes.unlock.request();
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="initialize" Id="{6318a031-9e44-4793-b981-8ea553b49d3d}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD initialize : RequestResults
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[initialize := THIS^.processes.initialize.request();
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="lock" Id="{7a2ef9a1-50e9-4dbc-9ae2-fac4c5c94390}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD lock : RequestResults
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[lock := THIS^.processes.lock.request();
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="changeOperatingState" Id="{ff73fe20-e39d-441d-8442-a7570a4c8802}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD changeOperatingState : RequestResults
+VAR_INPUT
+	state: OperatingStates;
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[changeOperatingState := THIS^.processes.changeOperatingState.request( state := state );
+]]></ST>
+      </Implementation>
+    </Method>
+  </POU>
+</TcPlcObject>

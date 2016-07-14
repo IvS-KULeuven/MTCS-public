@@ -1,0 +1,759 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="MTCS" Id="{3ce453eb-cc83-4f2e-8939-a8c99b99381b}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK MTCS EXTENDS SM_MTCS
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR
+    _initializingCurrentAction : INT;
+    _onFirstStartCurrentAction : INT;
+	
+	_nt_reboot : NT_Reboot;
+	_nt_shutdown : NT_Shutdown;
+    
+    _wakeUpState : INT;
+    _goToSleepState : INT;
+    _changeInstrumentState : INT;
+    _changeInstrumentConfig : InstrumentConfig;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[// flip the PLC_TASK_FLIP bool once every cycle
+GLOBAL.config.PLC_TASK_FLIP := NOT GLOBAL.config.PLC_TASK_FLIP;
+
+_update();
+
+_onFirstStart();
+_locking();
+_initializing();
+_changingOperator();
+_verifyingPassword();
+_locking();
+_unlocking();
+_rebooting();
+_shuttingDown();
+_wakingUp();
+_goingToSleep();
+_changingInstrument();
+
+_update();]]></ST>
+    </Implementation>
+    <Method Name="_onFirstStart" Id="{05d5ce46-f090-42e1-91a1-71c9f604ea40}">
+      <Declaration><![CDATA[METHOD _onFirstStart
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[CASE _onFirstStartCurrentAction OF
+    0:
+        // start loading the config from XML file
+        parts.configManager.processes.load.start(parts.configManager.processes.load.set.filePath);
+        _onFirstStartCurrentAction := 1;
+    1:
+        // wait until the config has been loaded
+        IF parts.configManager.processes.load.statuses.busyStatus.idle THEN
+            IF parts.configManager.processes.load.statuses.healthStatus.good THEN
+                _onFirstStartCurrentAction := 2;
+            ELSE
+                _onFirstStartCurrentAction := 999;
+            END_IF
+        END_IF
+    2:
+        // now start activating the config
+        parts.configManager.processes.activate.start();
+        _onFirstStartCurrentAction := 3;
+    3:
+        // wait until the config has been activated
+        IF parts.configManager.processes.activate.statuses.busyStatus.idle THEN
+            IF parts.configManager.processes.activate.statuses.healthStatus.good THEN
+                _onFirstStartCurrentAction := 4;
+            ELSE
+                _onFirstStartCurrentAction := 999;
+            END_IF
+        END_IF
+    4:
+        // nothing to do, done!
+        ;
+    999:
+        // error, but nothing we can do about it now!
+        ;
+
+END_CASE]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_update" Id="{18915f1f-f988-4515-a532-9f79c7ccccfa}">
+      <Declaration><![CDATA[METHOD _update
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[SUPER^();
+
+
+IF  (parts.axes.statuses.initializationStatus.initialized OR parts.axes.statuses.initializationStatus.locked) AND 
+    (parts.cover.statuses.initializationStatus.initialized OR parts.cover.statuses.initializationStatus.locked) AND 
+    (parts.hydraulics.statuses.initializationStatus.initialized OR parts.hydraulics.statuses.initializationStatus.locked) AND 
+    (parts.m1.statuses.initializationStatus.initialized OR parts.m1.statuses.initializationStatus.locked) AND 
+    (parts.m2.statuses.initializationStatus.initialized OR parts.m2.statuses.initializationStatus.locked) AND 
+    (parts.m3.statuses.initializationStatus.initialized OR parts.m3.statuses.initializationStatus.locked) AND 
+    (parts.safety.statuses.initializationStatus.initialized OR parts.safety.statuses.initializationStatus.locked) AND 
+    (parts.services.statuses.initializationStatus.initialized OR parts.services.statuses.initializationStatus.locked) AND 
+    (parts.telemetry.statuses.initializationStatus.initialized OR parts.telemetry.statuses.initializationStatus.locked) THEN
+    
+            statuses.initializationStatus(superState := TRUE, state := InitializationStates.INITIALIZED);
+            
+ELSIF  parts.axes.statuses.initializationStatus.initializingFailed OR 
+    parts.cover.statuses.initializationStatus.initializingFailed OR 
+    parts.hydraulics.statuses.initializationStatus.initializingFailed OR 
+    parts.m1.statuses.initializationStatus.initializingFailed OR 
+    parts.m2.statuses.initializationStatus.initializingFailed OR 
+    parts.m3.statuses.initializationStatus.initializingFailed OR 
+    parts.safety.statuses.initializationStatus.initializingFailed OR 
+    parts.services.statuses.initializationStatus.initializingFailed OR 
+    parts.telemetry.statuses.initializationStatus.initializingFailed THEN
+    
+            statuses.initializationStatus(superState := TRUE, state := InitializationStates.INITIALIZING_FAILED);
+            
+ELSIF  parts.axes.statuses.initializationStatus.initializing OR 
+    parts.cover.statuses.initializationStatus.initializing OR 
+    parts.hydraulics.statuses.initializationStatus.initializing OR 
+    parts.m1.statuses.initializationStatus.initializing OR 
+    parts.m2.statuses.initializationStatus.initializing OR 
+    parts.m3.statuses.initializationStatus.initializing OR 
+    parts.safety.statuses.initializationStatus.initializing OR 
+    parts.services.statuses.initializationStatus.initializing OR 
+    parts.telemetry.statuses.initializationStatus.initializing THEN
+    
+            statuses.initializationStatus(superState := TRUE, state := InitializationStates.INITIALIZING);
+            
+ELSIF  parts.axes.statuses.initializationStatus.shutdown OR 
+    parts.cover.statuses.initializationStatus.shutdown OR 
+    parts.hydraulics.statuses.initializationStatus.shutdown OR 
+    parts.m1.statuses.initializationStatus.shutdown OR 
+    parts.m2.statuses.initializationStatus.shutdown OR 
+    parts.m3.statuses.initializationStatus.shutdown OR 
+    parts.safety.statuses.initializationStatus.shutdown OR 
+    parts.services.statuses.initializationStatus.shutdown OR 
+    parts.telemetry.statuses.initializationStatus.shutdown THEN
+
+            statuses.initializationStatus(superState := TRUE, state := InitializationStates.SHUTDOWN);
+ELSE
+    statuses.initializationStatus(superState := FALSE);
+END_IF
+
+
+IF statuses.initializationStatus.initialized THEN
+    IF statuses.healthStatus.bad THEN
+        actualStatus := 'ERROR';
+    ELSIF statuses.healthStatus.warning THEN
+        actualStatus := 'Warning';
+    ELSIF statuses.healthStatus.good THEN 
+        IF statuses.busyStatus.busy THEN
+            actualStatus := 'Busy';
+        ELSIF statuses.busyStatus.idle THEN
+            actualStatus := 'Idle';
+        ELSE
+            actualStatus := 'UNKNOWN';
+        END_IF
+    ELSE
+        actualStatus := 'UNKNOWN';
+	END_IF
+ELSE
+    actualStatus := InitializationStatusToString(statuses.initializationStatus);
+END_IF
+
+
+isInstrumentActive := parts.m3.statuses.busyStatus.idle AND parts.m3.actualKnownPositionID <> M3PositionIDs.UNKNOWN;
+
+IF processes.changeInstrument.isBusy() THEN
+    activeInstrumentName := 'Changing...';
+    activeInstrumentNumber := -1;
+ELSE
+    IF isInstrumentActive THEN
+        activeInstrumentName := parts.m3.actualKnownPositionName;
+        
+        IF activeInstrumentName = config.instruments.instrument0.name THEN
+            activeInstrumentNumber := 0;
+            activeInstrument := config.instruments.instrument0;
+        ELSIF activeInstrumentName = config.instruments.instrument1.name THEN
+            activeInstrumentNumber := 1;
+            activeInstrument := config.instruments.instrument1;
+        ELSIF activeInstrumentName = config.instruments.instrument2.name THEN
+            activeInstrumentNumber := 2;
+            activeInstrument := config.instruments.instrument2;
+        ELSIF activeInstrumentName = config.instruments.instrument3.name THEN
+            activeInstrumentNumber := 3;
+            activeInstrument := config.instruments.instrument3;
+        ELSIF activeInstrumentName = config.instruments.instrument4.name THEN
+            activeInstrumentNumber := 4;
+            activeInstrument := config.instruments.instrument4;
+        ELSIF activeInstrumentName = config.instruments.instrument5.name THEN
+            activeInstrumentNumber := 5;
+            activeInstrument := config.instruments.instrument5;
+        ELSIF activeInstrumentName = config.instruments.instrument6.name THEN
+            activeInstrumentNumber := 6;
+            activeInstrument := config.instruments.instrument6;
+        ELSIF activeInstrumentName = config.instruments.instrument7.name THEN
+            activeInstrumentNumber := 7;
+            activeInstrument := config.instruments.instrument7;
+        ELSIF activeInstrumentName = config.instruments.instrument8.name THEN
+            activeInstrumentNumber := 8;
+            activeInstrument := config.instruments.instrument8;
+        ELSIF activeInstrumentName = config.instruments.instrument9.name THEN
+            activeInstrumentNumber := 9;
+            activeInstrument := config.instruments.instrument9;
+        ELSE
+            activeInstrumentNumber := -1;
+		END_IF
+            
+    ELSE
+        activeInstrumentName := 'None';
+        activeInstrumentNumber := -1;
+    END_IF
+END_IF
+
+
+
+
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_shuttingDown" Id="{2934a8e8-8fdd-47c3-b7fc-490c90acda9f}">
+      <Declaration><![CDATA[METHOD _shuttingDown
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF processes.shutdown.statuses.busyStatus.busy THEN
+
+    // make a rising edge for START:
+	_nt_shutdown(START := FALSE);
+	_nt_shutdown(NETID := '', 
+               START := TRUE,
+               DELAY := 0);
+
+	// done
+	processes.shutdown.setGood();
+	processes.shutdown.setFinished();
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_wakingUp" Id="{4479d633-1c89-439e-87a7-c2aa6fbce4e3}">
+      <Declaration><![CDATA[METHOD _wakingUp
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF processes.wakeUp.statuses.busyStatus.busy THEN
+	
+    CASE _wakeUpState OF
+        0:
+            parts.hydraulics.processes.startUpPumps.start();
+            _wakeUpState := 1;
+        1:
+            IF parts.hydraulics.processes.startUpPumps.statuses.busyStatus.idle THEN
+                IF parts.hydraulics.processes.startUpPumps.statuses.healthStatus.good THEN
+                    _wakeUpState := 2;
+                ELSE
+                    _wakeUpState := 999;
+                END_IF
+			END_IF
+        2:
+            parts.axes.processes.powerOn.start(azi := TRUE, ele := TRUE, roc := FALSE, ron := FALSE, fw := FALSE);
+            _wakeUpState := 3;
+        3:
+            IF isInstrumentActive THEN
+                processes.changeInstrument.start(name := activeInstrumentName);
+            END_IF
+            _wakeUpState := 1000;
+        999:
+            // done with error
+            processes.wakeUp.setBad();
+            processes.wakeUp.setFinished();
+            _wakeUpState := 0;
+    
+        1000:
+            // done with error
+            processes.wakeUp.setGood();
+            processes.wakeUp.setFinished();
+            _wakeUpState := 0;
+    
+	END_CASE
+
+
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_changingInstrument" Id="{6d1a783a-e732-476b-8042-c9b10400b0fe}">
+      <Declaration><![CDATA[METHOD _changingInstrument 
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF processes.changeInstrument.statuses.busyStatus.busy THEN
+   
+    CASE _changeInstrumentState OF
+        
+        0:
+            processes.changeInstrument.setActualStatus('Changing...');
+            
+            // store the config of the given instrument
+            IF processes.changeInstrument.get.name = config.instruments.instrument0.name THEN
+                _changeInstrumentConfig := config.instruments.instrument0;
+            ELSIF processes.changeInstrument.get.name = config.instruments.instrument1.name THEN
+                _changeInstrumentConfig := config.instruments.instrument1;
+            ELSIF processes.changeInstrument.get.name = config.instruments.instrument2.name THEN
+                _changeInstrumentConfig := config.instruments.instrument2;
+            ELSIF processes.changeInstrument.get.name = config.instruments.instrument3.name THEN
+                _changeInstrumentConfig := config.instruments.instrument3;
+            ELSIF processes.changeInstrument.get.name = config.instruments.instrument4.name THEN
+                _changeInstrumentConfig := config.instruments.instrument4;
+            ELSIF processes.changeInstrument.get.name = config.instruments.instrument5.name THEN
+                _changeInstrumentConfig := config.instruments.instrument5;
+            ELSIF processes.changeInstrument.get.name = config.instruments.instrument6.name THEN
+                _changeInstrumentConfig := config.instruments.instrument6;
+            ELSIF processes.changeInstrument.get.name = config.instruments.instrument7.name THEN
+                _changeInstrumentConfig := config.instruments.instrument7;
+            ELSIF processes.changeInstrument.get.name = config.instruments.instrument8.name THEN
+                _changeInstrumentConfig := config.instruments.instrument8;
+            ELSIF processes.changeInstrument.get.name = config.instruments.instrument9.name THEN
+                _changeInstrumentConfig := config.instruments.instrument9;
+            ELSE
+                // wrong name
+                _changeInstrumentState := 999;
+			END_IF
+            
+            IF _changeInstrumentState <> 999 THEN
+                _changeInstrumentState := 1;
+			END_IF
+            
+        1:
+            processes.changeInstrument.setActualStatus(CONCAT('Changing to ', _changeInstrumentConfig.name) );
+            IF _changeInstrumentConfig.changeM3 THEN
+                parts.m3.processes.gotoKnownPosition.start(name := _changeInstrumentConfig.name);
+			END_IF
+            IF _changeInstrumentConfig.doInitialThermalFocus THEN
+                parts.m2.processes.doThermalFocusForStationName.start(station := _changeInstrumentConfig.name);
+			END_IF
+            IF _changeInstrumentConfig.moveKnownPosition THEN
+                parts.axes.processes.moveKnownPosition.start(name := _changeInstrumentConfig.moveKnownPositionName);
+			END_IF
+            
+            _changeInstrumentState := 2;
+        2:
+            IF       (parts.m3.processes.gotoKnownPosition.statuses.busyStatus.idle OR (NOT _changeInstrumentConfig.changeM3))
+                AND  (parts.m2.processes.doThermalFocus.statuses.busyStatus.idle OR (NOT _changeInstrumentConfig.doInitialThermalFocus)) 
+                AND  (parts.axes.processes.moveKnownPosition.statuses.busyStatus.idle OR (NOT _changeInstrumentConfig.moveKnownPosition))
+            THEN
+                IF       (parts.m3.processes.gotoKnownPosition.statuses.healthStatus.good OR (NOT _changeInstrumentConfig.changeM3))
+                    AND  (parts.m2.processes.doThermalFocus.statuses.healthStatus.good OR (NOT _changeInstrumentConfig.doInitialThermalFocus))
+                    AND  (parts.axes.processes.moveKnownPosition.statuses.healthStatus.good OR (NOT _changeInstrumentConfig.moveKnownPosition))
+                THEN
+                    _changeInstrumentState := 3;
+                ELSIF parts.m3.processes.gotoKnownPosition.statuses.healthStatus.bad THEN
+                    processes.changeInstrument.setActualStatus('M3 error');
+                    _changeInstrumentState := 999;
+                ELSIF parts.m2.processes.doThermalFocus.statuses.healthStatus.bad THEN
+                    processes.changeInstrument.setActualStatus('M2 error');
+                    _changeInstrumentState := 999;
+                ELSIF parts.axes.processes.moveKnownPosition.statuses.healthStatus.bad THEN
+                    processes.changeInstrument.setActualStatus('Axes error');
+                    _changeInstrumentState := 999;
+                ELSE
+                    processes.changeInstrument.setActualStatus('ERROR'); // should not be happening
+                    _changeInstrumentState := 999;
+                END_IF
+			END_IF
+        3:
+            // power off has priority over power on
+            IF _changeInstrumentConfig.powerOffRoc THEN
+                parts.axes.parts.roc.processes.powerOff.start();
+                _changeInstrumentState := 4;
+            ELSIF _changeInstrumentConfig.powerOnRoc THEN
+                parts.axes.parts.roc.processes.powerOn.start();
+                _changeInstrumentState := 5;
+            ELSE
+                _changeInstrumentState := 6;
+			END_IF
+        4:
+            IF parts.axes.parts.roc.processes.powerOff.isIdle() THEN
+                IF parts.axes.parts.roc.processes.powerOff.isGood() THEN
+                    _changeInstrumentState := 6;
+                ELSE
+                    _changeInstrumentState := 999;
+                    processes.changeInstrument.setActualStatus('ROC error');
+				END_IF
+			END_IF
+        5:
+            IF parts.axes.parts.roc.processes.powerOn.isIdle() THEN
+                IF parts.axes.parts.roc.processes.powerOn.isGood() THEN
+                    _changeInstrumentState := 6;
+                ELSE
+                    _changeInstrumentState := 999;
+                    processes.changeInstrument.setActualStatus('ROC error');
+				END_IF
+			END_IF
+        6:
+            // power off has priority over power on
+            IF _changeInstrumentConfig.powerOffRon THEN
+                parts.axes.parts.ron.processes.powerOff.start();
+                _changeInstrumentState := 7;
+            ELSIF _changeInstrumentConfig.powerOnRon THEN
+                parts.axes.parts.ron.processes.powerOn.start();
+                _changeInstrumentState := 8;
+            ELSE
+                _changeInstrumentState := 9;
+			END_IF
+        7:
+            IF parts.axes.parts.ron.processes.powerOff.isIdle() THEN
+                IF parts.axes.parts.ron.processes.powerOff.isGood() THEN
+                    _changeInstrumentState := 9;
+                ELSE
+                    _changeInstrumentState := 999;
+                    processes.changeInstrument.setActualStatus('RON error');
+				END_IF
+			END_IF
+        8:
+            IF parts.axes.parts.ron.processes.powerOn.isIdle() THEN
+                IF parts.axes.parts.ron.processes.powerOn.isGood() THEN
+                    _changeInstrumentState := 9;
+                ELSE
+                    _changeInstrumentState := 999;
+                    processes.changeInstrument.setActualStatus('RON error');
+				END_IF
+			END_IF
+        9:
+            IF _changeInstrumentConfig.loadPointingModel THEN
+                parts.axes.processes.enablePointingModel.start(name := _changeInstrumentConfig.name);
+                _changeInstrumentState := 10;
+            ELSE
+                _changeInstrumentState := 11;
+			END_IF
+        10:
+            IF parts.axes.processes.enablePointingModel.isIdle() THEN
+                IF parts.axes.processes.enablePointingModel.isGood() THEN
+                    _changeInstrumentState := 11;
+                ELSE
+                    _changeInstrumentState := 999;
+                    processes.changeInstrument.setActualStatus('TPOINT error');
+				END_IF
+			END_IF
+        11:
+            // done (rotator active/inactive is automatically updated by axes)
+            _changeInstrumentState := 1000;
+            processes.changeInstrument.setActualStatus(CONCAT('Changed to ', _changeInstrumentConfig.name));
+        999:
+            // done with error
+            processes.changeInstrument.setBad();
+            processes.changeInstrument.setFinished();
+            _changeInstrumentState := 0;
+    
+        1000:
+            // done with error
+            processes.changeInstrument.setGood();
+            processes.changeInstrument.setFinished();
+            _changeInstrumentState := 0;
+	END_CASE
+    
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_changingOperator" Id="{71327635-971d-4b68-be41-317647b9b328}">
+      <Declaration><![CDATA[METHOD _changingOperator 
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF processes.changeOperator.statuses.busyStatus.busy THEN
+    // ok we're started
+	processes.changeOperator.setStarted();
+    
+    // depending on the state, we'll check the password (or not)
+    IF processes.changeOperator.get.state = OperatorStates.TECH THEN
+        // check the password for TECH!    
+        IF processes.changeOperator.get.password = GLOBAL.config.PASSWORD_TECH THEN
+            // ok!
+            noOfFailedOperatorChanges := 0;
+            statuses.operatorStatus(state := OperatorStates.TECH);
+            processes.changeOperator.setGood();
+            processes.changeOperator.setFinished();
+        ELSE
+            // wrong password!
+            noOfFailedOperatorChanges := noOfFailedOperatorChanges + 1;
+            processes.changeOperator.setBad();
+            processes.changeOperator.setFinished();
+		END_IF
+    ELSE
+        // no password needed
+        statuses.operatorStatus(state := processes.changeOperator.get.state);
+        processes.changeOperator.setGood();
+	    processes.changeOperator.setFinished();
+	END_IF
+    
+    // whether or not we logged in, there needs to be a new password entered,
+    // so the current status is again 'bad'!
+    statuses.passwordHealthStatus(isGood := FALSE);
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="FB_init" Id="{ad7db2e0-c908-4780-a791-cd474972b74a}">
+      <Declaration><![CDATA[METHOD FB_init : BOOL
+VAR_INPUT
+	bInitRetains : BOOL; // if TRUE, the retain variables are initialized (warm start / cold start)
+	bInCopyCode : BOOL;  // if TRUE, the instance afterwards gets moved into the copy code (online change)
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[processes.changeOperator.start(state := OperatorStates.OBSERVER, password := '');
+
+parts.configManager.configure(
+    editableConfigAddress       := ADR(editableConfig),
+    activeConfigAddress         := ADR(config),
+    configLength                := SIZEOF(editableConfig),
+    editableConfigSymbolName    := GLOBAL.config.MTCS_EDITABLE_CONFIG_SYMBOL_NAME,
+    activeConfigSymbolName      := GLOBAL.config.MTCS_ACTIVE_CONFIG_SYMBOL_NAME,
+    configFilePath              := GLOBAL.config.MTCS_CONFIG_FILE_PATH);
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_goingToSleep" Id="{bbbcfd94-9975-4742-b22c-f4d1defe58dc}">
+      <Declaration><![CDATA[METHOD _goingToSleep
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF processes.goToSleep.statuses.busyStatus.busy THEN
+    
+    CASE _goToSleepState OF
+        0:
+            parts.axes.processes.powerOff.start();
+            _goToSleepState := 1;
+        1:
+            IF parts.axes.processes.powerOff.statuses.busyStatus.idle THEN
+                // regardless of success or failure, go to the next step
+                _goToSleepState := 2;
+			END_IF
+        2:
+            parts.hydraulics.processes.stopPumps.start();
+            _goToSleepState := 3;
+        3:
+            IF parts.hydraulics.processes.stopPumps.statuses.busyStatus.idle THEN
+                IF parts.hydraulics.processes.stopPumps.statuses.healthStatus.good THEN
+                    _goToSleepState := 1000;
+                ELSE
+                    _goToSleepState := 999;
+                END_IF
+			END_IF
+        999:
+            // done with error
+            processes.goToSleep.setBad();
+            processes.goToSleep.setFinished();
+            _goToSleepState := 0;
+    
+        1000:
+            // done with error
+            processes.goToSleep.setGood();
+            processes.goToSleep.setFinished();
+            _goToSleepState := 0;
+    
+	END_CASE
+
+
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_rebooting" Id="{c42fd11c-bde9-45ce-bf1c-605efbfd8605}">
+      <Declaration><![CDATA[METHOD _rebooting
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF processes.reboot.statuses.busyStatus.busy THEN
+
+    // make a rising edge for START:
+	_nt_reboot(START := FALSE);
+	_nt_reboot(NETID := '', 
+               START := TRUE,
+               DELAY := 0);
+
+	// done
+	processes.reboot.setGood();
+	processes.reboot.setFinished();
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_locking" Id="{e298193d-97a1-436d-b192-f5ff9c4bb04d}">
+      <Declaration><![CDATA[METHOD _locking
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF processes.lock.statuses.busyStatus.busy THEN
+	statuses.initializationStatus(state := InitializationStates.LOCKED);
+	
+	// done
+	processes.lock.setGood();
+	processes.lock.setFinished();
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_verifyingPassword" Id="{f1cc9ae2-3859-4808-a52c-0cdecc3835f2}">
+      <Declaration><![CDATA[METHOD _verifyingPassword 
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF processes.verifyPassword.isBusy() THEN
+    // ok we're started
+	processes.verifyPassword.setStarted();
+    
+    // depending on the state, we'll check the password (or not)
+    IF processes.verifyPassword.get.state = OperatorStates.TECH THEN
+        // check the password for TECH!    
+        IF processes.verifyPassword.get.password = GLOBAL.config.PASSWORD_TECH THEN
+            // ok!
+            noOfFailedOperatorChanges := 0;
+            statuses.passwordHealthStatus(isGood := TRUE);
+            processes.verifyPassword.setGood();
+            processes.verifyPassword.setFinished();
+        ELSE
+            // wrong password!
+            noOfFailedOperatorChanges := noOfFailedOperatorChanges + 1;
+            statuses.passwordHealthStatus(isGood := FALSE);
+            processes.verifyPassword.setBad();
+            processes.verifyPassword.setFinished();
+		END_IF
+    ELSE
+        // no password needed
+        statuses.operatorStatus(state := processes.changeOperator.get.state);
+        // there was no password needed, so we can "reset" the password health status again:
+        statuses.passwordHealthStatus(isGood := FALSE);
+        processes.changeOperator.setGood();
+	    processes.changeOperator.setFinished();
+	END_IF
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_unlocking" Id="{f80aceca-46d8-4c84-8a0a-cd9ccb1d3b31}">
+      <Declaration><![CDATA[METHOD _unlocking
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF processes.unlock.statuses.busyStatus.busy THEN
+	statuses.initializationStatus(state := InitializationStates.INITIALIZED);
+	
+	// done
+	processes.unlock.setGood();
+	processes.unlock.setFinished();
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_initializing" Id="{ffa24d7e-1992-49e3-adce-f0c5b54f5be6}">
+      <Declaration><![CDATA[METHOD _initializing
+VAR_INPUT
+END_VAR
+VAR
+    
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF processes.initialize.statuses.busyStatus.busy THEN
+	
+	// start up the initialization
+	IF NOT processes.initialize.statuses.startedStatus.started THEN
+        // we're now initializing
+        _initializingCurrentAction := 0;
+		// OK we're started now
+		processes.initialize.setStarted();
+	END_IF;
+    
+    // process the actions
+    CASE _initializingCurrentAction OF
+        0:
+            // first initialize the safety
+            parts.safety.processes.initialize.start();
+            _initializingCurrentAction := 1;
+        1:
+            // wait until the safety is initialized
+            IF parts.safety.processes.initialize.isIdle() THEN
+                _initializingCurrentAction := 2;
+			END_IF
+        2:
+            // start initializing everything
+            parts.cover.processes.initialize.start();
+            parts.m1.processes.initialize.start();
+            parts.m2.processes.initialize.start();
+            parts.m3.processes.initialize.start();
+            parts.services.processes.initialize.start();
+            parts.telemetry.processes.initialize.start();
+            parts.hydraulics.processes.initialize.start();
+            _initializingCurrentAction := 3;
+        3:
+            // wait until everything is initialized
+            IF     parts.cover.processes.initialize.isIdle() 
+               AND parts.m1.processes.initialize.isIdle() 
+               AND parts.m3.processes.initialize.isIdle() 
+               AND parts.m2.processes.initialize.isIdle() 
+               AND parts.services.processes.initialize.isIdle() 
+               AND parts.telemetry.processes.initialize.isIdle() 
+               AND parts.hydraulics.processes.initialize.isIdle() 
+            THEN
+                IF     parts.cover.processes.initialize.isGood() 
+                   AND parts.m1.processes.initialize.isGood() 
+                   AND parts.m2.processes.initialize.isGood() 
+                   AND parts.m3.processes.initialize.isGood() 
+                   AND parts.services.processes.initialize.isGood() 
+                   AND parts.telemetry.processes.initialize.isGood() 
+                   AND parts.hydraulics.processes.initialize.isGood() 
+                THEN
+                    _initializingCurrentAction := 4;
+                ELSE
+                    _initializingCurrentAction := 999;
+                END_IF
+            END_IF
+        4:
+            parts.hydraulics.processes.startUpPumps.start();
+            _initializingCurrentAction := 5;
+        5:
+            IF parts.hydraulics.processes.startUpPumps.isIdle() THEN
+                IF parts.hydraulics.processes.startUpPumps.isGood() THEN
+                    _initializingCurrentAction := 6;
+                ELSE
+                    _initializingCurrentAction := 999;
+                END_IF
+			END_IF
+        6:
+            parts.axes.processes.initialize.start();
+            _initializingCurrentAction := 7;
+        7:
+            IF parts.axes.processes.initialize.isIdle() THEN
+                IF parts.axes.processes.initialize.isGood() THEN
+                    _initializingCurrentAction := 8;
+                ELSE
+                    _initializingCurrentAction := 999;
+				END_IF
+            END_IF
+        8:
+            IF isInstrumentActive THEN
+                processes.changeInstrument.start(name := activeInstrumentName);
+            END_IF
+            _initializingCurrentAction := 1000;
+        999:
+            // there has been an error!
+            // done
+            processes.initialize.setBad();
+            processes.initialize.setFinished();
+        1000:
+            // all done!
+            processes.initialize.setGood();
+            processes.initialize.setFinished();
+	END_CASE
+    
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+  </POU>
+</TcPlcObject>

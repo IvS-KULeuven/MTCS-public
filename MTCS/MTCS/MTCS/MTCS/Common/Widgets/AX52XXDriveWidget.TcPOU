@@ -1,0 +1,28 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.5">
+  <POU Name="AX52XXDriveWidget" Id="{bb11d9a3-8970-4695-b35e-01a0770dff3d}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK AX52XXDriveWidget
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+	ref : AX52XXDrive;
+END_VAR
+VAR
+	actualStatus : StatusWidget;
+    channelA : AX52XXDriveChannelWidget;
+    channelB : AX52XXDriveChannelWidget;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[
+actualStatus(text  := ref.actualStatus,
+             color := HealthBusyToColor(healthStatus := ref.statuses.healthStatus, 
+                                        busyStatus   := ref.statuses.busyStatus));
+                                        
+channelA(ref := ref.parts.channelA, name := 'Channel A');    
+channelB(ref := ref.parts.channelB, name := 'Channel B');]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

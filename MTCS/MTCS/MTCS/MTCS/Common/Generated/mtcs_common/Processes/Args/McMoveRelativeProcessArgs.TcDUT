@@ -1,0 +1,14 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="McMoveRelativeProcessArgs" Id="{40ba8f4c-af98-41a4-ad6c-f95e05b08c89}">
+    <Declaration><![CDATA[TYPE McMoveRelativeProcessArgs :
+STRUCT
+	///Distance to move
+	distance: LREAL;
+	///Maximum velocity
+	maxVelocity: LREAL;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

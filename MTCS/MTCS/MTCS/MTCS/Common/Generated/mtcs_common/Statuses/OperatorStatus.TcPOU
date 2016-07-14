@@ -1,0 +1,37 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="OperatorStatus" Id="{a92a75bf-1992-4771-bb02-419e00f3440b}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK OperatorStatus
+VAR_INPUT
+	///Super state (TRUE if the super state is active, or if there is no super state)
+	superState: BOOL := TRUE;
+	///Enum!
+	state: OperatorStates;
+END_VAR
+VAR_OUTPUT
+	///None
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	none: BOOL;
+	///Tech
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	tech: BOOL;
+	///Observer
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	observer: BOOL;
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[none := (state = OperatorStates.NONE) AND superState;
+observer := (state = OperatorStates.OBSERVER) AND superState;
+tech := (state = OperatorStates.TECH) AND superState;
+]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

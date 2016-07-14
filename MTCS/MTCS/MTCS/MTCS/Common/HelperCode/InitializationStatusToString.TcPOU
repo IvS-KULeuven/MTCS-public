@@ -1,0 +1,27 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.2">
+  <POU Name="InitializationStatusToString" Id="{af3625b0-147d-4f18-8e32-d4e2e0a67000}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION InitializationStatusToString : STRING
+VAR_IN_OUT
+    status : InitializationStatus;
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[IF status.initialized THEN
+	InitializationStatusToString := 'Initialized';
+ELSIF status.initializing THEN
+	InitializationStatusToString := 'Initializing';
+ELSIF status.locked THEN
+	InitializationStatusToString := 'Locked';
+ELSIF status.shutdown THEN
+	InitializationStatusToString := 'Shutdown';
+ELSIF status.initializingFailed THEN
+	InitializationStatusToString := 'Initializing failed';
+ELSE
+	InitializationStatusToString := 'Unknown state';
+END_IF]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

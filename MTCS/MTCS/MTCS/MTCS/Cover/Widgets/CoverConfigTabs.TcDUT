@@ -1,0 +1,21 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.2">
+  <DUT Name="CoverConfigTabs" Id="{049b5b69-4062-4c02-8354-51f0219d7322}">
+    <Declaration><![CDATA[TYPE CoverConfigTabs :
+(
+	GENERAL := 0,
+    TOP := 1,
+    BOTTOM := 2,
+    TOP_1 := 3,
+    TOP_2 := 4,
+    TOP_3 := 5,
+    TOP_4 := 6,
+    BOTTOM_1 := 7,
+    BOTTOM_2 := 8,
+    BOTTOM_3 := 9,
+    BOTTOM_4 := 10
+);
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

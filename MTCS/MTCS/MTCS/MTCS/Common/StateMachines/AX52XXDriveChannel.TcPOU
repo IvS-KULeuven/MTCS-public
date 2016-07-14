@@ -1,0 +1,651 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="AX52XXDriveChannel" Id="{ba373576-2ce6-4e54-9c1d-110e2c6d75a1}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK AX52XXDriveChannel EXTENDS SM_AX52XXDriveChannel
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR
+    _pointerToAxisRef : POINTER TO AXIS_REF := 0;
+    _SoERead : FB_SoERead;
+    _SoEWrite : FB_SoEWrite;
+    _SoEReset : FB_SoEReset;
+	_safetyErrorAckTon: TON;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[_update();
+
+isInSafetate := safetyOptionState.0;
+
+_updating();
+_reading();
+_writing();
+_resetting();
+_settingBrake();
+_acknowledgeSafetyError();
+
+_update();]]></ST>
+    </Implementation>
+    <Method Name="_resetting" Id="{5d222f9c-392e-4d44-8cba-1a998b6d10f5}">
+      <Declaration><![CDATA[METHOD _resetting
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[
+IF processes.reset.isBusy() THEN
+    
+    IF NOT processes.reset.isStarted() THEN
+        processes.reset._state := 0;
+        processes.reset.setStarted();
+	END_IF
+    
+    CASE processes.reset._state OF
+        0:  
+            processes.reset.setActualStatus('Resetting any errors');
+            // Execute must be FALSE first, to make sure we can create a rising edge
+            _SoEReset(
+                NetId := '',
+                Execute := FALSE,
+                Axis := _pointerToAxisRef^);
+            _SoEReset(
+                NetId := '',
+                Execute := TRUE,
+                Axis := _pointerToAxisRef^,
+                Timeout := T#10S); // From Beckhoff help pages: "The timeout time must be 10s, because the reset can take up to 10s."
+            processes.reset._state := 1;
+        1:
+            _SoEReset(
+                NetId := '',
+                Execute := TRUE,
+                Axis := _pointerToAxisRef^,
+                Timeout := T#10S);
+            
+            IF _SoEReset.Error THEN
+                processes.reset.setActualStatus(
+                        CONCAT(    
+                               CONCAT('Reset error: AdsErrId=', UINT_TO_STRING(_SoEReset.AdsErrId)), 
+                               CONCAT(' SercosErrId=', UINT_TO_STRING(_SoEReset.SercosErrId))
+                        )
+                );
+                processes.reset.adsErrorId := _SoEReset.AdsErrId;
+                processes.reset.sercosErrorId := _SoEReset.SercosErrId;
+                processes.reset._state := 999;
+            ELSIF NOT _SoEReset.Busy THEN
+                // ok done!
+                processes.reset._state := 1000;
+            END_IF
+        999:
+            // error!
+            processes.reset.setBad();
+            processes.reset.setFinished();
+        1000:
+            // all done!
+            processes.reset.setActualStatus('Reset finished');
+            processes.reset.setGood();
+            processes.reset.setFinished();
+    
+	END_CASE
+        
+
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_reading" Id="{75a1c5cd-7cb3-48f5-951c-a1c7030c6e40}">
+      <Declaration><![CDATA[METHOD _reading
+VAR_INPUT
+END_VAR
+VAR
+    valueAddress : PVOID;
+END_VAR]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF processes.read.statuses.busyStatus.busy THEN
+    
+    IF processes.read.get.noOfBytes = 1 THEN
+        valueAddress := ADR(processes.read.value1Byte);
+        processes.read.setGood();
+    ELSIF processes.read.get.noOfBytes = 2 THEN
+        valueAddress := ADR(processes.read.value2Bytes);
+        processes.read.setGood();
+    ELSIF processes.read.get.noOfBytes = 4 THEN
+        valueAddress := ADR(processes.read.value4Bytes);
+        processes.read.setGood();
+    ELSE
+        processes.read.setBad();
+        processes.read.setFinished();
+	END_IF
+    
+    IF _pointerToAxisRef = 0 THEN
+        processes.read.setActualStatus('Internal bug: axis_ref not set');
+        processes.read.setBad();
+        processes.read.setFinished();
+	END_IF
+    
+    IF processes.read.statuses.healthStatus.good THEN
+         
+        IF NOT processes.read.statuses.startedStatus.started THEN
+            // make sure we get a rising edge
+            _SoERead(Execute := FALSE, Axis:= _pointerToAxisRef^);
+            
+            (* execute the SoE read command *)
+            _SoERead(
+                NetId    := '',
+                Idn      :=  processes.read.get.index,
+                Element  := EC_SOE_ELEMENT_VALUE,
+                pDstBuf  := valueAddress,
+                BufLen   := processes.read.get.noOfBytes,
+                Execute  := TRUE,
+                Timeout  := DEFAULT_ADS_TIMEOUT,
+                Axis     := _pointerToAxisRef^);
+            
+             processes.read.setStarted();
+             
+		END_IF
+        
+       (* Make sure the Execute input is reset *)
+        _SoERead(Execute := FALSE, Axis:= _pointerToAxisRef^);
+        
+        (* update the health status *)
+        SUPER^.processes.read.statuses.healthStatus(isGood := NOT _SoERead.Error);
+        
+        (* update the busy status *)
+        SUPER^.processes.read.statuses.busyStatus(isBusy := _SoERead.Busy);
+        
+        (* update the error ID *)
+        SUPER^.processes.read.adsErrorId := _SoERead.AdsErrId;
+        SUPER^.processes.read.sercosErrorId := _SoERead.SercosErrId;
+             
+	END_IF
+ 
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_acknowledgeSafetyError" Id="{7ffef5e1-2f6e-4741-a721-faa49d51c85d}">
+      <Declaration><![CDATA[METHOD _acknowledgeSafetyError
+VAR_INPUT
+END_VAR
+
+VAR
+END_VAR]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[
+IF processes.acknowledgeSafetyError.isBusy() THEN
+    
+    IF NOT processes.acknowledgeSafetyError.isStarted() THEN
+        processes.acknowledgeSafetyError._state := 0;
+        processes.acknowledgeSafetyError.setStarted();
+	END_IF
+    
+    CASE processes.acknowledgeSafetyError._state OF
+        0:  
+            processes.acknowledgeSafetyError.setActualStatus('Commanding safety card');
+            safetyErrorAck := TRUE;
+            _safetyErrorAckTon(IN := FALSE);
+            
+            processes.acknowledgeSafetyError._state := 1;
+        1:
+            _safetyErrorAckTon(IN := TRUE, PT := T#0.3S);
+            IF _safetyErrorAckTon.Q THEN
+                processes.acknowledgeSafetyError._state := 2;
+            END_IF
+        2:
+            safetyErrorAck := FALSE;
+            _safetyErrorAckTon(IN := FALSE);
+            processes.acknowledgeSafetyError._state := 3;
+        3:
+            _safetyErrorAckTon(IN := TRUE, PT := T#0.3S);
+            IF _safetyErrorAckTon.Q THEN
+                processes.acknowledgeSafetyError._state := 4;
+            END_IF
+        4:
+            safetyErrorAck := TRUE;
+            _safetyErrorAckTon(IN := FALSE);
+            processes.acknowledgeSafetyError._state := 5;
+        5:
+            _safetyErrorAckTon(IN := TRUE, PT := T#0.3S);
+            IF _safetyErrorAckTon.Q THEN
+                processes.acknowledgeSafetyError._state := 6;
+            END_IF
+        6:
+            safetyErrorAck := FALSE;
+            _safetyErrorAckTon(IN := FALSE);
+            _safetyErrorAckTon(IN := TRUE, PT := T#1S);
+            processes.acknowledgeSafetyError._state := 7;
+        7:
+            _safetyErrorAckTon(IN := TRUE, PT := T#1S);
+            IF _safetyErrorAckTon.Q THEN
+                IF isInSafetate THEN
+                    processes.acknowledgeSafetyError._state := 999;
+                    processes.acknowledgeSafetyError.setActualStatus('Safe state persists!');
+                ELSE
+                    processes.acknowledgeSafetyError._state := 1000;
+                    processes.acknowledgeSafetyError.setActualStatus('Drive unblocked by safety');
+                END_IF
+            
+			END_IF
+        999:
+            // error!
+            processes.acknowledgeSafetyError.setBad();
+            processes.acknowledgeSafetyError.setFinished();
+        1000:
+            // all done!
+            processes.acknowledgeSafetyError.setGood();
+            processes.acknowledgeSafetyError.setFinished();
+    
+        END_CASE
+            
+
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_updating" Id="{b4936172-56f7-4735-94a4-b8021344e274}">
+      <Declaration><![CDATA[METHOD _updating
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[
+IF processes.update.isBusy() THEN
+    
+    IF NOT processes.update.isStarted() THEN
+        processes.update._state := 0;
+        processes.update.setStarted();
+	END_IF
+    
+    CASE processes.update._state OF
+        0:  
+            processes.update.setActualStatus('Reading P-0-0092 Configured channel peak current');
+            processes.read.start(index := P_0_IDN + 92, noOfBytes := 4);
+            processes.update._state := 1;
+        1:
+            IF processes.read.isIdle() THEN
+                IF processes.read.isGood() THEN
+                    channelPeakCurrent(newAmpsValue := UDINT_TO_LREAL(processes.read.value4Bytes) / 1000.0);
+                    processes.update._state := 2;
+                ELSE
+                    processes.update.setActualStatus('Could not read P-0-0092');
+                    processes.update._state := 999;
+				END_IF
+            END_IF
+        2:
+            processes.update.setActualStatus('Reading P-0-0093 Configured channel current');
+            processes.read.start(index := P_0_IDN + 93, noOfBytes := 4);
+            processes.update._state := 3;
+        3:
+            IF processes.read.isIdle() THEN
+                IF processes.read.isGood() THEN
+                    channelRatedCurrent(newAmpsValue := UDINT_TO_LREAL(processes.read.value4Bytes) / 1000.0);
+                    processes.update._state := 4;
+                ELSE
+                    processes.update.setActualStatus('Could not read P-0-0093');
+                    processes.update._state := 999;
+				END_IF
+            END_IF
+        4:  
+            processes.update.setActualStatus('Reading P-0-0070 Motor continuous stall torque');
+            processes.read.start(index := P_0_IDN + 70, noOfBytes := 2);
+            processes.update._state := 5;
+        5:
+            IF processes.read.isIdle() THEN
+                IF processes.read.isGood() THEN
+                        continuousStallTorque(newNewtonmeterValue := UINT_TO_LREAL(processes.read.value2Bytes) / 100.0);
+                        processes.update._state := 6;
+                ELSE
+                    processes.update.setActualStatus('Could not read P-0-070');
+                    processes.update._state := 999;
+				END_IF
+            END_IF 
+        6:  
+            processes.update.setActualStatus('Reading S-0-0111 Motor continuous stall current');
+            processes.read.start(index := S_0_IDN + 111, noOfBytes := 4);
+            processes.update._state := 7;
+        7:
+            IF processes.read.isIdle() THEN
+                IF processes.read.isGood() THEN
+                        continuousStallCurrent(newAmpsValue := UDINT_TO_LREAL(processes.read.value4Bytes) / 1000.0);
+                        processes.update._state := 8;
+                ELSE
+                    processes.update.setActualStatus('Could not read S-0-0111');
+                    processes.update._state := 999;
+				END_IF
+            END_IF
+        8:
+            // now we can simply calculate the torque constant:
+            // but watch for division by zero!!!
+            IF continuousStallCurrent.amps.value > 0 THEN
+                torqueConstant := continuousStallTorque.newtonmeter.value / continuousStallCurrent.amps.value;
+                processes.update._state := 9;
+            ELSE
+                torqueConstant := 0.0;
+                processes.update.setActualStatus('Torque constant cannot be calculated!');
+                processes.update._state := 999;
+			END_IF
+        9:
+            processes.update.setActualStatus('Reading S-0-0082 Positive torque limit value');
+            processes.read.start(index := S_0_IDN + 82, noOfBytes := 2);
+            processes.update._state := 10;
+        10:
+            IF processes.read.isIdle() THEN
+                IF processes.read.isGood() THEN
+                        positiveTorqueLimit(
+                            newFractionValue := UINT_TO_LREAL(processes.read.value2Bytes) / 1000.0, 
+                            maxNewtonmeter   := channelPeakCurrent.amps.value * torqueConstant);
+                        processes.update._state := 11;
+                ELSE
+                    processes.update.setActualStatus('Could not read S-0-0082');
+                    processes.update._state := 999;
+				END_IF
+            END_IF 
+        11:  
+            processes.update.setActualStatus('Reading S-0-0083 Negative torque limit value');
+            processes.read.start(index := S_0_IDN + 83, noOfBytes := 2);
+            processes.update._state := 12;
+        12:
+            IF processes.read.isIdle() THEN
+                IF processes.read.isGood() THEN
+                        negativeTorqueLimit(
+                            newFractionValue := UINT_TO_LREAL(processes.read.value2Bytes) / 1000.0, 
+                            maxNewtonmeter   := channelPeakCurrent.amps.value * torqueConstant);
+                        processes.update._state := 13;
+                ELSE
+                    processes.update.setActualStatus('Could not read S-0-0082');
+                    processes.update._state := 999;
+				END_IF
+            END_IF
+        13:  
+            processes.update.setActualStatus('Reading S-0-0092 Bipolar torque limit value');
+            processes.read.start(index := S_0_IDN + 92, noOfBytes := 2);
+            processes.update._state := 14;
+        14:
+            IF processes.read.isIdle() THEN
+                IF processes.read.isGood() THEN
+                        bipolarTorqueLimit(
+                            newFractionValue := UINT_TO_LREAL(processes.read.value2Bytes) / 1000.0, 
+                            maxNewtonmeter   := channelPeakCurrent.amps.value * torqueConstant);
+                        processes.update._state := 15;
+                ELSE
+                    processes.update.setActualStatus('Could not read S-0-0092');
+                    processes.update._state := 999;
+				END_IF
+            END_IF       
+        15:  
+            processes.update.setActualStatus('Reading P-0-0096 Motor control word');
+            processes.read.start(index := P_0_IDN + 96, noOfBytes := 2);
+            processes.update._state := 16;
+        16:
+            IF processes.read.isIdle() THEN
+                IF processes.read.isGood() THEN
+                    IF processes.read.value2Bytes.0 THEN
+                       brakeState := DriveBrakeStates.BRAKE_FORCE_LOCK;
+                    ELSIF processes.read.value2Bytes.1 THEN
+                       brakeState := DriveBrakeStates.BRAKE_FORCE_UNLOCK;
+                    ELSE
+                       brakeState := DriveBrakeStates.BRAKE_AUTOMATIC;
+                    END_IF
+                    brakeStateDescription := DriveBrakeStatesToString(brakeState);
+                    processes.update._state := 17;
+                ELSE
+                    processes.update.setActualStatus('Could not read P-0-0096');
+                    processes.update._state := 999;
+				END_IF
+            END_IF     
+        17:  
+            processes.update.setActualStatus('Reading S-0-0032 Primary operation mode');
+            processes.read.start(index := S_0_IDN + 32, noOfBytes := 2);
+            processes.update._state := 18;
+        18:
+            IF processes.read.isIdle() THEN
+                IF processes.read.isGood() THEN
+                    IF processes.read.value2Bytes = 0 THEN
+                       operatingMode := DriveOperatingModes.OPERATING_MODE_NONE;
+                    ELSIF    processes.read.value2Bytes = 1
+                          OR processes.read.value2Bytes = 32769 THEN
+                       operatingMode := DriveOperatingModes.OPERATING_MODE_TORQUE_CONTROL;
+                    ELSIF    processes.read.value2Bytes = 2
+                          OR processes.read.value2Bytes = 32770 THEN
+                       operatingMode := DriveOperatingModes.OPERATING_MODE_VELOCITY_CONTROL;
+                    ELSIF    processes.read.value2Bytes = 3
+                          OR processes.read.value2Bytes = 4
+                          OR processes.read.value2Bytes = 11
+                          OR processes.read.value2Bytes = 12
+                          OR processes.read.value2Bytes = 32771
+                          OR processes.read.value2Bytes = 32772
+                          OR processes.read.value2Bytes = 32779
+                          OR processes.read.value2Bytes = 32780 THEN
+                       operatingMode := DriveOperatingModes.OPERATING_MODE_POSITION_CONTROL;
+                    ELSE
+                       operatingMode := DriveOperatingModes.OPERATING_MODE_NONE;
+                    END_IF
+                    operatingModeDescription := DriveOperatingModesToString(operatingMode);
+                    processes.update._state := 19;
+                ELSE
+                    processes.update.setActualStatus('Could not read S-0-0032');
+                    processes.update._state := 999;
+				END_IF
+            END_IF
+        19:
+            // all done
+            processes.update._state := 1000;
+        999:
+            // error!
+            processes.update.setBad();
+            processes.update.setFinished();
+        1000:
+            // all done!
+            processes.update.setActualStatus('Updated');
+            processes.update.setGood();
+            processes.update.setFinished();
+    
+    
+	END_CASE
+        
+
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_settingBrake" Id="{c3bed2f6-adec-402d-b3f5-70218f9e91d5}">
+      <Declaration><![CDATA[METHOD _settingBrake
+VAR_INPUT
+END_VAR
+VAR
+    ctrlWord : WORD := 0;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[
+IF processes.setBrake.isBusy() THEN
+    
+    IF NOT processes.setBrake.isStarted() THEN
+        processes.setBrake._state := 0;
+        processes.setBrake.setStarted();
+	END_IF
+    
+    CASE processes.setBrake._state OF
+        0:  
+            processes.setBrake.setActualStatus(CONCAT('Setting brake ', DriveBrakeStatesToString(processes.setBrake.get.newState)));          
+            CASE processes.setBrake.get.newState OF
+               DriveBrakeStates.BRAKE_FORCE_LOCK:
+                    ctrlWord.0 := TRUE;
+                    ctrlWord.1 := FALSE;
+               DriveBrakeStates.BRAKE_FORCE_UNLOCK:
+                    ctrlWord.0 := FALSE;
+                    ctrlWord.1 := TRUE;
+               DriveBrakeStates.BRAKE_AUTOMATIC:
+                    ctrlWord.0 := FALSE;
+                    ctrlWord.1 := FALSE;
+            END_CASE
+            
+            processes.write.start(index := P_0_IDN + 96, noOfBytes := 2, value1Byte := 0, value2Bytes := ctrlWord, value4Bytes := 0);
+            processes.setBrake._state := 1;
+        1:
+            IF processes.write.isIdle() THEN
+                IF processes.write.isGood() THEN
+                    processes.setBrake._state := 2;
+                ELSE
+                    processes.setBrake.setActualStatus('Could not write P-0-0096');
+                    processes.setBrake._state := 999;
+				END_IF
+            END_IF    
+        2:  
+            processes.setBrake.setActualStatus('Reading P-0-0096 Motor control word');
+            processes.read.start(index := P_0_IDN + 96, noOfBytes := 2);
+            processes.setBrake._state := 3;
+        3:
+            IF processes.read.isIdle() THEN
+                IF processes.read.isGood() THEN
+                    IF processes.read.value2Bytes.0 THEN
+                       brakeState := DriveBrakeStates.BRAKE_FORCE_LOCK;
+                    ELSIF processes.read.value2Bytes.1 THEN
+                       brakeState := DriveBrakeStates.BRAKE_FORCE_UNLOCK;
+                    ELSE
+                       brakeState := DriveBrakeStates.BRAKE_AUTOMATIC;
+                    END_IF
+                    brakeStateDescription := DriveBrakeStatesToString(brakeState);
+                    processes.setBrake._state := 1000;
+                ELSE
+                    processes.setBrake.setActualStatus('Could not read P-0-0096');
+                    processes.setBrake._state := 999;
+				END_IF
+            END_IF     
+            
+
+        999:
+            // error!
+            processes.setBrake.setBad();
+            processes.setBrake.setFinished();
+        1000:
+            // all done!
+            processes.setBrake.setActualStatus(CONCAT('Brake now ', brakeStateDescription));
+            processes.setBrake.setGood();
+            processes.setBrake.setFinished();
+    
+	END_CASE
+        
+
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_update" Id="{c3ce2d6e-4d9b-42d7-8503-89c9df5a96f5}">
+      <Declaration><![CDATA[METHOD _update
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[SUPER^();
+
+IF statuses.healthStatus.good THEN
+    IF statuses.busyStatus.idle THEN
+        IF isInSafetate THEN
+            actualStatus := 'In safe state';
+        ELSE
+            actualStatus := 'Idle';
+        END_IF
+    ELSIF statuses.busyStatus.busy THEN
+        actualStatus := 'Busy';
+    ELSE
+        actualStatus := 'Good';
+    END_IF
+ELSIF statuses.healthStatus.warning THEN
+    IF isInSafetate THEN
+        actualStatus := 'SAFE STATE';
+    ELSE
+        actualStatus := 'Warning';
+	END_IF
+ELSIF statuses.healthStatus.bad THEN
+    IF errorC1D <> 0 THEN
+        actualStatus := CONCAT(CONCAT('C1D error (id: ', INT_TO_STRING(errorC1D)), ')');
+    ELSIF isInSafetate THEN
+        actualStatus := 'SAFE STATE';
+    ELSE
+        actualStatus := 'ERROR';
+	END_IF
+ELSE
+    actualStatus := '';
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="setInternalAxisRef" Id="{d70d0e28-757c-45ad-bb0f-4b492cdd1286}">
+      <Declaration><![CDATA[METHOD setInternalAxisRef
+VAR_INPUT
+    pointerToAxisRef : POINTER TO AXIS_REF;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[_pointerToAxisRef := pointerToAxisRef;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_writing" Id="{e1443aad-d86b-4f0a-b02e-49bc6260eaf3}">
+      <Declaration><![CDATA[METHOD _writing
+VAR_INPUT
+END_VAR
+VAR
+    srcAddress : PVOID;
+END_VAR]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF processes.write.statuses.busyStatus.busy THEN
+    
+    IF processes.write.get.noOfBytes = 1 THEN
+        srcAddress := ADR(processes.write.get.value1Byte);
+        processes.write.setGood();
+    ELSIF processes.write.get.noOfBytes = 2 THEN
+        srcAddress := ADR(processes.write.get.value2Bytes);
+        processes.write.setGood();
+    ELSIF processes.write.get.noOfBytes = 4 THEN
+        srcAddress := ADR(processes.write.get.value4Bytes);
+        processes.write.setGood();
+    ELSE
+        processes.write.setBad();
+        processes.write.setFinished();
+	END_IF
+     
+    IF _pointerToAxisRef = 0 THEN
+        processes.write.setActualStatus('Internal bug: axis_ref not set');
+        processes.write.setBad();
+        processes.write.setFinished();
+	END_IF
+    
+    IF processes.write.statuses.healthStatus.good THEN
+         
+        IF NOT processes.write.statuses.startedStatus.started THEN
+        
+            // make sure we get a rising edge
+            _SoEWrite(Execute := FALSE, Axis:= _pointerToAxisRef^);
+            (* execute the SoE write command *)
+            _SoEWrite(
+                NetId    := '',
+                Idn      :=  processes.write.get.index,
+                Element  := EC_SOE_ELEMENT_VALUE,
+                pSrcBuf  := srcAddress,
+                BufLen   := processes.write.get.noOfBytes,
+                Execute  := TRUE,
+                Timeout  := DEFAULT_ADS_TIMEOUT,
+                Axis     := _pointerToAxisRef^);
+            
+             processes.write.setStarted();
+        ELSE
+            // make sure the Exectute input is reset
+            _SoEWrite(Execute := FALSE, Axis:= _pointerToAxisRef^);
+        
+        (* update the health status *)
+        SUPER^.processes.write.statuses.healthStatus(isGood := NOT _SoEWrite.Error);
+        
+        (* update the busy status *)
+        SUPER^.processes.write.statuses.busyStatus(isBusy := _SoEWrite.Busy);
+        
+        (* update the error ID *)
+        SUPER^.processes.write.adsErrorId := _SoEWrite.AdsErrId;
+        SUPER^.processes.write.sercosErrorId := _SoEWrite.SercosErrId;
+		END_IF
+        
+             
+	END_IF
+    
+
+ 
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+  </POU>
+</TcPlcObject>

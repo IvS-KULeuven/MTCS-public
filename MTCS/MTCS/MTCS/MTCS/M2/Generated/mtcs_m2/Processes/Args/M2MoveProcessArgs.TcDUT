@@ -1,0 +1,14 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="M2MoveProcessArgs" Id="{1403dbc5-ff37-4f81-b10d-bff7f9b6025b}">
+    <Declaration><![CDATA[TYPE M2MoveProcessArgs :
+STRUCT
+	///The axis to move
+	axis: M2Axes;
+	///Move to a certain position in millimeters
+	position: LREAL;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

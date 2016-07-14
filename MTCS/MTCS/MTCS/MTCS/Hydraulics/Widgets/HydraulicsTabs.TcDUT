@@ -1,0 +1,14 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.5">
+  <DUT Name="HydraulicsTabs" Id="{39543a4c-70ec-4316-87b9-a8ce565217b4}">
+    <Declaration><![CDATA[TYPE HydraulicsTabs :
+(
+	OVERVIEW := 0,
+    TECHNICAL := 1,
+    IO := 2,
+    CONFIG := 3
+);
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

@@ -1,0 +1,70 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="AX52XXDriveChannelWidget" Id="{8764d741-98fe-4ecb-b336-20cc9c1c7d0c}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK AX52XXDriveChannelWidget
+VAR_INPUT
+    name : STRING;
+END_VAR
+VAR_OUTPUT
+	actualStatus : StatusWidget;
+    
+    input0 : BOOL;
+    input1 : BOOL;
+    input2 : BOOL;
+    input3 : BOOL;
+    input4 : BOOL;
+    input5 : BOOL;
+    input6 : BOOL;
+    input7 : BOOL;
+    
+    output0 : BOOL;
+    output1 : BOOL;
+    output2 : BOOL;
+    output3 : BOOL;
+    output4 : BOOL;
+    output5 : BOOL;
+    output6 : BOOL;
+    output7 : BOOL;
+    
+	processes_setBrakeStatus : StatusWidget;
+	processes_acknowledgeSafetyError : StatusWidget;
+END_VAR
+VAR
+END_VAR
+VAR_IN_OUT
+	ref : AX52XXDriveChannel;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[
+actualStatus(text  := ref.actualStatus,
+             color := HealthBusyToColor(healthStatus := ref.statuses.healthStatus, 
+                                        busyStatus   := ref.statuses.busyStatus));
+                                        
+input0 := ref.digitalInputs.0;          
+input1 := ref.digitalInputs.1;          
+input2 := ref.digitalInputs.2;          
+input3 := ref.digitalInputs.3;          
+input4 := ref.digitalInputs.4;          
+input5 := ref.digitalInputs.5;          
+input6 := ref.digitalInputs.6;          
+input7 := ref.digitalInputs.7;
+      
+output0 := ref.digitalOutputs.0;
+output1 := ref.digitalOutputs.1;
+output2 := ref.digitalOutputs.2;
+output3 := ref.digitalOutputs.3;
+output4 := ref.digitalOutputs.4;
+output5 := ref.digitalOutputs.5;
+output6 := ref.digitalOutputs.6;
+output7 := ref.digitalOutputs.7;
+
+processes_setBrakeStatus(text  := ref.processes.setBrake.actualStatus,
+                         color := HealthBusyToColor(healthStatus := ref.processes.setBrake.statuses.healthStatus, 
+                                                    busyStatus   := ref.processes.setBrake.statuses.busyStatus));
+processes_acknowledgeSafetyError(text  := ref.processes.acknowledgeSafetyError.actualStatus,
+                         color := HealthBusyToColor(healthStatus := ref.processes.acknowledgeSafetyError.statuses.healthStatus, 
+                                                    busyStatus   := ref.processes.acknowledgeSafetyError.statuses.busyStatus));]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

@@ -1,0 +1,24 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="M3RotationParts" Id="{9e682a61-e83d-48d9-88fa-1744b032101b}">
+    <Declaration><![CDATA[TYPE M3RotationParts :
+STRUCT
+	///Positioning axis: SSI encoder + Faulhaber drive
+	positioningAxis: AngularAxis;
+	///Anti-backlash Axis: Faulhaber drive + hall sensors
+	antiBacklashAxis: AngularAxis;
+	///Positioning drive
+	positioningDrive: FaulhaberDrive;
+	///Anti-backlash drive
+	antiBacklashDrive: FaulhaberDrive;
+	///Only hall sensors
+	positioningHallAxis: AngularAxis;
+	///The goto procedure
+	gotoProcedure: M3RotationGotoProcedure;
+	///The calibration procedure
+	calibrateProcedure: M3RotationCalibrateProcedure;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

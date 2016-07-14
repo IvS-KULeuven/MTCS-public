@@ -1,0 +1,139 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="SM_Safety" Id="{45f89de1-30fa-49dd-aa33-dc30034aa47d}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK SM_Safety
+VAR_INPUT
+	///Editable configuration of the Safety subsystem
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	editableConfig: SafetyConfig;
+END_VAR
+VAR_OUTPUT
+	///Current status description
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	actualStatus: STRING;
+	///Active configuration of the Safety subsystem
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	config: SafetyConfig;
+	///Statuses of the state machine
+	statuses: SafetyStatuses;
+	///Parts of the state machine
+	parts: SafetyParts;
+	///Processes of the state machine
+	processes: SafetyProcesses;
+END_VAR
+VAR_IN_OUT
+	///Shared operator status
+	{attribute 'OPC.UA.DA' := '0'}
+	operatorStatus: OperatorStatus;
+	///Shared activity status
+	{attribute 'OPC.UA.DA' := '0'}
+	activityStatus: ActivityStatus;
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[parts.hydraulics(
+    operatorStatus := operatorStatus,
+    activityStatus := activityStatus);
+parts.emergencyStops();
+parts.domeAccess(
+    operatorStatus := operatorStatus,
+    activityStatus := activityStatus,
+    config := config.domeAccess);
+parts.motionBlocking(
+    activityStatus := activityStatus,
+    hydraulics := parts.hydraulics,
+    emergencyStops := parts.emergencyStops,
+    domeAccess := parts.domeAccess);
+parts.io();
+parts.configManager( isEnabled := operatorStatus.tech );
+statuses.initializationStatus();
+statuses.healthStatus(
+    isGood := parts.io.statuses.healthStatus.isGood AND (parts.hydraulics.statuses.healthStatus.isGood AND (parts.emergencyStops.statuses.healthStatus.isGood AND (parts.domeAccess.statuses.healthStatus.isGood AND parts.motionBlocking.statuses.healthStatus.isGood))),
+    hasWarning := parts.io.statuses.healthStatus.hasWarning OR (parts.hydraulics.statuses.healthStatus.hasWarning OR (parts.emergencyStops.statuses.healthStatus.hasWarning OR (parts.domeAccess.statuses.healthStatus.hasWarning OR parts.motionBlocking.statuses.healthStatus.hasWarning))));
+statuses.busyStatus( isBusy := statuses.initializationStatus.initializing OR (parts.emergencyStops.statuses.busyStatus.busy OR (parts.domeAccess.statuses.busyStatus.busy OR (parts.hydraulics.statuses.busyStatus.busy OR parts.motionBlocking.statuses.busyStatus.busy))) );
+statuses.operatingStatus( superState := statuses.initializationStatus.initialized );
+statuses.communicationHealthStatus();
+statuses.functionBlockHealthStatus();
+statuses.outputHealthStatus();
+processes.initialize( isEnabled := statuses.initializationStatus.shutdown OR (statuses.initializationStatus.initializingFailed OR statuses.initializationStatus.initialized) );
+processes.lock( isEnabled := operatorStatus.tech AND statuses.initializationStatus.initialized );
+processes.unlock( isEnabled := operatorStatus.tech AND statuses.initializationStatus.locked );
+processes.changeOperatingState( isEnabled := FALSE );
+]]></ST>
+    </Implementation>
+    <Method Name="unlock" Id="{3995197a-32fc-476b-a3c5-560ca7cce5b9}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD unlock : RequestResults
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[unlock := THIS^.processes.unlock.request();
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="changeOperatingState" Id="{b4322df6-66ce-4d76-a22e-e3e481e9f4e0}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD changeOperatingState : RequestResults
+VAR_INPUT
+	state: OperatingStates;
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[changeOperatingState := THIS^.processes.changeOperatingState.request( state := state );
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="lock" Id="{cb419176-9848-4049-b556-ec73b2d8cf9d}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD lock : RequestResults
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[lock := THIS^.processes.lock.request();
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="initialize" Id="{fb74a19e-7c66-4f26-8bee-2bc91e951430}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD initialize : RequestResults
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[initialize := THIS^.processes.initialize.request();
+]]></ST>
+      </Implementation>
+    </Method>
+  </POU>
+</TcPlcObject>

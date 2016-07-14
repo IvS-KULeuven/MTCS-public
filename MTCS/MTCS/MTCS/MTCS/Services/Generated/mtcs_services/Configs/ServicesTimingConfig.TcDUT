@@ -1,0 +1,18 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="ServicesTimingConfig" Id="{4aa580bd-2467-4219-9a72-5797d229f105}">
+    <Declaration><![CDATA[TYPE ServicesTimingConfig :
+STRUCT
+	///Number of leap seconds, so that UTC = TAI + this value. See ftp://maia.usno.navy.mil/ser7/tai-utc.dat for the latest number.
+	leapSeconds: INT;
+	///Delta UT (= UT1 - UTC). Put to 0.0 to ignore.
+	dut: LREAL;
+	///If TRUE, then the local clock (source=LOCAL_CLOCK) will be used even if an external (more accurate!) clock is available
+	alwaysUseLocalClock: BOOL;
+	///Don't show the Servicestiming status as ERROR in case the serial link fails
+	ignoreSerialError: BOOL;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

@@ -1,0 +1,14 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="M2PotentiometerAxisConfig" Id="{7245fe30-3517-46b6-aece-163a7b4446e8}">
+    <Declaration><![CDATA[TYPE M2PotentiometerAxisConfig :
+STRUCT
+	///Settings which are general for all axes
+	general: M2AxisGeneralConfig;
+	///Position = voltage * correctionFactor * voltageToPosition
+	voltageCorrectionFactor: LREAL;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

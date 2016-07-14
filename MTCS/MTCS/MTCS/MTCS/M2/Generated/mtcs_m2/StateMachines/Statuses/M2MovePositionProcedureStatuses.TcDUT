@@ -1,0 +1,14 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="M2MovePositionProcedureStatuses" Id="{8e6d720d-9ec0-4d11-b242-3cc96e939d01}">
+    <Declaration><![CDATA[TYPE M2MovePositionProcedureStatuses :
+STRUCT
+	///Is the M2MoveAbsoluteProcedure in a busy state?
+	busyStatus: BusyStatus;
+	///Is the M2MoveAbsoluteProcedure in a healthy state?
+	healthStatus: HealthStatus;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

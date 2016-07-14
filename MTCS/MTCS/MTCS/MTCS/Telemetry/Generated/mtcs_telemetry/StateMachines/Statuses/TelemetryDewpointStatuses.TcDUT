@@ -1,0 +1,16 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="TelemetryDewpointStatuses" Id="{f0b71d09-0999-4fca-97f1-4b56f51bbd11}">
+    <Declaration><![CDATA[TYPE TelemetryDewpointStatuses :
+STRUCT
+	///Is the dewpoint being calculated?
+	enabledStatus: EnabledStatus;
+	///Is the depoint OK?
+	healthStatus: HealthStatus;
+	///Alarm status
+	alarmStatus: HiHiLoLoAlarmStatus;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

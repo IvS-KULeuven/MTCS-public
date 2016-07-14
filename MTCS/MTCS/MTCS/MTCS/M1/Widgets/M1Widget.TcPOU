@@ -1,0 +1,84 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.5">
+  <POU Name="M1Widget" Id="{9fa89346-06dc-411e-93eb-0de660c31895}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK M1Widget
+VAR_INPUT
+    activeTab : M1Tabs := M1Tabs.OVERVIEW;
+END_VAR
+VAR_OUTPUT
+    name : STRING := 'M1';
+END_VAR
+VAR_IN_OUT
+	ref : M1;
+    ref_tubeAngleMeasurement : TelemetryAccelerometer;
+END_VAR
+VAR
+	actualStatus            : StatusWidget;
+	initializationStatus    : InitializationStatusWidget;
+	
+    button_initialize 	: InitializeButtonWidget;
+    button_operating  	: OperatingButtonWidget;
+    button_locking    	: LockingButtonWidget;
+    
+    button_overview   	: SubSystemButtonWidget('Overview'		, M1Tabs.OVERVIEW);
+    button_radial     	: SubSystemButtonWidget('Radial' 	    , M1Tabs.RADIAL);
+    button_axial      	: SubSystemButtonWidget('Axial' 	    , M1Tabs.AXIAL);
+    button_io         	: SubSystemButtonWidget('I/O'    		, M1Tabs.IO);
+    button_config     	: SubSystemButtonWidget('Config'  		, M1Tabs.CONFIG);
+    
+    radialSupport       : M1RadialSupportWidget;
+    axialSupport        : M1AxialSupportWidget;
+    inclinometer        : M1InclinometerWidget;
+    io 					: M1M2IOWidget;
+    configManager       : ConfigManagerWidget;
+    
+    figure              : M1FigureWidget;
+    
+    activeConfigTab : INT;
+    
+    pneumaticSupplyPressure   : MeasurementWidget('Pneumatic supply pressure', '%.2f bar');
+    
+    accelerometerAngle : MeasurementWidget('Accelerometers angle (used!)', '%.2f °');
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[initializationStatus(status := ref.statuses.initializationStatus);
+
+
+button_initialize(status := ref.statuses.initializationStatus, process := ref.processes.initialize);
+button_operating(status := ref.statuses.operatingStatus, process := ref.processes.changeOperatingState);
+button_locking(status := ref.statuses.initializationStatus, lock := ref.processes.lock, unlock := ref.processes.unlock);
+
+button_overview(    color := actualStatus.color                 , activeTab := activeTab);
+button_radial(      color := radialSupport.actualStatus.color   , activeTab := activeTab);
+button_axial(       color := axialSupport.actualStatus.color   	, activeTab := activeTab);
+button_io(          color := io.actualStatus.color              , activeTab := activeTab);
+button_config(      color := configManager.actualStatus.color   , activeTab := activeTab);
+
+radialSupport(ref := ref.parts.radialSupport);
+axialSupport(ref := ref.parts.axialSupport);
+inclinometer(ref := ref.parts.inclinometer);
+io(ref := ref.parts.io);
+configManager(mgr := ref.parts.configManager);
+
+figure(ref := ref);
+
+actualStatus(text  := ref.actualStatus,
+             color := SystemToColor(healthStatus := ref.statuses.healthStatus,
+                                    busyStatus   := ref.statuses.busyStatus,
+                                    initializationStatus := ref.statuses.initializationStatus,
+                                    operatingStatus := ref.statuses.operatingStatus));
+
+pneumaticSupplyPressure( 
+    value        := ref.pneumaticSupplyPressure.average.bar.value, 
+    actualStatus := ref.pneumaticSupplyPressure.actualStatus, 
+    healthStatus := ref.pneumaticSupplyPressure.statuses.healthStatus);
+    
+accelerometerAngle(
+    value        := ABS(ref_tubeAngleMeasurement.averageYAngle.degrees.value),  // ABS !!!
+    actualStatus := ref_tubeAngleMeasurement.actualStatus, 
+    healthStatus := ref_tubeAngleMeasurement.statuses.yHealthStatus);
+]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

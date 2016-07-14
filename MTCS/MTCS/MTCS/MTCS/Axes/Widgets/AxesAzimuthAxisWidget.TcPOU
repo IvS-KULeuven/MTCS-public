@@ -1,0 +1,197 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="AxesAzimuthAxisWidget" Id="{b25436e7-a938-412c-9348-1de83eef39fb}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK AxesAzimuthAxisWidget
+VAR_INPUT
+    activeTab : AxesAzimuthAxisTabs;
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+    ref : AxesAzimuthAxis;
+    ref_aziDriveChannel : AX52XXDriveChannel;
+    ref_ablDriveChannel : AX52XXDriveChannel;
+END_VAR
+VAR
+	actualStatus : StatusWidget;
+    
+    processes_powerOnStatus : StatusWidget;
+    processes_powerOffStatus : StatusWidget;
+    processes_resetStatus : StatusWidget;
+    processes_doHomingStatus : StatusWidget;
+    processes_unlockBrakeStatus : StatusWidget;
+    processes_stopStatus : StatusWidget;
+    processes_moveAbsoluteStatus : StatusWidget;
+    processes_moveRelativeStatus : StatusWidget;
+    processes_moveVelocityStatus : StatusWidget;
+    processes_moveOutOfLimitSwitchStatus : StatusWidget;
+    
+    lidaCommonHealthStatus : HealthStatus;
+    lidaCommonBusyStatus   : BusyStatus;
+    lidaCommonStatusColor  : StatusColor;
+    
+    processCommonHealthStatus : HealthStatus;
+    processCommonBusyStatus   : BusyStatus;
+    processCommonStatusColor  : StatusColor;
+    
+    button_overview         : SubSubSystemButtonWidget('Overview'           , AxesAzimuthAxisTabs.OVERVIEW);
+    button_processes        : SubSubSystemButtonWidget('Processes'          , AxesAzimuthAxisTabs.PROCESSES);
+    button_aziDriveChannel  : SubSubSystemButtonWidget('AZI drive channel'  , AxesAzimuthAxisTabs.AZI_DRIVE_CHANNEL);   
+    button_ablDriveChannel  : SubSubSystemButtonWidget('ABL drive channel'  , AxesAzimuthAxisTabs.ABL_DRIVE_CHANNEL);   
+    button_virtualAxis      : SubSubSystemButtonWidget('Virtual axis'       , AxesAzimuthAxisTabs.VIRTUAL_AXIS);  
+    button_physicalAxis     : SubSubSystemButtonWidget('Physical axis'      , AxesAzimuthAxisTabs.PHYSICAL_AXIS);  
+    button_ablAxis          : SubSubSystemButtonWidget('ABL axis'           , AxesAzimuthAxisTabs.ABL_AXIS);
+    button_lidas            : SubSubSystemButtonWidget('LIDAs'              , AxesAzimuthAxisTabs.LIDAS);
+    button_absoluteEncoder  : SubSubSystemButtonWidget('Absolute encoder'   , AxesAzimuthAxisTabs.ABSOLUTE_ENCODER);
+    
+    aziDriveChannel : AX52XXDriveChannelWidget;
+    ablDriveChannel : AX52XXDriveChannelWidget;
+    virtualAxis     : AngularAxisWidget;
+    physicalAxis    : AngularAxisWidget;
+    ablAxis         : AngularAxisWidget;
+    
+    lida1 : IncrementalEncoderWidget;
+    lida2 : IncrementalEncoderWidget;
+    lida3 : IncrementalEncoderWidget;
+    lida4 : IncrementalEncoderWidget;
+    
+    actPos : AxesAngleWidget;
+    setPos : AxesAngleWidget;
+    targetPos : AxesAngleWidget;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[
+actualStatus(text  := ref.actualStatus,
+             color := HealthBusyToColor(healthStatus := ref.statuses.healthStatus, 
+                                        busyStatus   := ref.statuses.busyStatus));
+
+processes_powerOffStatus(
+    text  := ref.processes.powerOff.actualStatus,
+    color := HealthBusyToColor(healthStatus := ref.processes.powerOff.statuses.healthStatus, 
+                               busyStatus   := ref.processes.powerOff.statuses.busyStatus));
+processes_powerOnStatus(
+    text  := ref.processes.powerOn.actualStatus,
+    color := HealthBusyToColor(healthStatus := ref.processes.powerOn.statuses.healthStatus, 
+                               busyStatus   := ref.processes.powerOn.statuses.busyStatus));
+processes_resetStatus(
+    text  := ref.processes.reset.actualStatus,
+    color := HealthBusyToColor(healthStatus := ref.processes.reset.statuses.healthStatus, 
+                               busyStatus   := ref.processes.reset.statuses.busyStatus));
+processes_doHomingStatus(
+    text  := ref.processes.doHoming.actualStatus,
+    color := HealthBusyToColor(healthStatus := ref.processes.doHoming.statuses.healthStatus, 
+                               busyStatus   := ref.processes.doHoming.statuses.busyStatus));
+processes_unlockBrakeStatus(
+    text  := ref.processes.unlockBrake.actualStatus,
+    color := HealthBusyToColor(healthStatus := ref.processes.unlockBrake.statuses.healthStatus, 
+                               busyStatus   := ref.processes.unlockBrake.statuses.busyStatus));
+processes_stopStatus(
+    text  := ref.processes.stop.actualStatus,
+    color := HealthBusyToColor(healthStatus := ref.processes.stop.statuses.healthStatus, 
+                               busyStatus   := ref.processes.stop.statuses.busyStatus));
+processes_moveAbsoluteStatus(
+    text  := ref.processes.moveAbsolute.actualStatus,
+    color := HealthBusyToColor(healthStatus := ref.processes.moveAbsolute.statuses.healthStatus, 
+                               busyStatus   := ref.processes.moveAbsolute.statuses.busyStatus));
+processes_moveRelativeStatus(
+    text  := ref.processes.moveRelative.actualStatus,
+    color := HealthBusyToColor(healthStatus := ref.processes.moveRelative.statuses.healthStatus, 
+                               busyStatus   := ref.processes.moveRelative.statuses.busyStatus));
+processes_moveVelocityStatus(
+    text  := ref.processes.moveVelocity.actualStatus,
+    color := HealthBusyToColor(healthStatus := ref.processes.moveVelocity.statuses.healthStatus, 
+                               busyStatus   := ref.processes.moveVelocity.statuses.busyStatus));
+processes_moveOutOfLimitSwitchStatus(
+    text  := ref.processes.moveOutOfLimitSwitch.actualStatus,
+    color := HealthBusyToColor(healthStatus := ref.processes.moveOutOfLimitSwitch.statuses.healthStatus, 
+                               busyStatus   := ref.processes.moveOutOfLimitSwitch.statuses.busyStatus));
+
+
+aziDriveChannel(ref := ref_aziDriveChannel, name := 'AZI (Drive AZID channel A)');
+ablDriveChannel(ref := ref_ablDriveChannel, name := 'ABL (Drive ABLD channel A)');
+virtualAxis(baseRef := ref.parts.virtualAxis, ref := ref.parts.virtualAxis);
+physicalAxis(baseRef := ref.parts.physicalAxis, ref := ref.parts.physicalAxis);
+ablAxis(baseRef := ref.parts.ablAxis, ref := ref.parts.ablAxis);
+
+
+lidaCommonHealthStatus(
+     isGood :=      ref.parts.lida1.statuses.healthStatus.isGood 
+                AND ref.parts.lida2.statuses.healthStatus.isGood
+                AND ref.parts.lida3.statuses.healthStatus.isGood
+                AND ref.parts.lida4.statuses.healthStatus.isGood,
+     hasWarning :=  ref.parts.lida1.statuses.healthStatus.hasWarning 
+                 OR ref.parts.lida2.statuses.healthStatus.hasWarning 
+                 OR ref.parts.lida3.statuses.healthStatus.hasWarning 
+                 OR ref.parts.lida4.statuses.healthStatus.hasWarning);
+
+lidaCommonBusyStatus(
+    isBusy :=      ref.parts.lida1.statuses.busyStatus.isBusy 
+                OR ref.parts.lida2.statuses.busyStatus.isBusy
+                OR ref.parts.lida3.statuses.busyStatus.isBusy
+                OR ref.parts.lida4.statuses.busyStatus.isBusy);
+
+lidaCommonStatusColor := HealthBusyToColor(healthStatus := lidaCommonHealthStatus, busyStatus := lidaCommonBusyStatus);
+     
+
+
+processCommonHealthStatus(
+     isGood :=      ref.processes.powerOn.statuses.healthStatus.isGood 
+                AND ref.processes.powerOff.statuses.healthStatus.isGood
+                AND ref.processes.reset.statuses.healthStatus.isGood
+                AND ref.processes.doHoming.statuses.healthStatus.isGood
+                AND ref.processes.unlockBrake.statuses.healthStatus.isGood
+                AND ref.processes.stop.statuses.healthStatus.isGood
+                AND ref.processes.moveAbsolute.statuses.healthStatus.isGood
+                AND ref.processes.moveRelative.statuses.healthStatus.isGood
+                AND ref.processes.moveVelocity.statuses.healthStatus.isGood
+                AND ref.processes.moveOutOfLimitSwitch.statuses.healthStatus.isGood,
+     hasWarning :=  ref.processes.powerOn.statuses.healthStatus.hasWarning 
+                 OR ref.processes.powerOff.statuses.healthStatus.hasWarning
+                 OR ref.processes.reset.statuses.healthStatus.hasWarning
+                 OR ref.processes.doHoming.statuses.healthStatus.hasWarning
+                 OR ref.processes.unlockBrake.statuses.healthStatus.hasWarning
+                 OR ref.processes.stop.statuses.healthStatus.hasWarning
+                 OR ref.processes.moveAbsolute.statuses.healthStatus.hasWarning
+                 OR ref.processes.moveRelative.statuses.healthStatus.hasWarning
+                 OR ref.processes.moveVelocity.statuses.healthStatus.hasWarning
+                 OR ref.processes.moveOutOfLimitSwitch.statuses.healthStatus.hasWarning);
+
+processCommonBusyStatus(
+    isBusy :=      ref.processes.powerOn.statuses.busyStatus.busy 
+                 OR ref.processes.powerOff.statuses.busyStatus.busy
+                 OR ref.processes.reset.statuses.busyStatus.busy
+                 OR ref.processes.doHoming.statuses.busyStatus.busy
+                 OR ref.processes.unlockBrake.statuses.busyStatus.busy
+                 OR ref.processes.stop.statuses.busyStatus.busy
+                 OR ref.processes.moveAbsolute.statuses.busyStatus.busy
+                 OR ref.processes.moveRelative.statuses.busyStatus.busy
+                 OR ref.processes.moveVelocity.statuses.busyStatus.busy
+                 OR ref.processes.moveOutOfLimitSwitch.statuses.busyStatus.busy);
+
+processCommonStatusColor := HealthBusyToColor(healthStatus := processCommonHealthStatus, busyStatus := processCommonBusyStatus);
+     
+
+lida1(ref := ref.parts.lida1);
+lida2(ref := ref.parts.lida2);
+lida3(ref := ref.parts.lida3);
+lida4(ref := ref.parts.lida4);
+
+button_overview(        color := actualStatus.color                     , activeTab := activeTab);
+button_processes(       color := processCommonStatusColor               , activeTab := activeTab);
+button_aziDriveChannel( color := aziDriveChannel.actualStatus.color     , activeTab := activeTab);
+button_ablDriveChannel( color := ablDriveChannel.actualStatus.color     , activeTab := activeTab);
+button_virtualAxis(     color := virtualAxis.base.actualStatus.color    , activeTab := activeTab);
+button_physicalAxis(    color := physicalAxis.base.actualStatus.color   , activeTab := activeTab);
+button_ablAxis(         color := ablAxis.base.actualStatus.color        , activeTab := activeTab);
+button_lidas(           color := lidaCommonStatusColor                  , activeTab := activeTab);
+button_absoluteEncoder( color := HealthToColor(ref.parts.absoluteEncoder.statuses.healthStatus), activeTab := activeTab);
+
+actPos(degrees := ref.actPos.degrees.value, format := '%d° %.2d$' %04.1f"', showPlus := FALSE, showMinus := TRUE);
+setPos(degrees := ref.setPos.degrees.value, format := '%d° %.2d$' %04.1f"', showPlus := FALSE, showMinus := TRUE);
+targetPos(degrees := ref.targetPos.degrees.value, format := '%d° %.2d$' %04.1f"', showPlus := FALSE, showMinus := TRUE);
+
+]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

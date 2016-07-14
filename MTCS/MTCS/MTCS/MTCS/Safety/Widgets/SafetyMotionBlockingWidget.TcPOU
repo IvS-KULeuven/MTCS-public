@@ -1,0 +1,24 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.5">
+  <POU Name="SafetyMotionBlockingWidget" Id="{4f135694-d524-4cc0-9ade-3f014d523e55}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK SafetyMotionBlockingWidget
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+	actualStatus : StatusWidget;
+END_VAR
+VAR_IN_OUT
+	ref : SafetyMotionBlocking;
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[
+actualStatus(text  := ref.actualStatus,
+             color := HealthToColor(ref.statuses.healthStatus));
+
+]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

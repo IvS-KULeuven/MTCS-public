@@ -1,0 +1,19 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="AxesAzimuthAxisTabs" Id="{90a49691-6c05-43ff-84af-5b594ec77557}">
+    <Declaration><![CDATA[TYPE AxesAzimuthAxisTabs :
+(
+	OVERVIEW := 0,
+    PROCESSES := 1,
+    AZI_DRIVE_CHANNEL := 2,
+    ABL_DRIVE_CHANNEL := 3,
+    VIRTUAL_AXIS := 4,
+    PHYSICAL_AXIS := 5,
+    ABL_AXIS  := 6,
+    LIDAS := 7,
+    ABSOLUTE_ENCODER := 8
+);
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

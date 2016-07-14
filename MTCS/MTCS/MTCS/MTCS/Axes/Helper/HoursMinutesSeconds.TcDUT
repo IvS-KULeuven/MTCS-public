@@ -1,0 +1,15 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.5">
+  <DUT Name="HoursMinutesSeconds" Id="{c29ce1e2-299a-43a5-a352-f76add1d4fa2}">
+    <Declaration><![CDATA[TYPE HoursMinutesSeconds :
+STRUCT
+    positive : BOOL;
+    
+    hours : DINT;
+    minutes : DINT;
+    seconds : LREAL;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

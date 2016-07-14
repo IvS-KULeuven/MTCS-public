@@ -1,0 +1,69 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="SM_CoverIO" Id="{25a0768b-f37c-4fbe-a68a-960937e87e33}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK SM_CoverIO
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+	///Current status description
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	actualStatus: STRING;
+	///Statuses of the state machine
+	statuses: CoverIOStatuses;
+	///Parts of the state machine
+	parts: CoverIOParts;
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[parts.coupler(
+    id := '110A1',
+    typeId := 'EK1101');
+parts.slot1(
+    id := '115A1',
+    typeId := 'EL2008');
+parts.slot2(
+    id := '116A1',
+    typeId := 'EL4008');
+parts.slot3(
+    id := '117A1',
+    typeId := 'EL1088');
+parts.slot4(
+    id := '118A1',
+    typeId := 'EL5002');
+parts.slot5(
+    id := '118A5',
+    typeId := 'EL5002');
+parts.slot6(
+    id := '119A1',
+    typeId := 'EL5002');
+parts.slot7(
+    id := '119A5',
+    typeId := 'EL5002');
+parts.slot8(
+    id := '111A1',
+    typeId := 'EL2622');
+parts.slot9(
+    id := '111A5',
+    typeId := 'EL2622');
+parts.slot10(
+    id := '112A1',
+    typeId := 'EL2622');
+parts.slot11(
+    id := '112A5',
+    typeId := 'EL2622');
+parts.slot12(
+    id := '113A1',
+    typeId := 'EL2622');
+parts.slot13(
+    id := '114A1',
+    typeId := 'EL3681');
+statuses.healthStatus( isGood := parts.coupler.statuses.healthStatus.isGood AND (parts.slot1.statuses.healthStatus.isGood AND (parts.slot2.statuses.healthStatus.isGood AND (parts.slot3.statuses.healthStatus.isGood AND (parts.slot4.statuses.healthStatus.isGood AND (parts.slot5.statuses.healthStatus.isGood AND (parts.slot6.statuses.healthStatus.isGood AND (parts.slot7.statuses.healthStatus.isGood AND (parts.slot8.statuses.healthStatus.isGood AND (parts.slot9.statuses.healthStatus.isGood AND (parts.slot10.statuses.healthStatus.isGood AND (parts.slot11.statuses.healthStatus.isGood AND (parts.slot12.statuses.healthStatus.isGood AND parts.slot13.statuses.healthStatus.isGood)))))))))))) );
+]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

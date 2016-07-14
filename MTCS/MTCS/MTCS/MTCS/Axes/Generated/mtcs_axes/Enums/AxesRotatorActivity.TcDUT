@@ -1,0 +1,13 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="AxesRotatorActivity" Id="{bb470230-fc6b-4559-95dd-cb7843e09342}">
+    <Declaration><![CDATA[TYPE AxesRotatorActivity :
+(
+	NONE_ACTIVE := 0,
+	ROC_ACTIVE := 1,
+	RON_ACTIVE := 2
+);
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

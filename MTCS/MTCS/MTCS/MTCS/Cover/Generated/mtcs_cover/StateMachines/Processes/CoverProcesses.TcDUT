@@ -1,0 +1,26 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="CoverProcesses" Id="{c582ef19-7367-4e41-bc7e-3c6f6797385f}">
+    <Declaration><![CDATA[TYPE CoverProcesses :
+STRUCT
+	///Start initializing
+	initialize: Process;
+	///Lock the cover
+	lock: Process;
+	///Unlock the cover
+	unlock: Process;
+	///Reset any errors
+	reset: Process;
+	///Change the operating state (e.g. AUTO, MANUAL, ...)
+	changeOperatingState: ChangeOperatingStateProcess;
+	///Start opening the cover (only enabled in AUTO mode!)
+	open: Process;
+	///Start closing the cover (only enabled in AUTO mode!)
+	close: Process;
+	///Abort opening/closing the cover (only enabled in AUTO mode!)
+	abort: Process;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

@@ -1,0 +1,86 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.2">
+  <POU Name="M1Inclinometer" Id="{2e147afc-8db0-400a-aa50-5e27c0c1022b}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK M1Inclinometer EXTENDS SM_M1Inclinometer
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR
+    noOfSamples : UINT := 100;
+	_executeMovingAverage : BOOL;
+    _ctrl_moving_avg : FB_CTRL_MOVING_AVERAGE;
+    _params : ST_CTRL_MOVING_AVERAGE_PARAMS;
+    _array : ARRAY [1..100] OF LREAL;
+    _cosElevation : LREAL;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[_update();
+
+_params.nSamplesToFilter  := noOfSamples;
+_params.tCtrlCycleTime    := GLOBAL.config.PLC_CTRL_TIME;
+
+// COS(elevation) * 5V = InclinometerOutput
+_cosElevation := voltageMeasurement.actual.volt.value / 5.0; 
+IF _cosElevation > 1.0 THEN
+    _cosElevation := 1.0;
+ELSIF _cosElevation < -1.0 THEN
+    _cosElevation := -1.0;
+END_IF
+actualElevation(newDegreesValue := RadToDeg(ACOS(_cosElevation)));
+
+// only call the _ctrl_moving_avg FB once per task cycle (not once every time the xxxMeasurement FB is called)
+IF _executeMovingAverage <> GLOBAL.config.PLC_TASK_FLIP THEN
+	_executeMovingAverage := GLOBAL.config.PLC_TASK_FLIP;
+	_ctrl_moving_avg(
+		fIn             := actualElevation.degrees.value,
+		fManSyncValue   := 0.0,
+		bSync           := FALSE,
+		eMode           := E_CTRL_MODE.eCTRL_MODE_ACTIVE,
+		bHold           := FALSE,
+		stParams        := _params);
+END_IF
+
+averageElevation(newDegreesValue := _ctrl_moving_avg.fOut);
+
+_update();]]></ST>
+    </Implementation>
+    <Method Name="_update" Id="{eab6d6f2-9b3e-4f4c-9044-40aa51470ebe}">
+      <Declaration><![CDATA[METHOD _update
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[SUPER^(config := config);
+// update the actualStatus
+IF voltageMeasurement.overrange THEN
+    actualStatus := 'Overrange';
+ELSIF voltageMeasurement.underrange THEN
+    actualStatus := 'Underrange';
+ELSIF voltageMeasurement.error THEN
+    actualStatus := 'Error';
+ELSIF statuses.healthStatus.good THEN
+    actualStatus := 'OK';
+ELSIF statuses.healthStatus.warning THEN
+    actualStatus := 'Warning';
+ELSE
+    actualStatus := 'ERROR';
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="FB_init" Id="{fbd5d63d-5fba-40da-b250-e805faf1043e}">
+      <Declaration><![CDATA[METHOD FB_init : BOOL
+VAR_INPUT
+	bInitRetains : BOOL; // if TRUE, the retain variables are initialized (warm start / cold start)
+	bInCopyCode : BOOL;  // if TRUE, the instance afterwards gets moved into the copy code (online change)
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[_params.tTaskCycleTime    := GLOBAL.config.PLC_TASK_TIME;
+_params.pWorkArray_ADR    := ADR(_array);
+_params.nWorkArray_SIZEOF := SIZEOF(_array);]]></ST>
+      </Implementation>
+    </Method>
+  </POU>
+</TcPlcObject>

@@ -1,0 +1,26 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="M2ConstantsTiltY" Id="{aff24648-8f24-44f9-959c-459342f4c9e5}">
+    <Declaration><![CDATA[TYPE M2ConstantsTiltY :
+STRUCT
+	///Motor reduction ratio
+	MOT_TO_RED_RATIO: LREAL := 1526.0;
+	///Transmission ratio between the motor reduction and the screw
+	RED_TO_SCREW_RATIO: LREAL := 2.0;
+	///Transmission ratio between the potentiometer and the screw
+	SCREW_TO_POT_RATIO: LREAL := 0.5;
+	///Minimum position of the axis, in micrometer
+	MIN_POSITION: LREAL := 180.0;
+	///Maximum position of the axis, in micrometer
+	MAX_POSITION: LREAL := 1200.0;
+	///Screw pitch, in micrometer
+	SCREW_PITCH: LREAL := 1000.0;
+	///Motor feedback resolution (pulses per revolution of the motor rotor)
+	FEEDBACK_RESOLUTION: LREAL := 3;
+	///Max number of revolutions of the potentiometer
+	POTENTIOMETER_REVOLUTIONS: LREAL := 3;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

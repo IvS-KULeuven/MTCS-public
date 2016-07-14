@@ -1,0 +1,12 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="AxesEnablePointingModelProcessArgs" Id="{78f03576-a81a-4fc1-b3a8-ed435a2b6dd7}">
+    <Declaration><![CDATA[TYPE AxesEnablePointingModelProcessArgs :
+STRUCT
+	///Name of the pointing model
+	name: STRING;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

@@ -1,0 +1,24 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="SafetyDomeAccessIOParts" Id="{1a07c2f3-f857-4fc9-a847-f97a5245cc2a}">
+    <Declaration><![CDATA[TYPE SafetyDomeAccessIOParts :
+STRUCT
+	///DA:COU (EK1101)
+	COU: EtherCatDevice;
+	///DA:DI1 (EL1008)
+	DI1: EtherCatDevice;
+	///DA:DI2 (EL1008)
+	DI2: EtherCatDevice;
+	///DA:DO1 (EL2008)
+	DO1: EtherCatDevice;
+	///DA:SI1 (EL1904)
+	SI1: EtherCatDevice;
+	///DA:RE1 (EL2622)
+	RE1: EtherCatDevice;
+	///DA:RE2 (EL2622)
+	RE2: EtherCatDevice;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

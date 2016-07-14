@@ -1,0 +1,194 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.5">
+  <POU Name="SafetyHydraulics" Id="{e2b9382f-2c16-4b7d-a605-23ada2587e7a}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK SafetyHydraulics EXTENDS SM_SafetyHydraulics
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR
+    _startupPumpsState : INT := 0;
+    _startupPumpsTon   : TON;
+    _resetState : INT := 0;
+    _resetTon   : TON;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[_update();
+
+_startingUpPumps();
+_resetting();
+
+_update();
+]]></ST>
+    </Implementation>
+    <Method Name="_resetting" Id="{b1cb64ac-f5bd-48a9-b059-7318f36c2af3}">
+      <Declaration><![CDATA[METHOD _resetting
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF processes.reset.statuses.busyStatus.busy THEN
+	
+    // do a 0 -> 1 -> 0 pulse at the errorAcknowledge output AND afterwards at the resetErrorsOutput
+
+    CASE _resetState OF
+        0:
+            errorAcknowledge := FALSE;
+            resetErrorsOutput := FALSE;
+            _resetTon(IN := FALSE);
+            _resetTon(IN := TRUE, PT := T#200MS);
+            _resetState := 1;
+        1:
+            _resetTon(IN := TRUE);
+            IF _resetTon.Q THEN
+                _resetState := 2;
+			END_IF
+        2:
+            errorAcknowledge := TRUE;
+            _resetTon(IN := FALSE);
+            _resetTon(IN := TRUE, PT := T#200MS);
+            _resetState := 3;
+        3:
+            _resetTon(IN := TRUE);
+            IF _resetTon.Q THEN
+                _resetState := 4;
+			END_IF
+        4:
+            errorAcknowledge := FALSE;
+            _resetState := 5;
+        5:
+            resetErrorsOutput := TRUE;
+            _resetTon(IN := FALSE);
+            _resetTon(IN := TRUE, PT := T#200MS);
+            _resetState := 6;
+        6:
+            _resetTon(IN := TRUE);
+            IF _resetTon.Q THEN
+                _resetState := 7;
+			END_IF
+        7:
+            resetErrorsOutput := FALSE;
+            _resetState := 8;
+        8:
+            IF groupComError OR groupFBError OR groupOutError THEN
+                processes.reset.setBad();
+                processes.reset.setFinished();
+            ELSE
+                processes.reset.setGood();
+                processes.reset.setFinished();
+			END_IF
+            _resetState := 0;
+    END_CASE 
+
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_startingUpPumps" Id="{c19af804-1388-457b-8ddb-64d990ad1325}">
+      <Declaration><![CDATA[METHOD _startingUpPumps
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF processes.startupPumps.statuses.busyStatus.busy THEN
+	
+    // do a 0 -> 1 -> 0 pulse
+    CASE _startupPumpsState OF
+        0:
+            processes.reset.start();
+            _startupPumpsState := 1;
+        1:
+            IF processes.reset.isIdle() THEN
+                IF processes.reset.isGood() THEN
+                    _startupPumpsState := 2;
+                ELSE
+                    _startupPumpsState := 999;
+				END_IF
+			END_IF
+        2:
+            restartPumpsOutput := FALSE;
+            _startupPumpsState := 3;
+        3:
+            
+            restartPumpsOutput := TRUE;
+            _startupPumpsTon(IN := FALSE);
+            _startupPumpsTon(IN := TRUE, PT := T#500MS);
+            _startupPumpsState := 4;
+        4:
+            _startupPumpsTon(IN := TRUE);
+            IF _startupPumpsTon.Q THEN
+                _startupPumpsState := 5;
+			END_IF
+        5:
+            restartPumpsOutput := FALSE;
+            _startupPumpsState := 1000;
+        999:
+            // done with error
+            processes.startupPumps.setBad();
+            processes.startupPumps.setFinished();
+            _startupPumpsState := 0;
+        1000:
+            // done without error
+            processes.startupPumps.setGood();
+            processes.startupPumps.setFinished();
+            _startupPumpsState := 0;
+    END_CASE 
+
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_update" Id="{ce9e73a8-2f88-4f22-afa2-95865389a03f}">
+      <Declaration><![CDATA[METHOD _update
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[SUPER^(operatorStatus := operatorStatus, activityStatus := activityStatus);
+
+IF statuses.busyStatus.busy THEN
+    IF processes.reset.isBusy() THEN
+        actualStatus := 'Resetting...';
+    ELSIF processes.startupPumps.isBusy() THEN
+        actualStatus := 'Starting up the pumps...';
+    ELSE
+        actualStatus := 'BUSY';
+	END_IF
+ELSE
+    IF statuses.healthStatus.good THEN
+        IF allOK THEN
+            IF pumpsStartingUp THEN
+                actualStatus := 'Pumps starting up';
+            ELSIF pumpsStopped THEN
+                actualStatus := 'Pumps are stopped';
+            ELSE
+                actualStatus := 'Pumps are running, all good';
+			END_IF
+        ELSE
+            actualStatus := 'GOOD';
+		END_IF
+    ELSIF statuses.healthStatus.bad THEN
+        IF groupComError THEN
+            actualStatus := 'Communication error';
+        ELSIF groupFbError THEN
+            IF pumpsFrequencyNotRising THEN
+                actualStatus := 'Pumps frequency not rising after startup!';
+            ELSIF pressureNotRising THEN
+                actualStatus := 'Pressure not rising after startup!';
+            ELSE
+                actualStatus := 'Function block error';
+			END_IF
+        ELSIF groupOutError THEN
+            actualStatus := 'Output error';
+        ELSE 
+            actualStatus := 'ERROR';
+        END_IF
+    ELSIF statuses.healthStatus.warning THEN
+        actualStatus := 'WARNING';
+    ELSE
+        actualStatus := 'Unknown';
+    END_IF
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+  </POU>
+</TcPlcObject>

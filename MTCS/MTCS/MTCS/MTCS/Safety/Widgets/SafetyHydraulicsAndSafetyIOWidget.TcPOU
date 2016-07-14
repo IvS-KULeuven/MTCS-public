@@ -1,0 +1,49 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.5">
+  <POU Name="SafetyHydraulicsAndSafetyIOWidget" Id="{a52d175b-d0a9-433a-9bc0-635d9c5e32a9}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK SafetyHydraulicsAndSafetyIOWidget
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR
+	actualStatus : StatusWidget;
+    
+	COU : EtherCatDeviceWidget;
+	DO1 : EtherCatDeviceWidget;
+	SI1 : EtherCatDeviceWidget;
+	SI2 : EtherCatDeviceWidget;
+	SI3 : EtherCatDeviceWidget;
+	SI4 : EtherCatDeviceWidget;
+	SL : EtherCatDeviceWidget;
+	SO1 : EtherCatDeviceWidget;
+	AI1 : EtherCatDeviceWidget;
+	AI2 : EtherCatDeviceWidget;
+	RTD1 : EtherCatDeviceWidget;
+	PWR1 : EtherCatDeviceWidget;
+	AO1 : EtherCatDeviceWidget;
+END_VAR
+VAR_IN_OUT
+	ref : SafetyHydraulicsAndSafetyIO;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[actualStatus(text  := ref.actualStatus,
+             color := HealthToColor(ref.statuses.healthStatus));
+
+COU(device := ref.parts.COU);
+DO1(device := ref.parts.DO1);
+SI1(device := ref.parts.SI1);
+SI2(device := ref.parts.SI2);
+SI3(device := ref.parts.SI3);
+SI4(device := ref.parts.SI4);
+SL(device := ref.parts.SL);
+SO1(device := ref.parts.SO1);
+AI1(device := ref.parts.AI1);
+AI2(device := ref.parts.AI2);
+RTD1(device := ref.parts.RTD1);
+PWR1(device := ref.parts.PWR1);
+AO1(device := ref.parts.AO1);]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

@@ -1,0 +1,16 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="M2ZAxisConfig" Id="{3f085ed5-427e-4fc0-90fb-26890c401ed9}">
+    <Declaration><![CDATA[TYPE M2ZAxisConfig :
+STRUCT
+	///Settings which are general for all axes
+	general: M2AxisGeneralConfig;
+	///The number of steps to be expected between the time at which the PLC realizes that the brake release signal must be set, and the time that the axis is fully stopped at high speed
+	highSpeedStoppingSteps: UDINT;
+	///Timeout for a fast movement of the Z axis (in seconds)
+	highSpeedTimeout: LREAL;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

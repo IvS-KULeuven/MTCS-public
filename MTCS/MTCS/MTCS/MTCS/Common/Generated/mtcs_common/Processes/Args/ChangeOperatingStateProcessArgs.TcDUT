@@ -1,0 +1,12 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="ChangeOperatingStateProcessArgs" Id="{13a46553-3118-421f-8633-a8e3e9a302cc}">
+    <Declaration><![CDATA[TYPE ChangeOperatingStateProcessArgs :
+STRUCT
+	///New operating state (e.g. AUTO, MANUAL)
+	state: OperatingStates;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

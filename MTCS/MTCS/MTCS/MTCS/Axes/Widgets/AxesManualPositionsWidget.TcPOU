@@ -1,0 +1,60 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="AxesManualPositionsWidget" Id="{dfff77e5-86f5-4a33-906a-bd999af6ed42}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK AxesManualPositionsWidget
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+    invisiblePosition0 : BOOL;
+    invisiblePosition1 : BOOL;
+    invisiblePosition2 : BOOL;
+    invisiblePosition3 : BOOL;
+    invisiblePosition4 : BOOL;
+    invisiblePosition5 : BOOL;
+    invisiblePosition6 : BOOL;
+    invisiblePosition7 : BOOL;
+    invisiblePosition8 : BOOL;
+    invisiblePosition9 : BOOL;
+    invisiblePosition10 : BOOL;
+    invisiblePosition11 : BOOL;
+    invisiblePosition12 : BOOL;
+    invisiblePosition13 : BOOL;
+    invisiblePosition14 : BOOL;
+    invisiblePosition15 : BOOL;
+    invisiblePosition16 : BOOL;
+    invisiblePosition17 : BOOL;
+    invisiblePosition18 : BOOL;
+    invisiblePosition19 : BOOL;
+END_VAR
+VAR_IN_OUT
+    ref : Axes;
+    ref_operatorStatus : OperatorStatus;
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[invisiblePosition0 := NOT (ref.config.knownPositions.position0.allowObserver OR ref_operatorStatus.tech) OR ref.config.knownPositions.position0.name = '';
+invisiblePosition1 := NOT (ref.config.knownPositions.position1.allowObserver OR ref_operatorStatus.tech) OR ref.config.knownPositions.position1.name = '';
+invisiblePosition2 := NOT (ref.config.knownPositions.position2.allowObserver OR ref_operatorStatus.tech) OR ref.config.knownPositions.position2.name = '';
+invisiblePosition3 := NOT (ref.config.knownPositions.position3.allowObserver OR ref_operatorStatus.tech) OR ref.config.knownPositions.position3.name = '';
+invisiblePosition4 := NOT (ref.config.knownPositions.position4.allowObserver OR ref_operatorStatus.tech) OR ref.config.knownPositions.position4.name = '';
+invisiblePosition5 := NOT (ref.config.knownPositions.position5.allowObserver OR ref_operatorStatus.tech) OR ref.config.knownPositions.position5.name = '';
+invisiblePosition6 := NOT (ref.config.knownPositions.position6.allowObserver OR ref_operatorStatus.tech) OR ref.config.knownPositions.position6.name = '';
+invisiblePosition7 := NOT (ref.config.knownPositions.position7.allowObserver OR ref_operatorStatus.tech) OR ref.config.knownPositions.position7.name = '';
+invisiblePosition8 := NOT (ref.config.knownPositions.position8.allowObserver OR ref_operatorStatus.tech) OR ref.config.knownPositions.position8.name = '';
+invisiblePosition9 := NOT (ref.config.knownPositions.position9.allowObserver OR ref_operatorStatus.tech) OR ref.config.knownPositions.position9.name = '';
+invisiblePosition10 := NOT (ref.config.knownPositions.position10.allowObserver OR ref_operatorStatus.tech) OR ref.config.knownPositions.position10.name = '';
+invisiblePosition11 := NOT (ref.config.knownPositions.position11.allowObserver OR ref_operatorStatus.tech) OR ref.config.knownPositions.position11.name = '';
+invisiblePosition12 := NOT (ref.config.knownPositions.position12.allowObserver OR ref_operatorStatus.tech) OR ref.config.knownPositions.position12.name = '';
+invisiblePosition13 := NOT (ref.config.knownPositions.position13.allowObserver OR ref_operatorStatus.tech) OR ref.config.knownPositions.position13.name = '';
+invisiblePosition14 := NOT (ref.config.knownPositions.position14.allowObserver OR ref_operatorStatus.tech) OR ref.config.knownPositions.position14.name = '';
+invisiblePosition15 := NOT (ref.config.knownPositions.position15.allowObserver OR ref_operatorStatus.tech) OR ref.config.knownPositions.position15.name = '';
+invisiblePosition16 := NOT (ref.config.knownPositions.position16.allowObserver OR ref_operatorStatus.tech) OR ref.config.knownPositions.position16.name = '';
+invisiblePosition17 := NOT (ref.config.knownPositions.position17.allowObserver OR ref_operatorStatus.tech) OR ref.config.knownPositions.position17.name = '';
+invisiblePosition18 := NOT (ref.config.knownPositions.position18.allowObserver OR ref_operatorStatus.tech) OR ref.config.knownPositions.position18.name = '';
+invisiblePosition19 := NOT (ref.config.knownPositions.position19.allowObserver OR ref_operatorStatus.tech) OR ref.config.knownPositions.position19.name = '';
+]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

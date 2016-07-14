@@ -1,0 +1,18 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="SafetyDomeAccessParts" Id="{391586a2-ad89-4447-baa7-7eff1218eef2}">
+    <Declaration><![CDATA[TYPE SafetyDomeAccessParts :
+STRUCT
+	///Lamps relay 1
+	lampsRelay1: SimpleRelay;
+	///Lamps relay 2
+	lampsRelay2: SimpleRelay;
+	///Lamps relay 3
+	lampsRelay3: SimpleRelay;
+	///Lamps relay 4
+	lampsRelay4: SimpleRelay;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

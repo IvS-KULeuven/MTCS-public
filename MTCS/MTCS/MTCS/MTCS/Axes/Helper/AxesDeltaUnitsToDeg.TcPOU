@@ -1,0 +1,21 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="AxesDeltaUnitsToDeg" Id="{0d906718-a020-49c6-b676-63ec91b9c37c}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION AxesDeltaUnitsToDeg : LREAL
+VAR_INPUT
+    units : AxesDeltaUnits;
+    value : LREAL;
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[CASE units OF
+    AxesDeltaUnits.RADIANS:
+        AxesDeltaUnitsToDeg := RAD_TO_DEG(value);
+    AxesDeltaUnits.DEGREES:
+        AxesDeltaUnitsToDeg := value;  
+END_CASE]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

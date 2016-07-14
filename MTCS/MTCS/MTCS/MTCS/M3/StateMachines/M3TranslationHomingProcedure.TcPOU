@@ -1,0 +1,600 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="M3TranslationHomingProcedure" Id="{21919e22-f5f4-4170-a8be-ea279c1fa8a1}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK M3TranslationHomingProcedure EXTENDS SM_M3TranslationHomingProcedure
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR
+    substate : INT;
+    
+    _cause : M3TranslationHomingProcedureStates;
+    _ton : TON;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[_update();
+
+// run the procedure
+CASE state OF
+    M3TranslationHomingProcedureStates.IDLE: 
+        _idle();
+    M3TranslationHomingProcedureStates.ABORTED: 
+        _aborted();
+    M3TranslationHomingProcedureStates.PREPARE_PROCESS: 
+        _prepareProcess();
+    M3TranslationHomingProcedureStates.ENABLING_AXIS: 
+        _enablingAxis();
+    M3TranslationHomingProcedureStates.MOVE_TO_LIMIT_SWITCH:
+        _moveToLimitSwitch();
+    M3TranslationHomingProcedureStates.WAIT_FOR_LIMIT_SWITCH:
+        _waitForLimitSwitch();
+    M3TranslationHomingProcedureStates.STOP:
+        _stop();
+    M3TranslationHomingProcedureStates.APPLY_HOMING_SETTINGS:
+        _applyHomingSettings();
+    M3TranslationHomingProcedureStates.MOVE_TO_MECH_STOP:
+        _moveToMechStop();
+    M3TranslationHomingProcedureStates.WAIT_FOR_MECH_STOP:
+        _waitForMechStop();
+    M3TranslationHomingProcedureStates.SET_ZERO_POSITION:
+        _setZeroPosition();
+    M3TranslationHomingProcedureStates.DISABLE_AXIS: 
+        _disablingAxis();
+    M3TranslationHomingProcedureStates.ERROR: 
+        _error();
+    M3TranslationHomingProcedureStates.RESETTING: 
+        _resetting(nextState := M3TranslationHomingProcedureStates.IDLE, 
+                   causingState := M3TranslationHomingProcedureStates.RESETTING);
+    M3TranslationHomingProcedureStates.ABORTING: 
+        _aborting();
+END_CASE
+
+
+IF state = M3TranslationHomingProcedureStates.ERROR THEN
+    actualStatus := CONCAT('Error @ ',_stateToString(_cause));
+ELSE
+    actualStatus := _stateToString(state);
+END_IF
+
+_update();]]></ST>
+    </Implementation>
+    <Method Name="reset" Id="{0320bb19-e6ca-42b8-b51e-dbfb894734b7}">
+      <Declaration><![CDATA[METHOD reset
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF state = M3TranslationHomingProcedureStates.ERROR THEN
+    // return to the idle state
+    state    := M3TranslationHomingProcedureStates.RESETTING;
+    substate := 0;
+    _cause   := M3TranslationHomingProcedureStates.ERROR;
+    _update();
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_setZeroPosition" Id="{2cdccab5-536c-48e2-a28b-a3a8828437ac}">
+      <Declaration><![CDATA[METHOD _setZeroPosition
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[CASE substate OF
+    0:
+        motorAxis.processes.setPosition.start(value := 0.0);
+        substate := 1;
+    1:
+        IF motorAxis.processes.setPosition.isIdle() THEN
+            IF motorAxis.processes.setPosition.isGood()  THEN
+                // all done!
+                state    := M3TranslationHomingProcedureStates.DISABLE_AXIS;
+                substate := 0;
+            ELSE
+                state    := M3TranslationHomingProcedureStates.ERROR;
+                substate := 0;
+                _cause   := M3TranslationHomingProcedureStates.SET_ZERO_POSITION;
+            END_IF
+        END_IF
+END_CASE]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_stop" Id="{403e01d8-f1d9-4905-839b-b26f0cb34ec0}">
+      <Declaration><![CDATA[METHOD _stop
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[CASE substate OF
+    0:
+        motorAxis.processes.stop.start();
+        substate := 1;
+    1:
+        IF motorAxis.processes.stop.isIdle() THEN
+            IF motorAxis.processes.stop.isGood() THEN
+                substate := 2;
+            ELSE
+                substate := 99;
+            END_IF
+        END_IF
+    2:
+        motorAxis.processes.reset.start();
+        substate := 3;
+    3:
+        IF motorAxis.processes.reset.isIdle() THEN
+            IF motorAxis.processes.reset.isGood() THEN
+                substate := 0;
+                state    := M3TranslationHomingProcedureStates.APPLY_HOMING_SETTINGS;
+            ELSE
+                substate := 99;
+            END_IF
+        END_IF
+    99:
+        // ERROR
+        state    := M3TranslationHomingProcedureStates.ERROR;
+        substate := 0;
+        _cause   := M3TranslationHomingProcedureStates.STOP;
+END_CASE]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_waitForMechStop" Id="{461f2875-bccc-4acf-9ea8-0d63ccc24349}">
+      <Declaration><![CDATA[METHOD _waitForMechStop
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[
+// instead of checking the current to rise, we now wait for 5 seconds
+// because sometimes the motorDrive.averageCurrent.milliAmps.value > config.homingPeakCurrentLimit
+// before the limit was reached!
+CASE substate OF
+    0:
+        _ton(IN := FALSE, );
+        _ton(IN := TRUE,
+             PT := LREAL_TO_TIME(10000.0)); // convert sec to millisec, todo: make configurable
+        substate := 1;
+    1:
+        _ton(IN := TRUE);
+        IF _ton.Q THEN
+            substate := 2;
+		END_IF
+    2:
+        state    := M3TranslationHomingProcedureStates.SET_ZERO_POSITION;
+        substate := 0;
+END_CASE
+
+// alternative version:
+
+//IF statuses.healthStatus.good THEN
+//    IF motorDrive.averageCurrent.milliAmps.value > config.homingPeakCurrentLimit THEN
+//        state    := M3TranslationHomingProcedureStates.SET_ZERO_POSITION;
+//        substate := 0;
+//    END_IF
+//ELSE
+//   state    := M3TranslationHomingProcedureStates.ERROR;
+//   substate := 0;
+//END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_prepareProcess" Id="{53e574c8-aa9d-4f82-8631-4c13f8342398}">
+      <Declaration><![CDATA[METHOD _prepareProcess
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// reset the axis
+_resetting(nextState    := M3TranslationHomingProcedureStates.ENABLING_AXIS,
+           causingState := M3TranslationHomingProcedureStates.PREPARE_PROCESS);]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_moveToLimitSwitch" Id="{59e47b7b-d60e-44bc-860e-6f119cfbcd30}">
+      <Declaration><![CDATA[METHOD _moveToLimitSwitch
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[
+CASE substate OF
+    0:
+        motorAxis.processes.moveVelocity.start(value := -ABS(config.homingSearchLimitSwitchVelocity));
+        substate := 1;
+    1:
+        IF motorAxis.processes.moveVelocity.isIdle() THEN
+            IF motorAxis.processes.moveVelocity.isGood() THEN
+                state    := M3TranslationHomingProcedureStates.WAIT_FOR_LIMIT_SWITCH;
+                substate := 0;
+            ELSE
+                state    := M3TranslationHomingProcedureStates.ERROR;
+                substate := 0;
+                _cause   := M3TranslationHomingProcedureStates.MOVE_TO_LIMIT_SWITCH;
+            END_IF
+        END_IF
+END_CASE]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_applyHomingSettings" Id="{660eeda1-3f27-4e80-ac8a-3cedf5f2fc8f}">
+      <Declaration><![CDATA[METHOD _applyHomingSettings
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[
+CASE substate OF
+    0:
+        // set the the continuous current limit to a low value, to be able to "crash" into the mechanical stop
+        motorDrive.processes.write.start( index       := 16#2333, 
+                                          subindex    := 1, 
+                                          noOfBytes   := 2, 
+                                          value1Byte  := 0, 
+                                          value2Bytes := config.homingContinuousCurrentLimit, 
+                                          value4Bytes := 0);
+        substate := 1;
+    1:
+        IF motorDrive.processes.write.isIdle() THEN
+            IF motorDrive.processes.write.isGood() THEN
+                substate := 2;
+            ELSE
+                substate := 99;
+			END_IF
+		END_IF
+    2:
+        // set the the peak current limit to a low value, to be able to "crash" into the mechanical stop
+        motorDrive.processes.write.start( index       := 16#2333, 
+                                          subindex    := 2, 
+                                          noOfBytes   := 2, 
+                                          value1Byte  := 0, 
+                                          value2Bytes := config.homingPeakCurrentLimit, 
+                                          value4Bytes := 0);
+        substate := 3;
+    3:
+        IF motorDrive.processes.write.isIdle() THEN
+            IF motorDrive.processes.write.isGood() THEN
+                substate := 4;
+            ELSE
+                substate := 99;
+			END_IF
+		END_IF
+    4:
+        // turn off the negative limit switch
+        motorDrive.processes.write.start( index       := 16#2310, 
+                                          subindex    := 1, 
+                                          noOfBytes   := 1, 
+                                          value1Byte  := 0,  // 0 = NEGATIVE LIMIT SWITCH DISABLED!
+                                          value2Bytes := 0, 
+                                          value4Bytes := 0);
+        substate := 5;
+    5:
+        IF motorDrive.processes.write.isIdle() THEN
+            IF motorDrive.processes.write.isGood() THEN
+                state    := M3TranslationHomingProcedureStates.MOVE_TO_MECH_STOP;
+                substate := 0;
+            ELSE
+                substate := 99;
+			END_IF
+		END_IF
+    99: // ERROR
+        state    := M3TranslationHomingProcedureStates.ERROR;
+        substate := 0;
+        _cause   := M3TranslationHomingProcedureStates.APPLY_HOMING_SETTINGS;
+END_CASE]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="abort" Id="{767b6288-ccf2-4f17-bc92-3938f91ec81b}">
+      <Declaration><![CDATA[METHOD abort
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF statuses.busyStatus.busy THEN
+    // go to the aborting state
+    state    := M3TranslationHomingProcedureStates.ABORTING;
+    substate := 0;
+    _cause   := M3TranslationHomingProcedureStates.ABORTING;
+    _update();
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_aborted" Id="{7e46cec6-2e9e-4f6c-b957-a703b50ac809}">
+      <Declaration><![CDATA[METHOD _aborted
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// not doing anything, just being aborted... :-)
+;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_resetting" Id="{7ff8b7ff-801e-4f04-8d82-d41d39e2ce6a}">
+      <Declaration><![CDATA[METHOD _resetting
+VAR_INPUT
+    nextState : M3TranslationHomingProcedureStates;
+    causingState : M3TranslationHomingProcedureStates;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[CASE substate OF
+    0:
+        motorAxis.processes.reset.start();
+        substate := 1;
+    1:
+        IF motorAxis.processes.reset.isIdle() THEN
+            IF motorAxis.processes.reset.isGood() THEN
+                substate := 2;
+            ELSE
+                substate := 99;
+            END_IF
+        END_IF
+    2:
+        // re-initialize the drive
+        motorDrive.processes.initialize.start();
+        substate := 3;
+    3:
+        IF motorDrive.processes.initialize.isIdle() THEN
+            IF motorDrive.processes.initialize.isGood() THEN
+                state    := nextState;
+                substate := 0;
+            ELSE
+                substate := 99;
+			END_IF
+		END_IF
+    99: // ERROR
+        state    := M3TranslationHomingProcedureStates.ERROR;
+        substate := 0;
+        _cause   := causingState;
+END_CASE]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_moveToMechStop" Id="{8ab03fb6-c674-443d-988d-e23921872c65}">
+      <Declaration><![CDATA[METHOD _moveToMechStop
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[
+CASE substate OF
+    0:
+        motorAxis.processes.moveVelocity.start(value := -ABS(config.homingToHardwareStopVelocity));
+        substate := 1;
+    1:
+        IF motorAxis.processes.moveVelocity.isIdle() THEN
+            IF motorAxis.processes.moveVelocity.isGood() THEN
+                state    := M3TranslationHomingProcedureStates.WAIT_FOR_MECH_STOP;
+                substate := 0;
+            ELSE
+                state    := M3TranslationHomingProcedureStates.ERROR;
+                substate := 0;
+                _cause   := M3TranslationHomingProcedureStates.MOVE_TO_MECH_STOP;
+            END_IF
+        END_IF
+END_CASE]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_disablingAxis" Id="{8d3f7201-63d2-4466-a31b-c3ffa0f266dd}">
+      <Declaration><![CDATA[METHOD _disablingAxis
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// enable the axes
+CASE substate OF
+    0:
+        motorAxis.processes.power.start(enable := FALSE);
+        substate := 1;
+    1:
+        IF motorAxis.processes.power.isIdle() THEN
+            IF motorAxis.processes.power.isGood() THEN
+                state    := M3TranslationHomingProcedureStates.RESETTING;
+                substate := 0;
+            ELSE
+                state    := M3TranslationHomingProcedureStates.ERROR;
+                substate := 0;
+                _cause   := M3TranslationHomingProcedureStates.DISABLE_AXIS;
+            END_IF
+        END_IF
+END_CASE]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_enablingAxis" Id="{affbcb9f-3590-4199-96a6-1a778b685ece}">
+      <Declaration><![CDATA[METHOD _enablingAxis
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// enable the axes
+CASE substate OF
+    0:
+        motorAxis.processes.power.start(enable := TRUE);
+        substate := 1;
+    1:
+        IF motorAxis.processes.power.isIdle() THEN
+            IF motorAxis.processes.power.isGood() THEN
+                state    := M3TranslationHomingProcedureStates.MOVE_TO_LIMIT_SWITCH;
+                substate := 0;
+            ELSE
+                state    := M3TranslationHomingProcedureStates.ERROR;
+                substate := 0;
+                _cause   := M3TranslationHomingProcedureStates.ENABLING_AXIS;
+            END_IF
+        END_IF
+END_CASE]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_idle" Id="{bc19afee-428d-4093-84e7-91d0fbb15d2a}">
+      <Declaration><![CDATA[METHOD _idle
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// not doing anything, just being idle... :-)
+;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="start" Id="{c20f1e26-1a8b-46bd-946f-03d46f84086a}">
+      <Declaration><![CDATA[METHOD start
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF    state = M3TranslationHomingProcedureStates.IDLE 
+   OR state = M3TranslationHomingProcedureStates.ERROR 
+   OR state = M3TranslationHomingProcedureStates.ABORTED 
+THEN
+    state    := M3TranslationHomingProcedureStates.PREPARE_PROCESS;
+    substate := 0;
+END_IF
+
+_update();]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_waitForLimitSwitch" Id="{dbba7f1a-ede2-49df-bedc-ddaaaebf5b10}">
+      <Declaration><![CDATA[METHOD _waitForLimitSwitch
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[
+CASE substate OF
+    0:
+        _ton(IN := FALSE, );
+        _ton(IN := TRUE,
+             PT := T#120S); // convert sec to millisec, todo: make configurable
+        substate := 1;
+    1:
+        _ton(IN := TRUE);
+        IF _ton.Q THEN
+            // timeout!!!
+            substate := 2;
+        ELSE
+            IF statuses.healthStatus.good THEN
+                IF negativeLimitSwitchActive THEN
+                    state    := M3TranslationHomingProcedureStates.STOP;
+                    substate := 0;
+                END_IF
+            ELSE
+                state    := M3TranslationHomingProcedureStates.ERROR;
+                substate := 0;
+            END_IF
+		END_IF
+    2:
+        state    := M3TranslationHomingProcedureStates.ERROR;
+        substate := 0;
+        _cause   := M3TranslationHomingProcedureStates.WAIT_FOR_LIMIT_SWITCH;
+END_CASE
+
+
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_stateToString" Id="{e1df991a-cada-438b-b863-73b96662a960}">
+      <Declaration><![CDATA[METHOD _stateToString : STRING
+VAR_INPUT
+    x : M3TranslationHomingProcedureStates;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[CASE x OF
+    M3TranslationHomingProcedureStates.IDLE: 
+        _stateToString := 'Idle';
+    M3TranslationHomingProcedureStates.ABORTED: 
+        _stateToString := 'Aborted';
+    M3TranslationHomingProcedureStates.PREPARE_PROCESS: 
+        _stateToString := 'Preparing process';
+    M3TranslationHomingProcedureStates.ENABLING_AXIS: 
+        _stateToString := 'Enabling axis';
+    M3TranslationHomingProcedureStates.MOVE_TO_LIMIT_SWITCH:
+        _stateToString := 'Moving to limit switch';
+    M3TranslationHomingProcedureStates.WAIT_FOR_LIMIT_SWITCH:
+        _stateToString := 'Waiting for limit switch';
+    M3TranslationHomingProcedureStates.STOP:
+        _stateToString := 'Stopping';
+    M3TranslationHomingProcedureStates.APPLY_HOMING_SETTINGS:
+        _stateToString := 'Applying homing settings';
+    M3TranslationHomingProcedureStates.MOVE_TO_MECH_STOP:
+        _stateToString := 'Moving to mechanical stop';
+    M3TranslationHomingProcedureStates.WAIT_FOR_MECH_STOP:
+        _stateToString := 'Waiting for mechanical stop';
+    M3TranslationHomingProcedureStates.SET_ZERO_POSITION:
+        _stateToString := 'Setting zero position';
+    M3TranslationHomingProcedureStates.DISABLE_AXIS: 
+        _stateToString := 'Disabling axis';
+    M3TranslationHomingProcedureStates.ERROR: 
+        _stateToString := 'Error';
+    M3TranslationHomingProcedureStates.RESETTING: 
+        _stateToString := 'Resetting';
+    M3TranslationHomingProcedureStates.ABORTING: 
+        _stateToString := 'Aborting';
+END_CASE]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_aborting" Id="{f688b971-26b5-4d60-8ac8-a58cd7a5fab4}">
+      <Declaration><![CDATA[METHOD _aborting
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[CASE substate OF
+    0:  
+        // halt the axis
+        motorAxis.processes.stop.start();
+        substate := 1;
+    1: 
+        IF motorAxis.processes.stop.isIdle() THEN
+            // whatever happens, always try to disable the drive
+            substate := 2;
+        END_IF
+    2:
+        // disable the drive
+        motorAxis.processes.power.start(enable := FALSE);
+        substate := 3;
+    3: 
+        IF motorAxis.processes.power.isIdle() THEN
+            IF motorAxis.processes.power.isGood() THEN
+                // Okay, all done!
+                state    := M3TranslationHomingProcedureStates.ABORTED;
+                substate := 0;
+            ELSE
+                state    := M3TranslationHomingProcedureStates.ERROR;
+                substate := 0;
+                _cause   := M3TranslationHomingProcedureStates.ABORTING;
+            END_IF
+        END_IF
+            
+END_CASE]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_update" Id="{fdcd12e2-d634-45a9-8dd0-9eccd578189f}">
+      <Declaration><![CDATA[METHOD _update
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[SUPER^(
+    config                      := config, 
+    motorAxis                   := motorAxis, 
+    motorDrive                  := motorDrive, 
+    target                      := target, 
+    positiveLimitSwitchActive   := positiveLimitSwitchActive, 
+    negativeLimitSwitchActive   := negativeLimitSwitchActive, 
+    actualPosition              := actualPosition, 
+    actualPositionError         := actualPositionError);]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_error" Id="{fe5a5bee-3d78-46e8-83a9-139dc99b301d}">
+      <Declaration><![CDATA[METHOD _error
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// try to stop
+CASE substate OF 
+    0:
+        motorAxis.processes.stop.start();
+        substate := 1;
+    1:
+        ; // simply wait until the procedure is reset
+END_CASE]]></ST>
+      </Implementation>
+    </Method>
+  </POU>
+</TcPlcObject>

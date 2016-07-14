@@ -1,0 +1,23 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.5">
+  <POU Name="AxesMoveUnitsToDeg" Id="{4d77c3eb-6f54-48a7-a6da-2368cb679121}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION AxesMoveUnitsToDeg : LREAL
+VAR_INPUT
+    units : AxesMoveUnits;
+    value : LREAL;
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[CASE units OF
+    AxesMoveUnits.RADIANS:
+        AxesMoveUnitsToDeg := RAD_TO_DEG(value);
+    AxesMoveUnits.DEGREES:
+        AxesMoveUnitsToDeg := value; 
+    AxesMoveUnits.ARCSECONDS:
+        AxesMoveUnitsToDeg := ARCSEC_TO_DEG(value);   
+END_CASE]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

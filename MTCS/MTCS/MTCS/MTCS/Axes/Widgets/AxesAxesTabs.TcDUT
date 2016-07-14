@@ -1,0 +1,15 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.5">
+  <DUT Name="AxesAxesTabs" Id="{3e08a26e-4f7e-486c-9c13-7dc1ba850843}">
+    <Declaration><![CDATA[TYPE AxesAxesTabs :
+(
+	AZI := 0,
+    ELE := 2,
+    ROC := 3,
+    RON := 4,
+    FW  := 5
+);
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

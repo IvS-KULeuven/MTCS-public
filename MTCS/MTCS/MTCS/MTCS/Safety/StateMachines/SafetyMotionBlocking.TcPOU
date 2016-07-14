@@ -1,0 +1,119 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.5">
+  <POU Name="SafetyMotionBlocking" Id="{1796d250-96fa-47cc-94a4-9632044618cd}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK SafetyMotionBlocking EXTENDS SM_SafetyMotionBlocking
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR
+    _resetState : INT := 0;
+    _resetTon   : TON;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[_update();
+
+_resetting();
+
+_update();]]></ST>
+    </Implementation>
+    <Method Name="_update" Id="{29f8af3b-3f10-423a-8f54-77828f503b6d}">
+      <Declaration><![CDATA[METHOD _update
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[SUPER^(
+    activityStatus := activityStatus,
+    hydraulics := hydraulics, 
+    emergencyStops := emergencyStops,
+    domeAccess := domeAccess);
+
+IF statuses.busyStatus.busy THEN
+    IF processes.reset.isBusy() THEN
+        actualStatus := 'Resetting...';
+    ELSE
+        actualStatus := 'BUSY';
+	END_IF
+ELSE
+    IF statuses.healthStatus.good THEN
+        IF NOT motionAllowed THEN
+            actualStatus := 'Motion is not allowed';
+        ELSIF NOT telescopeAzimuthReleaseOK THEN
+            actualStatus := 'Azimuth axis blocked';
+        ELSIF NOT (telescopeAzimuthReleaseOK AND telescopeElevationReleaseOK AND telescopeRotationReleaseOK) THEN
+            actualStatus := 'Axes are blocked';
+        ELSE
+            actualStatus := 'All free to move';
+		END_IF
+    ELSIF statuses.healthStatus.bad THEN
+        IF groupComError THEN
+            actualStatus := 'Communication error';
+        ELSIF groupFbError THEN
+            actualStatus := 'FunctionBlock error';
+        ELSIF groupOutError THEN
+            actualStatus := 'Output error';
+        ELSE 
+            actualStatus := 'Motion is blocked due to error!';
+        END_IF
+    ELSIF statuses.healthStatus.warning THEN
+        actualStatus := 'WARNING';
+    ELSE
+        actualStatus := 'Unknown';
+    END_IF
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_resetting" Id="{3e2f704b-4dba-4783-856d-b9d130eb79cd}">
+      <Declaration><![CDATA[METHOD _resetting
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF processes.reset.statuses.busyStatus.busy THEN
+	
+    // do a 0 -> 1 -> 0 pulse at the errorAck output
+
+    CASE _resetState OF
+        0:
+            errorAcknowledge := FALSE;
+            _resetState := 1;
+        1:
+            errorAcknowledge := TRUE;
+            _resetTon(IN := FALSE);
+            _resetTon(IN := TRUE, PT := T#100MS);
+            _resetState := 2;
+        2:
+            _resetTon(IN := TRUE);
+            IF _resetTon.Q THEN
+                _resetState := 3;
+			END_IF
+        3:
+            errorAcknowledge := FALSE;
+            _resetState := 4;
+        4:
+            _resetTon(IN := FALSE);
+            _resetTon(IN := TRUE, PT := T#100MS);
+            _resetState := 5;
+        5:
+            _resetTon(IN := TRUE);
+            IF _resetTon.Q THEN
+                _resetState := 6;
+			END_IF
+        6:
+            IF groupComError OR groupFBError OR groupOutError THEN
+                processes.reset.setBad();
+                processes.reset.setFinished();
+            ELSE
+                processes.reset.setGood();
+                processes.reset.setFinished();
+			END_IF
+            _resetState := 0;
+    END_CASE 
+
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+  </POU>
+</TcPlcObject>

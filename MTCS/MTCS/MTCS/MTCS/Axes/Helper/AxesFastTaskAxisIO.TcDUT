@@ -1,0 +1,13 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.5">
+  <DUT Name="AxesFastTaskAxisIO" Id="{b01e90a9-0a05-4648-b0fd-5772718a0bc8}">
+    <Declaration><![CDATA[TYPE AxesFastTaskAxisIO :
+STRUCT
+	virtual_fromNc    AT %I* : NCTOPLC_AXIS_REF;
+	physical_fromPlc  AT %I* : PLCTONC_AXIS_REF;
+	physical_toNc     AT %Q* : PLCTONC_AXIS_REF;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

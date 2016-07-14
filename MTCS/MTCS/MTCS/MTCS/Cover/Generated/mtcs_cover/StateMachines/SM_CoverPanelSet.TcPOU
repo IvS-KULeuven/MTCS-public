@@ -1,0 +1,88 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="SM_CoverPanelSet" Id="{95db4a84-903b-4512-ac4a-526d4738e622}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK SM_CoverPanelSet
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+	///Current status description
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	actualStatus: STRING;
+	///Statuses of the state machine
+	statuses: CoverPanelSetStatuses;
+	///Parts of the state machine
+	parts: CoverPanelSetParts;
+	///Processes of the state machine
+	processes: CoverPanelSetProcesses;
+END_VAR
+VAR_IN_OUT
+	{attribute 'OPC.UA.DA' := '0'}
+	initializationStatus: InitializationStatus;
+	{attribute 'OPC.UA.DA' := '0'}
+	operatorStatus: OperatorStatus;
+	{attribute 'OPC.UA.DA' := '0'}
+	operatingStatus: OperatingStatus;
+	{attribute 'OPC.UA.DA' := '0'}
+	config: CoverPanelSetConfig;
+	{attribute 'OPC.UA.DA' := '0'}
+	coverConfig: CoverConfig;
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[parts.p1(
+    initializationStatus := initializationStatus,
+    operatorStatus := operatorStatus,
+    operatingStatus := operatingStatus,
+    config := config.p1,
+    coverConfig := coverConfig);
+parts.p2(
+    initializationStatus := initializationStatus,
+    operatorStatus := operatorStatus,
+    operatingStatus := operatingStatus,
+    config := config.p2,
+    coverConfig := coverConfig);
+parts.p3(
+    initializationStatus := initializationStatus,
+    operatorStatus := operatorStatus,
+    operatingStatus := operatingStatus,
+    config := config.p3,
+    coverConfig := coverConfig);
+parts.p4(
+    initializationStatus := initializationStatus,
+    operatorStatus := operatorStatus,
+    operatingStatus := operatingStatus,
+    config := config.p4,
+    coverConfig := coverConfig);
+parts.magnetsRelay( isEnabled := initializationStatus.initialized AND operatingStatus.manual );
+statuses.apertureStatus(
+    isOpen := parts.p1.statuses.apertureStatus.open AND (parts.p2.statuses.apertureStatus.open AND (parts.p3.statuses.apertureStatus.open AND parts.p4.statuses.apertureStatus.open)),
+    isClosed := parts.p1.statuses.apertureStatus.closed AND (parts.p2.statuses.apertureStatus.closed AND (parts.p3.statuses.apertureStatus.closed AND parts.p4.statuses.apertureStatus.closed)));
+statuses.healthStatus(
+    isGood := parts.p1.statuses.healthStatus.isGood AND (parts.p2.statuses.healthStatus.isGood AND (parts.p3.statuses.healthStatus.isGood AND parts.p4.statuses.healthStatus.isGood)),
+    hasWarning := parts.p1.statuses.healthStatus.hasWarning OR (parts.p2.statuses.healthStatus.hasWarning OR (parts.p3.statuses.healthStatus.hasWarning OR parts.p4.statuses.healthStatus.hasWarning)));
+statuses.busyStatus( isBusy := parts.p1.statuses.busyStatus.busy OR (parts.p2.statuses.busyStatus.busy OR (parts.p3.statuses.busyStatus.busy OR parts.p4.statuses.busyStatus.busy)) );
+processes.reset( isEnabled := initializationStatus.initialized );
+]]></ST>
+    </Implementation>
+    <Method Name="reset" Id="{3309fd98-f9ca-4875-a0fd-2a871c0722e3}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD reset : RequestResults
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[reset := THIS^.processes.reset.request();
+]]></ST>
+      </Implementation>
+    </Method>
+  </POU>
+</TcPlcObject>

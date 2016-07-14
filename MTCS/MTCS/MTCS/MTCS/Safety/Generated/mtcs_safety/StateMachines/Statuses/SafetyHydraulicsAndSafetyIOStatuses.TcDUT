@@ -1,0 +1,12 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="SafetyHydraulicsAndSafetyIOStatuses" Id="{fd08ed41-0f35-46e6-9b33-dc08044f7ba0}">
+    <Declaration><![CDATA[TYPE SafetyHydraulicsAndSafetyIOStatuses :
+STRUCT
+	///Is the I/O in a healthy state?
+	healthStatus: HealthStatus;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

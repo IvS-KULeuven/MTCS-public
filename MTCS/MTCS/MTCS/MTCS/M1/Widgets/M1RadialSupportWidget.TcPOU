@@ -1,0 +1,56 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.2">
+  <POU Name="M1RadialSupportWidget" Id="{dc68a787-7ec8-40bc-8b06-1d9ae75720d2}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK M1RadialSupportWidget
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+    ref : M1RadialSupport;
+END_VAR
+VAR
+	actualStatus  : StatusWidget;
+    
+    regulatorPressure : MeasurementWidget('Radial pressure @ regulator', '%.2f bar');
+    mirrorPressure : MeasurementWidget('Radial pressure @ mirror cell' , '%.2f bar');
+    
+    changeToAutoButtonDeactivated : BOOL;
+    changeToManualButtonDeactivated : BOOL;
+    
+    operatingStatus : StatusWidget; 
+    
+    vacuumRelay : SimpleRelayWidget;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[actualStatus(text  := ref.actualStatus, 
+             color := HealthBusyToColor(healthStatus := ref.statuses.healthStatus,
+                                        busyStatus   := ref.statuses.busyStatus));
+
+regulatorPressure( value        := ref.regulatorPressure.average.bar.value, 
+                   actualStatus := ref.regulatorPressure.actualStatus, 
+                   healthStatus := ref.regulatorPressure.statuses.healthStatus);
+mirrorPressure( value        := ref.mirrorPressure.average.bar.value, 
+                actualStatus := ref.mirrorPressure.actualStatus, 
+                healthStatus := ref.mirrorPressure.statuses.healthStatus);
+                
+changeToAutoButtonDeactivated := ref.processes.changePressureSetpointState.statuses.enabledStatus.disabled
+                                 OR ref.statuses.pressureSetpointStatus.auto;
+changeToManualButtonDeactivated := ref.processes.changePressureSetpointState.statuses.enabledStatus.disabled
+                                   OR ref.statuses.pressureSetpointStatus.manual;
+                                   
+IF ref.statuses.pressureSetpointStatus.auto THEN
+    operatingStatus(text := 'Automatic');
+    operatingStatus.color.bg := Colors.GREEN;
+    operatingStatus.color.fg := Colors.WHITE;
+ELSIF ref.statuses.pressureSetpointStatus.manual THEN
+    operatingStatus(text := 'Fixed');
+    operatingStatus.color.bg := Colors.ORANGE;
+    operatingStatus.color.fg := Colors.WHITE;
+END_IF
+
+vacuumRelay(ref := ref.parts.vacuumRelay);]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

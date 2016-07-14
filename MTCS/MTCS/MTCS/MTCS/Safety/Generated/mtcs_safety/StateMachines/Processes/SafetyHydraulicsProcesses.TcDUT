@@ -1,0 +1,14 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="SafetyHydraulicsProcesses" Id="{137c6f2b-601e-4bd1-9ced-eb0387ea6c97}">
+    <Declaration><![CDATA[TYPE SafetyHydraulicsProcesses :
+STRUCT
+	///Start up the pumps (this will first trigger a reset() command!)
+	startupPumps: Process;
+	///Reset the errors (including the programmed ones and the TwinSAFE group ones)
+	reset: Process;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

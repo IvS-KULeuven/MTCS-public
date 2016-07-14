@@ -1,0 +1,32 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.5">
+  <POU Name="AxesCalculateTorqueCommandValue" Id="{fe7fccc7-d63a-478f-bf58-db4847512138}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION AxesCalculateTorqueCommandValue : INT
+VAR_INPUT
+    torqueSetpoint : LREAL; // Nm
+    torqueConstant : LREAL; // Nm/A
+    channelPeakCurrent : LREAL; // A
+END_VAR
+VAR
+    currentAtMotor : LREAL; // A
+    currentFraction : LREAL; // [0.0..1.0]
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[
+IF torqueConstant <> 0 THEN
+    currentAtMotor := torqueSetpoint / torqueConstant;
+ELSE
+    currentAtMotor := 0.0;
+END_IF
+
+IF channelPeakCurrent <> 0 THEN
+    currentFraction := currentAtMotor / channelPeakCurrent;
+ELSE
+    currentFraction := 0.0;
+END_IF
+
+AxesCalculateTorqueCommandValue := LREAL_TO_INT(currentFraction * 1000.0); // units: tenth of a percent ]]]]><![CDATA[>]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

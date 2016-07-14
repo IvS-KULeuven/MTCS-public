@@ -1,0 +1,411 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="SM_M2" Id="{1d02f6b1-d9c6-4faa-a1cc-8f6f93f7dc86}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK SM_M2
+VAR_INPUT
+	///Editable configuration of the M2 subsystem
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	editableConfig: M2Config;
+END_VAR
+VAR_OUTPUT
+	///Current status description
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	actualStatus: STRING;
+	///Active configuration of the M2 subsystem
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	config: M2Config;
+	///The axis which is currently selected by the multiplexer
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	selectedAxis: M2Axes;
+	///The name of the axis which is currently selected by the multiplexer
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	selectedAxisName: STRING;
+	///Number of seconds before the power of the M2 field electronics will be powered off automatically
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	powerOffTimer: LREAL;
+	///Thermal focus position for cassegrain
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	thermalFocusCassegrain: LinearPosition;
+	///Thermal focus position for nasmyth A
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	thermalFocusNasmythA: LinearPosition;
+	///Thermal focus position for nasmyth B
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	thermalFocusNasmythB: LinearPosition;
+	///Thermal focus position for nasmyth C
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	thermalFocusNasmythC: LinearPosition;
+	///Thermal focus position for nasmyth D
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	thermalFocusNasmythD: LinearPosition;
+	///Thermal focus position for nasmyth D
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	thermalFocusActualFocalStation: LinearPosition;
+	///Statuses of the state machine
+	statuses: M2Statuses;
+	///Parts of the state machine
+	parts: M2Parts;
+	///Processes of the state machine
+	processes: M2Processes;
+END_VAR
+VAR_IN_OUT
+	///Shared operator status
+	{attribute 'OPC.UA.DA' := '0'}
+	operatorStatus: OperatorStatus;
+	///Shared I/O with M1
+	{attribute 'OPC.UA.DA' := '0'}
+	io: M1M2IO;
+	///Actual M3 focal station, needed for thermal focus
+	{attribute 'OPC.UA.DA' := '0'}
+	actualFocalStation: M3PositionIDs;
+	///Config of M3 with all info (e.g. names) of focal stations
+	{attribute 'OPC.UA.DA' := '0'}
+	m3KnownPositionsConfig: M3KnownPositionsConfig;
+	///Telemetry temperatures
+	{attribute 'OPC.UA.DA' := '0'}
+	temperatures: TelemetryTemperatures;
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[parts.powerRelay( isEnabled := operatorStatus.tech );
+parts.heater( isEnabled := operatorStatus.tech );
+parts.x(
+    powered := statuses.poweredStatus.enabled,
+    config := config,
+    axisConfig := config.x);
+parts.y(
+    powered := statuses.poweredStatus.enabled,
+    config := config,
+    axisConfig := config.y);
+parts.z(
+    powered := statuses.poweredStatus.enabled,
+    config := config,
+    axisConfig := config.z,
+    isEnabled := operatorStatus.tech);
+parts.tiltX(
+    powered := statuses.poweredStatus.enabled,
+    config := config,
+    axisConfig := config.tiltX);
+parts.tiltY(
+    powered := statuses.poweredStatus.enabled,
+    config := config,
+    axisConfig := config.tiltY);
+parts.multiplexer(
+    isEnabled := operatorStatus.tech,
+    powered := statuses.poweredStatus.enabled);
+parts.configManager( isEnabled := operatorStatus.tech );
+parts.moveStepsProcedure(
+    powerOn := processes.powerOn,
+    x := parts.x,
+    y := parts.y,
+    z := parts.z,
+    tiltX := parts.tiltX,
+    tiltY := parts.tiltY,
+    multiplexer := parts.multiplexer,
+    config := config);
+parts.movePositionProcedure(
+    powerOn := processes.powerOn,
+    x := parts.x,
+    y := parts.y,
+    z := parts.z,
+    tiltX := parts.tiltX,
+    tiltY := parts.tiltY,
+    multiplexer := parts.multiplexer,
+    moveStepsProcedure := parts.moveStepsProcedure,
+    config := config);
+statuses.initializationStatus();
+statuses.poweredStatus( isEnabled := parts.powerRelay.digitalOutput AND (processes.powerOn.statuses.busyStatus.idle AND processes.powerOff.statuses.busyStatus.idle) );
+statuses.healthStatus(
+    isGood := ((parts.x.statuses.healthStatus.isGood AND (parts.y.statuses.healthStatus.isGood AND (parts.z.statuses.healthStatus.isGood AND (parts.tiltX.statuses.healthStatus.isGood AND (parts.tiltY.statuses.healthStatus.isGood AND parts.multiplexer.statuses.healthStatus.isGood))))) OR statuses.poweredStatus.disabled) AND (io.statuses.healthStatus.isGood AND (temperatures.statuses.healthStatus.isGood AND parts.configManager.statuses.healthStatus.isGood)),
+    hasWarning := ((parts.x.statuses.healthStatus.hasWarning OR (parts.y.statuses.healthStatus.hasWarning OR (parts.z.statuses.healthStatus.hasWarning OR (parts.tiltX.statuses.healthStatus.hasWarning OR (parts.tiltY.statuses.healthStatus.hasWarning OR parts.multiplexer.statuses.healthStatus.hasWarning))))) AND statuses.poweredStatus.enabled) OR (io.statuses.healthStatus.hasWarning OR (temperatures.statuses.healthStatus.hasWarning OR parts.configManager.statuses.healthStatus.hasWarning)));
+statuses.busyStatus( isBusy := statuses.initializationStatus.initializing OR (parts.multiplexer.statuses.busyStatus.busy OR (parts.configManager.statuses.busyStatus.busy OR (processes.abort.statuses.busyStatus.busy OR (processes.powerOn.statuses.busyStatus.busy OR (processes.powerOff.statuses.busyStatus.busy OR (processes.doThermalFocus.statuses.busyStatus.busy OR (processes.doThermalFocusForStationName.statuses.busyStatus.busy OR (processes.doThermalFocusForStationPosition.statuses.busyStatus.busy OR (processes.verifyFixedPositions.statuses.busyStatus.busy OR (processes.moveSteps.statuses.busyStatus.busy OR (processes.moveAbsolute.statuses.busyStatus.busy OR processes.moveRelative.statuses.busyStatus.busy))))))))))) );
+statuses.operatingStatus( superState := statuses.initializationStatus.initialized );
+processes.initialize( isEnabled := statuses.initializationStatus.shutdown OR (statuses.initializationStatus.initializingFailed OR statuses.initializationStatus.initialized) );
+processes.lock( isEnabled := operatorStatus.tech AND statuses.initializationStatus.initialized );
+processes.unlock( isEnabled := operatorStatus.tech AND statuses.initializationStatus.locked );
+processes.changeOperatingState( isEnabled := statuses.busyStatus.idle AND (statuses.initializationStatus.initialized AND operatorStatus.tech) );
+processes.moveAbsolute( isEnabled := statuses.initializationStatus.initialized AND statuses.busyStatus.idle );
+processes.moveRelative( isEnabled := processes.moveAbsolute.isEnabled );
+processes.moveSteps( isEnabled := statuses.initializationStatus.initialized AND operatorStatus.tech );
+processes.doThermalFocus( isEnabled := processes.moveAbsolute.isEnabled AND (NOT(actualFocalStation = M3PositionIDs.UNKNOWN)) );
+processes.doThermalFocusForStationName( isEnabled := processes.moveAbsolute.isEnabled );
+processes.doThermalFocusForStationPosition( isEnabled := processes.moveAbsolute.isEnabled );
+processes.verifyFixedPositions( isEnabled := processes.moveAbsolute.isEnabled );
+processes.powerOn( isEnabled := statuses.busyStatus.idle AND statuses.initializationStatus.initialized );
+processes.powerOff( isEnabled := statuses.busyStatus.idle AND statuses.initializationStatus.initialized );
+processes.abort( isEnabled := parts.moveStepsProcedure.statuses.busyStatus.busy OR parts.movePositionProcedure.statuses.busyStatus.busy );
+]]></ST>
+    </Implementation>
+    <Method Name="doThermalFocusForStationPosition" Id="{01618cbb-6a0f-4858-92eb-eb7260b17553}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD doThermalFocusForStationPosition : RequestResults
+VAR_INPUT
+	station: M3PositionIDs;
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[doThermalFocusForStationPosition := THIS^.processes.doThermalFocusForStationPosition.request( station := station );
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="doThermalFocus" Id="{49f7e74c-d927-4609-8317-83b885b34ccd}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD doThermalFocus : RequestResults
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[doThermalFocus := THIS^.processes.doThermalFocus.request();
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="abort" Id="{4e9ba108-8554-4540-a369-4481dae7b2d1}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD abort : RequestResults
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[abort := THIS^.processes.abort.request();
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="lock" Id="{8936e883-b816-47b5-a054-17a32ddb13b3}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD lock : RequestResults
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[lock := THIS^.processes.lock.request();
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="unlock" Id="{9bbaee94-e7e1-4ae1-bebb-1f2123e3b3ca}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD unlock : RequestResults
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[unlock := THIS^.processes.unlock.request();
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="initialize" Id="{afdf4cf8-aebb-46ab-b00c-c92bc62d1023}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD initialize : RequestResults
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[initialize := THIS^.processes.initialize.request();
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="powerOff" Id="{b99ebda4-0d77-4960-825a-ee4aa42729f7}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD powerOff : RequestResults
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[powerOff := THIS^.processes.powerOff.request();
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="changeOperatingState" Id="{bcc77101-3edb-4dd4-8017-f934c61fd645}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD changeOperatingState : RequestResults
+VAR_INPUT
+	state: OperatingStates;
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[changeOperatingState := THIS^.processes.changeOperatingState.request( state := state );
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="doThermalFocusForStationName" Id="{d3883524-0cd9-4db4-b276-6d2b8158c18a}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD doThermalFocusForStationName : RequestResults
+VAR_INPUT
+	station: STRING;
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[doThermalFocusForStationName := THIS^.processes.doThermalFocusForStationName.request( station := station );
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="moveRelative" Id="{ddf141ba-9b96-44d1-87b8-728163b8c760}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD moveRelative : RequestResults
+VAR_INPUT
+	axis: M2Axes;
+	position: LREAL;
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[moveRelative := THIS^.processes.moveRelative.request(
+    axis := axis,
+    position := position);
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="moveSteps" Id="{e477cb18-fc0d-4eac-a285-e4e4ae232f2e}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD moveSteps : RequestResults
+VAR_INPUT
+	axis: M2Axes;
+	steps: UDINT;
+	cw: BOOL;
+	fast: BOOL;
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[moveSteps := THIS^.processes.moveSteps.request(
+    axis := axis,
+    steps := steps,
+    cw := cw,
+    fast := fast);
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="moveAbsolute" Id="{e69a0ec0-88ba-45ce-9cc1-e3452e433aaf}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD moveAbsolute : RequestResults
+VAR_INPUT
+	axis: M2Axes;
+	position: LREAL;
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[moveAbsolute := THIS^.processes.moveAbsolute.request(
+    axis := axis,
+    position := position);
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="verifyFixedPositions" Id="{f0d580be-47cd-49cf-b2e1-7ea8b1dbb711}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD verifyFixedPositions : RequestResults
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[verifyFixedPositions := THIS^.processes.verifyFixedPositions.request();
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="powerOn" Id="{f310045c-51bf-4950-b410-26f4e1874249}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD powerOn : RequestResults
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[powerOn := THIS^.processes.powerOn.request();
+]]></ST>
+      </Implementation>
+    </Method>
+  </POU>
+</TcPlcObject>

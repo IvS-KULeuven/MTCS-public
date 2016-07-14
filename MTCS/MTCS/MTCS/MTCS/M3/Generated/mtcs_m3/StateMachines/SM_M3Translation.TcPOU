@@ -1,0 +1,162 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="SM_M3Translation" Id="{258cb5b1-6edb-4e2d-9689-d67bd6cc85d4}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK SM_M3Translation
+VAR_INPUT
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	target: M3TranslationTarget;
+	///TRUE if the positive limit switch is active
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	positiveLimitSwitchActive AT %I*: BOOL;
+	///TRUE if the negative limit switch is active
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	negativeLimitSwitchActive AT %I*: BOOL;
+END_VAR
+VAR_OUTPUT
+	///Current status description
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	actualStatus: STRING;
+	///The actual position of the translation
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	actualPosition: LinearPosition;
+	///The actual position error of the translation
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	actualPositionError: LinearPosition;
+	///Statuses of the state machine
+	statuses: M3TranslationStatuses;
+	///Parts of the state machine
+	parts: M3TranslationParts;
+	///Processes of the state machine
+	processes: M3TranslationProcesses;
+END_VAR
+VAR_IN_OUT
+	{attribute 'OPC.UA.DA' := '0'}
+	initializationStatus: InitializationStatus;
+	{attribute 'OPC.UA.DA' := '0'}
+	operatorStatus: OperatorStatus;
+	{attribute 'OPC.UA.DA' := '0'}
+	operatingStatus: OperatingStatus;
+	{attribute 'OPC.UA.DA' := '0'}
+	config: M3TranslationConfig;
+	{attribute 'OPC.UA.DA' := '0'}
+	m3Config: M3Config;
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[target( knownPositions := m3Config.knownPositions );
+actualPosition( newMillimetersValue := parts.motorAxis.actPos.millimeters.value );
+actualPositionError( newMillimetersValue := actualPosition.millimeters.value - target.position.millimeters.value );
+parts.motorAxis(
+    isEnabled := operatorStatus.tech AND initializationStatus.initialized,
+    standstillTolerance := config.standstillTolerance,
+    isGearingSupported := FALSE);
+parts.motorDrive(
+    isEnabled := operatorStatus.tech AND initializationStatus.initialized,
+    config := config.motorDrive);
+parts.gotoProcedure(
+    config := config,
+    motorAxis := parts.motorAxis,
+    motorDrive := parts.motorDrive,
+    target := target,
+    positiveLimitSwitchActive := positiveLimitSwitchActive,
+    negativeLimitSwitchActive := negativeLimitSwitchActive,
+    actualPosition := actualPosition,
+    actualPositionError := actualPositionError);
+parts.homingProcedure(
+    config := config,
+    motorAxis := parts.motorAxis,
+    motorDrive := parts.motorDrive,
+    target := target,
+    positiveLimitSwitchActive := positiveLimitSwitchActive,
+    negativeLimitSwitchActive := negativeLimitSwitchActive,
+    actualPosition := actualPosition,
+    actualPositionError := actualPositionError);
+statuses.healthStatus(
+    isGood := parts.motorAxis.statuses.healthStatus.isGood AND (parts.motorDrive.statuses.healthStatus.isGood AND (parts.homingProcedure.statuses.healthStatus.isGood AND parts.gotoProcedure.statuses.healthStatus.isGood)),
+    hasWarning := parts.motorAxis.statuses.healthStatus.hasWarning OR (parts.motorDrive.statuses.healthStatus.hasWarning OR (parts.homingProcedure.statuses.healthStatus.hasWarning OR parts.gotoProcedure.statuses.healthStatus.hasWarning)));
+statuses.busyStatus( isBusy := parts.motorAxis.statuses.busyStatus.busy );
+processes.goto( isEnabled := operatingStatus.manual AND (initializationStatus.initialized AND parts.gotoProcedure.isGotoAllowed) );
+processes.reset( isEnabled := statuses.healthStatus.bad );
+processes.abort( isEnabled := parts.gotoProcedure.statuses.busyStatus.busy OR parts.homingProcedure.statuses.busyStatus.busy );
+processes.startHoming( isEnabled := operatingStatus.manual AND initializationStatus.initialized );
+]]></ST>
+    </Implementation>
+    <Method Name="abort" Id="{6530a3f7-559d-4873-9299-d9b4c2009afd}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD abort : RequestResults
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[abort := THIS^.processes.abort.request();
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="startHoming" Id="{68ccd48c-75b7-4089-aea4-d971826a0434}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD startHoming : RequestResults
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[startHoming := THIS^.processes.startHoming.request();
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="goto" Id="{85ec9260-d8f3-487e-a406-1820b2f4206b}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD goto : RequestResults
+VAR_INPUT
+	position: LREAL;
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[goto := THIS^.processes.goto.request( position := position );
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="reset" Id="{e6a2d364-62fe-4a17-97fa-a3c59b2ad88a}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD reset : RequestResults
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[reset := THIS^.processes.reset.request();
+]]></ST>
+      </Implementation>
+    </Method>
+  </POU>
+</TcPlcObject>

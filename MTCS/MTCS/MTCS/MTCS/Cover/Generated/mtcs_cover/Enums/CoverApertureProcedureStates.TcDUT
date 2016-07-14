@@ -1,0 +1,26 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="CoverApertureProcedureStates" Id="{e6df370b-2f4e-4be9-a919-d41b5fad8e6a}">
+    <Declaration><![CDATA[TYPE CoverApertureProcedureStates :
+(
+	IDLE := 0,
+	ABORTED := 1,
+	PREPARE_PROCESS := 2,
+	ENABLING_RELAYS := 3,
+	ENABLING_MOTORS := 4,
+	ENABLING_MAGNETS := 5,
+	DISABLING_RELAYS := 6,
+	DISABLING_MOTORS := 7,
+	DISABLING_MAGNETS := 8,
+	OPENING_TOP_PANELS := 9,
+	OPENING_BOTH_PANELS := 10,
+	CLOSING_BOTTOM_PANELS := 11,
+	CLOSING_BOTH_PANELS := 12,
+	ERROR := 13,
+	RESETTING := 14,
+	ABORTING := 15
+);
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

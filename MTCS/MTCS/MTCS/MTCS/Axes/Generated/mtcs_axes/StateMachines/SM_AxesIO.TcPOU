@@ -1,0 +1,34 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="SM_AxesIO" Id="{ff125399-245d-4752-8b71-ab220430527b}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK SM_AxesIO
+VAR_INPUT
+	///Is control enabled?
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	isEnabled: BOOL;
+END_VAR
+VAR_OUTPUT
+	///Current status description
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	actualStatus: STRING;
+	///Statuses of the state machine
+	statuses: AxesIOStatuses;
+	///Parts of the state machine
+	parts: AxesIOParts;
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[parts.aziDrive( isEnabled := isEnabled );
+parts.ablDrive( isEnabled := isEnabled );
+parts.eleDrive( isEnabled := isEnabled );
+statuses.healthStatus( isGood := parts.aziDrive.statuses.healthStatus.isGood AND (parts.ablDrive.statuses.healthStatus.isGood AND parts.eleDrive.statuses.healthStatus.isGood) );
+]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

@@ -1,0 +1,12 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="CurrentMeasurementStatuses" Id="{6c03c6d4-e3ff-44e1-af60-43ff15a9e93f}">
+    <Declaration><![CDATA[TYPE CurrentMeasurementStatuses :
+STRUCT
+	///Is the measurement valid?
+	healthStatus: HealthStatus;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

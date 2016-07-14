@@ -1,0 +1,28 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="HydraulicsConfig" Id="{28ea77f4-456a-4a6f-b395-d9ae1048785d}">
+    <Declaration><![CDATA[TYPE HydraulicsConfig :
+STRUCT
+	///Top side settings
+	top: HydraulicsSideConfig;
+	///Bottom side settings
+	bottom: HydraulicsSideConfig;
+	///Cycle time in seconds of the control loop (old system: 60.0)
+	controlCycleTime: LREAL;
+	///Don't change the frequency setpoint if the error is below this value (in Hz) (old system: 1.0)
+	controlHysteresis: LREAL;
+	///Time in seconds during startup, when the pumps must run at maxFrequency
+	buildUpPressureTime: LREAL;
+	///Oil temperature measured at the bearing
+	bearingTemperature: MeasurementConfig;
+	///Time in seconds during stopping
+	stoppingTime: LREAL;
+	///Time in seconds to wait while powering on
+	pumpsPowerOnTIme: LREAL;
+	///Time in seconds to wait while powering off
+	pumpsPowerOffTIme: LREAL;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

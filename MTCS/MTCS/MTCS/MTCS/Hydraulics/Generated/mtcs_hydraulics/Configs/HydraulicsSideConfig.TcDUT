@@ -1,0 +1,28 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="HydraulicsSideConfig" Id="{fd7e23c4-1e31-49b7-8390-ff4080255373}">
+    <Declaration><![CDATA[TYPE HydraulicsSideConfig :
+STRUCT
+	///Minimum allowed frequency in Hz (old system: 50.0 for both pumps)
+	minFrequency: LREAL;
+	///Maximum allowed frequency in Hz (old system: 100.0 for both pumps)
+	maxFrequency: LREAL;
+	///Pressure measurement config, in Bar
+	pressureMeasurement: MeasurementConfig;
+	///Sensor full scale range, in Bar
+	pressureSensorFullScale: LREAL;
+	///Frequency measurement config, in Hertz
+	frequencyMeasurement: MeasurementConfig;
+	///Measurement full scale range, in Hertz
+	frequencyMeasurementFullScale: LREAL;
+	///Coefficient 'a' of formula: Frequency[Hz] = a * temp[Celsius]^2 + b * temp[Celsius] + c
+	conversionCoefficientA: LREAL;
+	///Coefficient 'b' of formula: Frequency[Hz] = a * temp[Celsius]^2 + b * temp[Celsius] + c
+	conversionCoefficientB: LREAL;
+	///Coefficient 'c' of formula: Frequency[Hz] = a * temp[Celsius]^2 + b * temp[Celsius] + c
+	conversionCoefficientC: LREAL;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

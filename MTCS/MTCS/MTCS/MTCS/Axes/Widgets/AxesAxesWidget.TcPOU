@@ -1,0 +1,70 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="AxesAxesWidget" Id="{b32ec22b-e9d7-4c7d-90a5-30d6ac09b19d}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK AxesAxesWidget
+VAR_INPUT
+    activeTab : AxesAxesTabs;
+END_VAR
+VAR_OUTPUT
+    commonStatusColor : StatusColor;
+END_VAR
+VAR_IN_OUT
+	ref_azi : AxesAzimuthAxis;
+	ref_ele : AxesElevationAxis;
+	ref_roc : AxesRotationAxis;
+	ref_ron : AxesRotationAxis;
+    ref_io  : AxesIO;
+    //ref_fw  : TODO
+END_VAR
+VAR    
+    button_azi : SubSubSystemButtonWidget('AZI', AxesAxesTabs.AZI);      
+    button_ele : SubSubSystemButtonWidget('ELE', AxesAxesTabs.ELE);      
+    button_roc : SubSubSystemButtonWidget('ROC', AxesAxesTabs.ROC);      
+    button_ron : SubSubSystemButtonWidget('RON', AxesAxesTabs.RON);      
+    button_fw  : SubSubSystemButtonWidget('FW' , AxesAxesTabs.FW);      
+
+    azi : AxesAzimuthAxisWidget;
+    ele : AxesElevationAxisWidget;
+    roc : AxesRotationAxisWidget;
+    ron : AxesRotationAxisWidget;
+    //fw : AxesPositioningAxisWidget;
+    
+    commonHealthStatus : HealthStatus;
+    commonBusyStatus : BusyStatus;
+    
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[azi(ref := ref_azi, ref_aziDriveChannel := ref_io.parts.aziDrive.parts.channelA, ref_ablDriveChannel := ref_io.parts.ablDrive.parts.channelA);
+ele(ref := ref_ele, ref_driveChannel := ref_io.parts.eleDrive.parts.channelA);
+roc(ref := ref_roc, ref_driveChannel := ref_io.parts.aziDrive.parts.channelB, axisTitle := 'Rotator Cas.'   , driveChannelTitle := 'ROC (Drive AZID channel B)');
+ron(ref := ref_ron, ref_driveChannel := ref_io.parts.ablDrive.parts.channelB, axisTitle := 'Rotator Nas.', driveChannelTitle := 'RON (Drive ABLD channel B)');
+
+button_azi(activeTab := activeTab, color := azi.actualStatus.color);
+button_ele(activeTab := activeTab, color := ele.actualStatus.color);
+button_roc(activeTab := activeTab, color := roc.actualStatus.color);
+button_ron(activeTab := activeTab, color := ron.actualStatus.color);
+//button_fw( activeTab := activeTab, color := fw.actualStatus.color);
+
+commonHealthStatus(
+     isGood :=      ref_azi.statuses.healthStatus.isGood 
+                AND ref_ele.statuses.healthStatus.isGood
+                AND ref_roc.statuses.healthStatus.isGood
+                AND ref_ron.statuses.healthStatus.isGood,
+     hasWarning :=  ref_azi.statuses.healthStatus.hasWarning 
+                 OR ref_ele.statuses.healthStatus.hasWarning 
+                 OR ref_roc.statuses.healthStatus.hasWarning 
+                 OR ref_ron.statuses.healthStatus.hasWarning);
+                         
+commonBusyStatus(
+     isBusy :=    ref_azi.statuses.busyStatus.busy 
+               OR ref_ele.statuses.busyStatus.busy 
+               OR ref_roc.statuses.busyStatus.busy 
+               OR ref_ron.statuses.busyStatus.busy);
+
+commonStatusColor := HealthBusyToColor(
+                healthStatus := commonHealthStatus,
+                busyStatus := commonBusyStatus);]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

@@ -1,0 +1,14 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="AX52XXDriveParts" Id="{d3a4ce6c-b237-4b05-8e48-f375c7bbf9b9}">
+    <Declaration><![CDATA[TYPE AX52XXDriveParts :
+STRUCT
+	///Channel A
+	channelA: AX52XXDriveChannel;
+	///Channel B
+	channelB: AX52XXDriveChannel;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

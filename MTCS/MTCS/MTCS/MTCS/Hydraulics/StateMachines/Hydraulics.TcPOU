@@ -1,0 +1,651 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="Hydraulics" Id="{1eea5cbd-e14f-4d12-b3bd-6b3aaa78197e}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK Hydraulics EXTENDS SM_Hydraulics
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR
+    _initializingCurrentAction : INT;
+    _onFirstStartCurrentAction : INT;
+    
+    _startingUpPumpsSubstate : INT;
+    _startingUpPumpsTon : TON;
+    
+    _stoppingPumpsSubstate : INT;
+    _stoppingPumpsTon : TON;
+    
+    _updateFrequenciesChanging : BOOL;
+    _updateFrequenciesTopSetpoint : LREAL;
+    _updateFrequenciesBottomSetpoint : LREAL;
+    _updateFrequenciesTon : TON;
+    
+    _updateCirculationPumpRelayChanging : BOOL;
+    _updateCirculationPumpRelaySetpoint : BOOL;
+    
+    _pumpsErrorCause : STRING;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[_update();
+
+_onFirstStart();
+_initializing();
+_locking();
+_unlocking();
+_changingOperatingState();
+
+_startingUpPumps();
+_stoppingPumps();
+_updateFrequencies();
+_updateCirculationPumpRelay();
+
+// simulation values
+IF GLOBAL.config.SIMULATION_ACTIVE THEN
+    circulationFilterDOK := TRUE;
+    circulationFilterGOK := TRUE;
+END_IF
+
+_update();]]></ST>
+    </Implementation>
+    <Method Name="FB_init" Id="{17755df5-39cd-40c7-9cb0-40905ba5d30b}">
+      <Declaration><![CDATA[METHOD FB_init : BOOL
+VAR_INPUT
+	bInitRetains : BOOL; // if TRUE, the retain variables are initialized (warm start / cold start)
+	bInCopyCode : BOOL;  // if TRUE, the instance afterwards gets moved into the copy code (online change)
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[parts.configManager.configure(
+    editableConfigAddress       := ADR(editableConfig),
+    activeConfigAddress         := ADR(config),
+    configLength                := SIZEOF(editableConfig),
+    editableConfigSymbolName    := GLOBAL.config.HYDRAULICS_EDITABLE_CONFIG_SYMBOL_NAME,
+    activeConfigSymbolName      := GLOBAL.config.HYDRAULICS_ACTIVE_CONFIG_SYMBOL_NAME,
+    configFilePath              := GLOBAL.config.HYDRAULICS_CONFIG_FILE_PATH);
+    
+parts.top.setSide(top := TRUE);
+parts.bottom.setSide(top := FALSE);]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_onFirstStart" Id="{53d82725-ab30-41d5-b104-5ac6dc95cf92}">
+      <Declaration><![CDATA[METHOD _onFirstStart
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[CASE _onFirstStartCurrentAction OF
+    0:
+        // start loading the config from XML file
+        parts.configManager.processes.load.start(parts.configManager.processes.load.set.filePath);
+        _onFirstStartCurrentAction := 1;
+    1:
+        // wait until the config has been loaded
+        IF parts.configManager.processes.load.statuses.busyStatus.idle THEN
+            IF parts.configManager.processes.load.statuses.healthStatus.good THEN
+                _onFirstStartCurrentAction := 2;
+            ELSE
+                _onFirstStartCurrentAction := 999;
+            END_IF
+        END_IF
+    2:
+        // now start activating the config
+        parts.configManager.processes.activate.start();
+        _onFirstStartCurrentAction := 3;
+    3:
+        // wait until the config has been activated
+        IF parts.configManager.processes.activate.statuses.busyStatus.idle THEN
+            IF parts.configManager.processes.activate.statuses.healthStatus.good THEN
+                _onFirstStartCurrentAction := 4;
+            ELSE
+                _onFirstStartCurrentAction := 999;
+            END_IF
+        END_IF
+    4:
+        // nothing to do, done!
+        ;
+    999:
+        // error, but nothing we can do about it now!
+        ;
+
+END_CASE]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_stoppingPumps" Id="{669c57c6-2ae3-4a77-bb00-55b0ee1fcfca}">
+      <Declaration><![CDATA[METHOD _stoppingPumps
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF processes.stopPumps.isBusy() THEN
+    
+    CASE _stoppingPumpsSubstate OF
+        0:
+            _pumpsErrorCause := '';
+            // change the state
+            pumpsState := HydraulicsPumpsStates.STOPPING;
+            _stoppingPumpsSubstate := 1;
+        1:
+            // start the timer to wait until the maximum frequency time has elapsed
+            _stoppingPumpsTon(IN := FALSE);
+            _stoppingPumpsTon(IN := TRUE, 
+                              PT := LREAL_TO_TIME(config.stoppingTime * 1000.0)); // LREAL_TO_TIME expects milliseconds
+            _stoppingPumpsSubstate := 2;
+        2:
+            _stoppingPumpsTon(IN := TRUE);
+            // wait until the timer has expired or until an error has occurred
+            IF safetyHydraulics.statuses.healthStatus.bad THEN
+                _pumpsErrorCause := 'Safety error during stopping';
+                _stoppingPumpsSubstate := 999;
+			ELSIF _stoppingPumpsTon.Q THEN
+                _stoppingPumpsSubstate := 3;
+            END_IF
+         3:
+            // OK the pumps should now be stopped
+            IF safetyHydraulics.pumpsStopped THEN
+                _stoppingPumpsSubstate := 4;
+            ELSE
+                _pumpsErrorCause := 'Could not stop: safety says still running';
+                _stoppingPumpsSubstate := 999;
+			END_IF
+         4:
+            // now turn off the power and start a timer
+            pumpsState := HydraulicsPumpsStates.POWERING_OFF;
+            parts.pumpsPowerRelay.processes.setEnabled.start(FALSE);
+            _stoppingPumpsTon(IN := FALSE);
+            _stoppingPumpsTon(IN := TRUE, PT := LREAL_TO_TIME(config.pumpsPowerOffTIme*1000.0));
+            _stoppingPumpsSubstate := 5;
+         5:
+            _stoppingPumpsTon(IN := TRUE);
+            IF _stoppingPumpsTon.Q THEN
+                _stoppingPumpsSubstate := 1000;
+			END_IF
+         
+         999:
+            // ended with problem!
+            pumpsState := HydraulicsPumpsStates.ERROR;
+            processes.stopPumps.setBad();
+            processes.stopPumps.setFinished();
+            _stoppingPumpsSubstate := 0;
+         1000:
+            // all good, done!
+            pumpsState := HydraulicsPumpsStates.STOPPED;
+            processes.stopPumps.setGood();
+            processes.stopPumps.setFinished();
+            _stoppingPumpsSubstate := 0;
+	END_CASE
+
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_startingUpPumps" Id="{7545d2f5-7728-49f7-95be-e5286454e790}">
+      <Declaration><![CDATA[METHOD _startingUpPumps
+VAR_INPUT
+END_VAR
+
+VAR
+	startupProcedure: INT;
+END_VAR]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF processes.startUpPumps.isBusy() THEN
+    
+    CASE _startingUpPumpsSubstate OF
+        0:
+            _pumpsErrorCause := '';
+            // power on the drives
+            pumpsState := HydraulicsPumpsStates.POWERING_ON;
+            parts.pumpsPowerRelay.processes.setEnabled.start(TRUE);
+            _startingUpPumpsSubstate := 1;
+        1:
+            // wait until they're powered on
+            _startingUpPumpsTon(IN := FALSE);
+            _startingUpPumpsTon(IN := TRUE, PT := LREAL_TO_TIME(config.pumpsPowerOnTIme*1000.0));
+            _startingUpPumpsSubstate := 2;
+        2: 
+            _startingUpPumpsTon(IN := TRUE);
+            // reset the drives
+            IF _startingUpPumpsTon.Q THEN
+                pumpsState := HydraulicsPumpsStates.RESETTING_DRIVES;
+                parts.top.processes.resetDrive.start();
+                parts.bottom.processes.resetDrive.start();
+                _startingUpPumpsSubstate := 3;
+			END_IF
+        3:
+            // wait until the drives have been reset
+            IF parts.top.processes.resetDrive.isIdle() AND parts.bottom.processes.resetDrive.isIdle() THEN
+                IF parts.top.processes.resetDrive.isGood() AND parts.top.processes.resetDrive.isGood() THEN
+                    _startingUpPumpsSubstate := 4;
+                ELSE
+                    _pumpsErrorCause := 'Could not reset drives';
+                    _startingUpPumpsSubstate := 999;
+                END_IF
+            END_IF
+        4:
+            // command the safety regardless of whether the safety is healthy or not. 
+            // If the safety is not healthy, we expect this command will try to reset the safety errors first.
+            pumpsState := HydraulicsPumpsStates.COMMANDING_SAFETY;
+            safetyHydraulics.processes.startupPumps.start();
+            _startingUpPumpsSubstate := 5;
+        5:
+            // wait until the safety is commanded
+            IF safetyHydraulics.processes.startupPumps.isIdle() THEN
+                IF safetyHydraulics.processes.startupPumps.isGood() THEN
+                    _startingUpPumpsSubstate := 6;
+                ELSE
+                    _pumpsErrorCause := 'Ccould not command safety';
+                    _startingUpPumpsSubstate := 999;
+                END_IF
+            END_IF
+        6:
+            // start building up the pressure by running at maximum frequency
+            pumpsState := HydraulicsPumpsStates.BUILDING_UP_PRESSURE;
+            _startingUpPumpsSubstate := 7;
+        7:
+            IF parts.top.processes.changeFrequencySetpoint.isIdle() AND parts.bottom.processes.changeFrequencySetpoint.isIdle() THEN
+                IF parts.top.processes.changeFrequencySetpoint.isGood() AND parts.bottom.processes.changeFrequencySetpoint.isGood() THEN
+                    _startingUpPumpsSubstate := 8;
+                ELSE
+                    _pumpsErrorCause := 'Could not change setpoint';
+                    _startingUpPumpsSubstate := 999;
+                END_IF
+            END_IF
+        8:
+            // start the timer to wait until the maximum frequency time has elapsed
+            _startingUpPumpsTon(IN := FALSE);
+            _startingUpPumpsTon(IN := TRUE, 
+                                PT := LREAL_TO_TIME(config.buildUpPressureTime * 1000.0)); // LREAL_TO_TIME expects milliseconds
+            _startingUpPumpsSubstate := 9;
+        9:
+            _startingUpPumpsTon(IN := TRUE);
+            // wait until the timer has expired or until an error has occurred
+            IF safetyHydraulics.statuses.healthStatus.bad THEN
+                _pumpsErrorCause := 'Safety problem during pressure buildup';
+                _startingUpPumpsSubstate := 999;
+			ELSIF _startingUpPumpsTon.Q THEN
+                _startingUpPumpsSubstate := 10;
+            END_IF
+         10:
+            // OK the pumps should now be up and running
+            IF safetyHydraulics.pumpsRunning THEN
+                _startingUpPumpsSubstate := 1000;
+            ELSE
+                _pumpsErrorCause := 'Could not start: safety says not running';
+                _startingUpPumpsSubstate := 999;
+			END_IF
+         999:
+            // ended with problem!
+            pumpsState := HydraulicsPumpsStates.ERROR;
+            processes.startUpPumps.setBad();
+            processes.startUpPumps.setFinished();
+            _startingUpPumpsSubstate := 0;
+         1000:
+            // all good, done!
+            pumpsState := HydraulicsPumpsStates.RUNNING;
+            processes.startUpPumps.setGood();
+            processes.startUpPumps.setFinished();
+            _startingUpPumpsSubstate := 0;
+	END_CASE
+
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_locking" Id="{95419ed2-dbaf-433b-9ac8-32a83c1eaee5}">
+      <Declaration><![CDATA[METHOD _locking
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF processes.lock.statuses.busyStatus.busy THEN
+	statuses.initializationStatus(state := InitializationStates.LOCKED);
+	
+	// done
+	processes.lock.setGood();
+	processes.lock.setFinished();
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_initializing" Id="{9d6f181f-a20a-4d3f-b3f6-4f725f3a88f3}">
+      <Declaration><![CDATA[METHOD _initializing
+VAR_INPUT
+END_VAR
+VAR
+    
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF processes.initialize.statuses.busyStatus.busy THEN
+	
+	// start up the initialization
+	IF NOT processes.initialize.statuses.startedStatus.started THEN
+        // we're now initializing
+        statuses.initializationStatus(state := InitializationStates.INITIALIZING);
+        _initializingCurrentAction := 0;
+		// OK we're started now
+		processes.initialize.setStarted();
+	END_IF;
+    
+    // process the actions
+    CASE _initializingCurrentAction OF
+        
+        0:
+            // start loading the config from XML file
+            parts.configManager.processes.load.start(parts.configManager.processes.load.set.filePath);
+            _initializingCurrentAction := 1;
+        1:
+            // wait until the config has been loaded
+            IF parts.configManager.processes.load.statuses.busyStatus.idle THEN
+                IF parts.configManager.processes.load.statuses.healthStatus.good THEN
+                    _initializingCurrentAction := 2;
+                ELSE
+                    _initializingCurrentAction := 999;
+                END_IF
+            END_IF
+        2:
+            // now start activating the config
+            parts.configManager.processes.activate.start();
+            _initializingCurrentAction := 3;
+        3:
+            // wait until the config has been activated
+            IF parts.configManager.processes.activate.statuses.busyStatus.idle THEN
+                IF parts.configManager.processes.activate.statuses.healthStatus.good THEN
+                    _initializingCurrentAction := 4;
+                ELSE
+                    _initializingCurrentAction := 999;
+                END_IF
+            END_IF
+        4:
+            // reset the errors of the SafetyHydraulics instance
+            safetyHydraulics.processes.reset.start();
+            _initializingCurrentAction := 5;
+        5:
+            // wait for the process to finish
+            IF safetyHydraulics.processes.reset.isIdle() THEN
+                IF safetyHydraulics.processes.reset.isGood() THEN
+                    _initializingCurrentAction := 6;
+                ELSE
+                    _initializingCurrentAction := 999;
+                END_IF
+            END_IF
+        6:
+            // guess the initial state
+            _guessPumpsState();
+            _initializingCurrentAction := 1000;
+        999:
+            // there has been an error!
+            statuses.initializationStatus(state := InitializationStates.INITIALIZING_FAILED);
+            // done
+            processes.initialize.setBad();
+            processes.initialize.setFinished();
+        1000:
+            // all done!
+            statuses.initializationStatus(state := InitializationStates.INITIALIZED);
+            processes.initialize.setGood();
+            processes.initialize.setFinished();
+	END_CASE
+    
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_updateCirculationPumpRelay" Id="{9fc74acd-8e59-430c-adee-795cf78df7aa}">
+      <Declaration><![CDATA[METHOD _updateCirculationPumpRelay
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[
+CASE pumpsState OF
+    HydraulicsPumpsStates.MANUAL,
+    HydraulicsPumpsStates.ERROR:
+        // don't do anything!
+        _updateCirculationPumpRelayChanging := FALSE;
+
+    HydraulicsPumpsStates.STOPPED:
+        // turn OFF the relay
+        _updateCirculationPumpRelayChanging := TRUE;
+        _updateCirculationPumpRelaySetpoint := FALSE; // OFF
+ELSE
+    // turn ON the relay
+    _updateCirculationPumpRelayChanging := TRUE;
+    _updateCirculationPumpRelaySetpoint := TRUE; // ON
+END_CASE
+
+
+// apply the changes
+IF _updateCirculationPumpRelayChanging THEN
+    IF parts.circulationPumpRelay.digitalOutput <> _updateCirculationPumpRelaySetpoint THEN     // only if the output wasn't already OK
+        IF parts.circulationPumpRelay.processes.setEnabled.isIdle() THEN                        // only if the process isn't busy
+            parts.circulationPumpRelay.processes.setEnabled.start(_updateCirculationPumpRelaySetpoint);
+        END_IF
+    END_IF
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_update" Id="{a6a9f653-d414-4cdc-98a1-842029c31023}">
+      <Declaration><![CDATA[METHOD _update
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[SUPER^(operatorStatus := operatorStatus, safetyHydraulics := safetyHydraulics, safetyIO := safetyIO);
+
+IF statuses.initializationStatus.initialized THEN
+    IF statuses.healthStatus.bad THEN
+        actualStatus := 'ERROR';
+    ELSIF statuses.healthStatus.good OR statuses.healthStatus.warning THEN
+        IF statuses.operatingStatus.manual THEN
+            actualStatus := 'MANUAL';
+        ELSIF statuses.operatingStatus.auto THEN
+            
+            IF processes.startUpPumps.isBusy() THEN
+                actualStatus := 'Starting up pumps';
+            ELSIF processes.stopPumps.isBusy() THEN
+                actualStatus := 'Stopping the pumps';
+            ELSE
+                CASE pumpsState OF
+                    HydraulicsPumpsStates.STOPPED:
+                        actualStatus := 'STOPPED';
+                    HydraulicsPumpsStates.POWERING_ON:
+                        actualStatus := 'Powering on';
+                    HydraulicsPumpsStates.POWERING_OFF:
+                        actualStatus := 'Powering off';
+                    HydraulicsPumpsStates.RESETTING_DRIVES:
+                        actualStatus := 'Resetting drives';
+                    HydraulicsPumpsStates.COMMANDING_SAFETY:
+                        actualStatus := 'Commanding safety';
+                    HydraulicsPumpsStates.BUILDING_UP_PRESSURE:
+                        actualStatus := 'Building up pressure';
+                    HydraulicsPumpsStates.RUNNING:
+                        actualStatus := 'RUNNING';
+                    HydraulicsPumpsStates.STOPPING:
+                        actualStatus := 'Stopping';
+                    HydraulicsPumpsStates.MANUAL:
+                        actualStatus := 'MANUAL';
+                    HydraulicsPumpsStates.ERROR:
+                        actualStatus := 'ERROR';
+                ELSE
+                    actualStatus := 'UNKNOWN';
+                END_CASE
+            END_IF
+        ELSE
+            actualStatus := 'UNKNOWN';
+		END_IF
+    ELSE
+        actualStatus := 'UNKNOWN';
+	END_IF
+ELSE
+    actualStatus := InitializationStatusToString(statuses.initializationStatus);
+END_IF
+
+
+CASE pumpsState OF
+    HydraulicsPumpsStates.STOPPED:
+        pumpsStatus := 'STOPPED';
+    HydraulicsPumpsStates.RESETTING_DRIVES:
+        pumpsStatus := 'Resetting drives';
+    HydraulicsPumpsStates.COMMANDING_SAFETY:
+        pumpsStatus := 'Commanding safety';
+    HydraulicsPumpsStates.BUILDING_UP_PRESSURE:
+        pumpsStatus := 'Building up pressure';
+    HydraulicsPumpsStates.RUNNING:
+        pumpsStatus := 'RUNNING';
+    HydraulicsPumpsStates.STOPPING:
+        pumpsStatus := 'Stopping';
+    HydraulicsPumpsStates.MANUAL:
+        pumpsStatus := 'MANUAL';
+    HydraulicsPumpsStates.POWERING_ON:
+        pumpsStatus := 'Powering on';
+    HydraulicsPumpsStates.POWERING_OFF:
+        pumpsStatus := 'Powering off';
+    HydraulicsPumpsStates.ERROR:
+        IF _pumpsErrorCause = '' THEN
+            pumpsStatus := 'ERROR';
+        ELSE
+            pumpsStatus := _pumpsErrorCause;
+        END_IF
+ELSE
+    pumpsStatus := 'UNKNOWN';
+END_CASE]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_updateFrequencies" Id="{aef20083-5b4c-450c-b961-78b94943096b}">
+      <Declaration><![CDATA[METHOD _updateFrequencies
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[
+
+CASE pumpsState OF
+
+    HydraulicsPumpsStates.STOPPED,
+    HydraulicsPumpsStates.RESETTING_DRIVES,
+    HydraulicsPumpsStates.STOPPING,
+    HydraulicsPumpsStates.ERROR: 
+        // reset the timer
+        _updateFrequenciesTon(IN := FALSE);
+        
+        // Frequency[Hz] = 0.0
+        _updateFrequenciesChanging       := TRUE;
+        _updateFrequenciesTopSetpoint    := 0.0;
+        _updateFrequenciesBottomSetpoint := 0.0;
+            
+    HydraulicsPumpsStates.BUILDING_UP_PRESSURE:
+        // reset the timer
+        _updateFrequenciesTon(IN := FALSE);
+    
+        // Frequency[Hz] = maximum
+        _updateFrequenciesChanging       := TRUE;
+        _updateFrequenciesTopSetpoint    := config.top.maxFrequency;
+        _updateFrequenciesBottomSetpoint := config.bottom.maxFrequency;
+    
+    HydraulicsPumpsStates.RUNNING:
+        // run the timer
+        _updateFrequenciesTon(IN := TRUE, 
+                              PT := LREAL_TO_TIME(config.controlCycleTime * 1000.0));
+                      
+        // Frequency[Hz] = a * temp[Celsius]^2 + b * temp[Celsius] + c
+        _updateFrequenciesTopSetpoint    :=   config.top.conversionCoefficientA * bearingTemperature.average.celsius.value * bearingTemperature.average.celsius.value
+                                            + config.top.conversionCoefficientB * bearingTemperature.average.celsius.value
+                                            + config.top.conversionCoefficientC;
+        _updateFrequenciesBottomSetpoint :=   config.bottom.conversionCoefficientA * bearingTemperature.average.celsius.value * bearingTemperature.average.celsius.value
+                                            + config.bottom.conversionCoefficientB * bearingTemperature.average.celsius.value
+                                            + config.bottom.conversionCoefficientC;
+        
+        // limit the values
+        _updateFrequenciesTopSetpoint    := LIMIT( config.top.minFrequency      , _updateFrequenciesTopSetpoint, config.top.maxFrequency );
+        _updateFrequenciesBottomSetpoint := LIMIT( config.bottom.minFrequency   , _updateFrequenciesTopSetpoint, config.bottom.maxFrequency );
+        
+        // only do an update during the first 1000 milliseconds of the timer, and only if the deviation > hysteresis
+        _updateFrequenciesChanging := TIME_TO_LREAL(_updateFrequenciesTon.ET) < 1000.0 
+                                      AND ( ABS(_updateFrequenciesTopSetpoint - parts.top.processes.changeFrequencySetpoint.get.setpoint) > config.controlHysteresis
+                                            OR 
+                                            ABS(_updateFrequenciesBottomSetpoint - parts.bottom.processes.changeFrequencySetpoint.get.setpoint) > config.controlHysteresis);
+        
+                                    
+        // reset the timer if needed
+        IF _updateFrequenciesTon.Q THEN
+            _updateFrequenciesTon(IN := FALSE);
+		END_IF
+ELSE
+        // reset the timer
+    // no setpoint changes needed
+    _updateFrequenciesChanging := FALSE;
+END_CASE
+
+
+// apply the changes
+IF _updateFrequenciesChanging THEN
+    IF parts.top.driveSetpoint.hertz.value <> _updateFrequenciesTopSetpoint THEN     // only if the frequency wasn't already OK
+        IF parts.top.processes.changeFrequencySetpoint.isIdle() THEN                           // only if the process isn't busy
+            parts.top.processes.changeFrequencySetpoint.start(setpoint := _updateFrequenciesTopSetpoint);
+        END_IF
+    END_IF
+    IF parts.bottom.driveSetpoint.hertz.value <> _updateFrequenciesBottomSetpoint THEN     // only if the frequency wasn't already OK
+        IF parts.bottom.processes.changeFrequencySetpoint.isIdle() THEN                           // only if the process isn't busy
+            parts.bottom.processes.changeFrequencySetpoint.start(setpoint := _updateFrequenciesBottomSetpoint);
+        END_IF
+    END_IF
+END_IF
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_changingOperatingState" Id="{aef7808d-1c4d-4007-92ad-68bdceef4ddc}">
+      <Declaration><![CDATA[METHOD _changingOperatingState
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF SUPER^.processes.changeOperatingState.statuses.busyStatus.busy THEN
+	SUPER^.processes.changeOperatingState.setStarted();
+	SUPER^.statuses.operatingStatus(state := SUPER^.processes.changeOperatingState.get.state);
+    _guessPumpsState();
+	SUPER^.processes.changeOperatingState.setFinished();
+END_IF
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_guessPumpsState" Id="{e88d7265-18c7-4ba5-8525-194769e8d156}">
+      <Declaration><![CDATA[METHOD _guessPumpsState
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[
+// guess the pumps state
+IF statuses.operatingStatus.manual THEN
+    pumpsState := HydraulicsPumpsStates.MANUAL;
+ELSE
+    IF safetyHydraulics.statuses.healthStatus.bad THEN
+        pumpsState := HydraulicsPumpsStates.ERROR;
+        _pumpsErrorCause := 'Safety not OK';
+    ELSE
+        IF safetyHydraulics.pumpsRunning THEN
+            pumpsState := HydraulicsPumpsStates.RUNNING;
+        ELSIF safetyHydraulics.pumpsStopped THEN
+            pumpsState := HydraulicsPumpsStates.STOPPED;
+        ELSE
+            pumpsState := HydraulicsPumpsStates.ERROR;
+            _pumpsErrorCause := 'Unknown state, start or stop pumps';
+        END_IF
+    END_IF
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_unlocking" Id="{f534b467-1f04-4833-b62f-7392988d6152}">
+      <Declaration><![CDATA[METHOD _unlocking
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF processes.unlock.statuses.busyStatus.busy THEN
+	statuses.initializationStatus(state := InitializationStates.INITIALIZED);
+	
+	// done
+	processes.unlock.setGood();
+	processes.unlock.setFinished();
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+  </POU>
+</TcPlcObject>

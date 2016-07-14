@@ -1,0 +1,62 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="SM_TemperatureMeasurement" Id="{4fbd0b21-951e-4309-ae53-365f95cebceb}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK SM_TemperatureMeasurement
+VAR_INPUT
+	///Measured raw value
+	{attribute 'OPC.UA.DA' := '0'}
+	rawValue AT %I*: INT;
+	///Error
+	{attribute 'OPC.UA.DA' := '0'}
+	error AT %I*: BOOL;
+	///rawValue * conversionFactor = temperature.degrees.value
+	{attribute 'OPC.UA.DA' := '0'}
+	conversionFactor: LREAL := 0.01;
+END_VAR
+VAR_OUTPUT
+	///Current status description
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	actualStatus: STRING;
+	///Actual value
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	actual: Temperature;
+	///Moving average value
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	average: Temperature;
+	///Underrange
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	underrange AT %I*: BOOL;
+	///Overrange
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	overrange AT %I*: BOOL;
+	///Statuses of the state machine
+	statuses: TemperatureMeasurementStatuses;
+END_VAR
+VAR_IN_OUT
+	///Reference to the config (alarms in degrees celsius)
+	{attribute 'OPC.UA.DA' := '0'}
+	config: MeasurementConfig;
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[actual( newCelsiusValue := (rawValue * conversionFactor) + config.offset );
+statuses.enabledStatus( isEnabled := config.enabled );
+statuses.healthStatus(
+    superState := statuses.enabledStatus.enabled,
+    isGood := NOT(error OR (underrange OR (overrange OR (statuses.alarmStatus.hiHi OR statuses.alarmStatus.loLo)))),
+    hasWarning := statuses.alarmStatus.hi OR statuses.alarmStatus.lo);
+statuses.alarmStatus(
+    superState := statuses.enabledStatus.enabled,
+    config := config.alarms,
+    value := average.celsius.value);
+]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

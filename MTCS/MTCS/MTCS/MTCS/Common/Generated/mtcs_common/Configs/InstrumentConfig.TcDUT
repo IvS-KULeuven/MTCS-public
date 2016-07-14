@@ -1,0 +1,34 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="InstrumentConfig" Id="{7926429b-7f50-4bee-810d-ef19b6eea2c9}">
+    <Declaration><![CDATA[TYPE InstrumentConfig :
+STRUCT
+	///Name of the instrument
+	name: STRING;
+	///Do a thermal focus when changing to this instrument
+	doInitialThermalFocus: BOOL;
+	///Change M3 to the focal station with the same name as the instrument
+	changeM3: BOOL;
+	///Move the axes to a known position (defined by the 'moveKnownPositionName' config entry) before turning off derotators
+	moveKnownPosition: BOOL;
+	///Name of the known position to move to before turning off derotators
+	moveKnownPositionName: STRING;
+	///Turn on the Cassegrain derotator if needed
+	powerOnRoc: BOOL;
+	///Turn off the Cassegrain derotator if needed
+	powerOffRoc: BOOL;
+	///Turn on the Nasmyth B derotator if needed
+	powerOnRon: BOOL;
+	///Turn off the Nasmyth B derotator if needed
+	powerOffRon: BOOL;
+	///Load the pointing model with the same name as the instrument
+	loadPointingModel: BOOL;
+	///True if the Cassegrain rotator is active (irrespective of its power status).
+	rocActive: BOOL;
+	///True if the Nasmyth rotator is active (irrespective of its power status)
+	ronActive: BOOL;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

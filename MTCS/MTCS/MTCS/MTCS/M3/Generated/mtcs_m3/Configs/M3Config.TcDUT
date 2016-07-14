@@ -1,0 +1,20 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="M3Config" Id="{2d3133a1-439b-4128-b5e6-479072fa51fc}">
+    <Declaration><![CDATA[TYPE M3Config :
+STRUCT
+	///All known M3 positions
+	knownPositions: M3KnownPositionsConfig;
+	///The settings of the rotation stage
+	rotation: M3RotationConfig;
+	///The settings of the translation stage
+	translation: M3TranslationConfig;
+	///Move the mirror to a known position after initialization
+	moveAfterInitialization: BOOL;
+	///Move the mirror to this position after initialization
+	moveAfterInitializationPosition: STRING;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

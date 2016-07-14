@@ -1,0 +1,34 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.2">
+  <POU Name="SimpleRelayWidget" Id="{75ff24c9-e77d-4e8d-89ad-7586ad61a936}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK SimpleRelayWidget
+VAR_OUTPUT
+    text : STRING;
+    deactivate : BOOL;
+END_VAR
+VAR_IN_OUT
+    ref : SimpleRelay;
+END_VAR
+VAR
+    do_request : BOOL := FALSE;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[IF ref.digitalOutput THEN
+    text := 'Disable';
+    IF do_request THEN
+        ref.setEnabled(enabled := FALSE);
+        do_request := FALSE;
+	END_IF
+ELSE
+    text := 'Enable';
+    IF do_request THEN
+        ref.setEnabled(enabled := TRUE);
+        do_request := FALSE;
+	END_IF
+END_IF
+deactivate := ref.processes.setEnabled.statuses.enabledStatus.disabled;
+]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

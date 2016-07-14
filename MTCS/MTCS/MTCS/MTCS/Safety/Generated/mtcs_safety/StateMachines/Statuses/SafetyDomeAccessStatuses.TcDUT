@@ -1,0 +1,14 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="SafetyDomeAccessStatuses" Id="{d1945225-07c3-4932-8232-ecc09e1fe430}">
+    <Declaration><![CDATA[TYPE SafetyDomeAccessStatuses :
+STRUCT
+	///Are the emergency stops in a healthy state? Good=RUN, Bad=safe stopped
+	healthStatus: HealthStatus;
+	///Is the safety busy?
+	busyStatus: BusyStatus;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

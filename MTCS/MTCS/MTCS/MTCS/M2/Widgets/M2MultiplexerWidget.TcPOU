@@ -1,0 +1,38 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.5">
+  <POU Name="M2MultiplexerWidget" Id="{5001cd39-bd2c-4399-82a3-367866d0965c}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK M2MultiplexerWidget
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+    ref : M2Multiplexer;
+END_VAR
+VAR
+	actualStatus  : StatusWidget;
+	
+    A           : SimpleRelayWidget;
+    B           : SimpleRelayWidget;
+    C           : SimpleRelayWidget;
+    driveEnable : SimpleRelayWidget;
+    CW          : SimpleRelayWidget;
+    release     : SimpleRelayWidget;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[// update the status widget
+actualStatus(text  := ref.actualStatus, 
+             color := HealthBusyToColor(healthStatus := ref.statuses.healthStatus,
+                                        busyStatus   := ref.statuses.busyStatus));
+
+// update the relay widgets
+A(ref := ref.parts.A);
+B(ref := ref.parts.B);
+C(ref := ref.parts.C);
+driveEnable(ref := ref.parts.driveEnable);
+CW(ref := ref.parts.CW);
+release(ref := ref.parts.release);]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

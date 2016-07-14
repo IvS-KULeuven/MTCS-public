@@ -1,0 +1,12 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="M1RadialSupportParts" Id="{3c5b7f6b-5ca3-42a4-a65a-b74efd0eeb02}">
+    <Declaration><![CDATA[TYPE M1RadialSupportParts :
+STRUCT
+	///Switch Radial vacuum ON to retract the radial pads during mirror manipulations.
+	vacuumRelay: SimpleRelay;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

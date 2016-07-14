@@ -1,0 +1,15 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="M2Axes" Id="{82d9d5f8-6e9b-47aa-b3ac-6204a30d7b49}">
+    <Declaration><![CDATA[TYPE M2Axes :
+(
+	X := 0,
+	Y := 1,
+	Z := 2,
+	TILTX := 3,
+	TILTY := 4
+);
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

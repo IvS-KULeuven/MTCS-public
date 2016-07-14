@@ -1,0 +1,46 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.5">
+  <POU Name="InitializationStatusWidget" Id="{f6647664-713d-4043-8093-05c1388919d3}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK InitializationStatusWidget
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+	fgColor : DWORD;
+	bgColor : DWORD;
+	description : STRING;
+END_VAR
+VAR_IN_OUT
+	status : InitializationStatus;
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[IF status.initialized THEN
+	fgColor := Colors.BLACK;
+	bgColor := Colors.GREEN;
+	description := 'Initialized';
+ELSIF status.initializing THEN
+	fgColor := Colors.WHITE;
+	bgColor := Colors.BLUE;
+	description := 'Initializing';
+ELSIF status.locked THEN
+	fgColor := Colors.BLACK;
+	bgColor := Colors.ORANGE;
+	description := 'LOCKED';
+ELSIF status.shutdown THEN
+	fgColor := Colors.BLACK;
+	bgColor := Colors.GRAY;
+	description := 'Shutdown';
+ELSIF status.initializingFailed THEN
+	fgColor := Colors.WHITE;
+	bgColor := Colors.RED;
+	description := 'Failed';
+ELSE
+	fgColor := Colors.WHITE;
+	bgColor := Colors.RED;
+	description := 'Unknown';
+END_IF]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

@@ -1,0 +1,12 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="TelemetryRelativeHumiditiesStatuses" Id="{e91f8fb3-aa68-43a4-9850-f223644c5f22}">
+    <Declaration><![CDATA[TYPE TelemetryRelativeHumiditiesStatuses :
+STRUCT
+	///Are all relative humidities in a healthy state?
+	healthStatus: HealthStatus;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

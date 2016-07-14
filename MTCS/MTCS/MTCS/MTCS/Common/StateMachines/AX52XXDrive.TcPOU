@@ -1,0 +1,17 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.5">
+  <POU Name="AX52XXDrive" Id="{53dfe883-a51f-4b3f-bb88-e8eae91f2206}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK AX52XXDrive EXTENDS SM_AX52XXDrive
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR
+    _internal : INT; // if no variable is present, the symbols of the superclass are not visible in the OPC UA address space
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[SUPER^();]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

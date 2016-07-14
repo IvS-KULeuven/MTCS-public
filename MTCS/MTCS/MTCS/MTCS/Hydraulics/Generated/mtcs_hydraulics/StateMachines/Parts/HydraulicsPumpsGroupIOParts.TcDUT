@@ -1,0 +1,22 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="HydraulicsPumpsGroupIOParts" Id="{1ae6612e-2997-45be-a9ed-bc58873a333e}">
+    <Declaration><![CDATA[TYPE HydraulicsPumpsGroupIOParts :
+STRUCT
+	///PG:COU (EK1101)
+	COU: EtherCatDevice;
+	///PG:DI1 (EL1008)
+	DI1: EtherCatDevice;
+	///PG:SI1 (EL1904)
+	SI1: EtherCatDevice;
+	///PG:SI2 (EL1904)
+	SI2: EtherCatDevice;
+	///PG:SI3 (EL1904)
+	SI3: EtherCatDevice;
+	///PG:DI2 (EL1008)
+	DI2: EtherCatDevice;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

@@ -1,0 +1,39 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.36">
+  <POU Name="TelemetryFlatfieldLedsWidget" Id="{d8a627df-a104-44c3-b4c8-99bbdee4ba5b}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK TelemetryFlatfieldLedsWidget
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR
+	actualStatus : StatusWidget;
+	
+    output1 : SimpleRelayWidget;
+    output2 : SimpleRelayWidget;
+    output3 : SimpleRelayWidget;
+    output4 : SimpleRelayWidget;
+    output5 : SimpleRelayWidget;
+    output6 : SimpleRelayWidget;
+    output7 : SimpleRelayWidget;
+    output8 : SimpleRelayWidget;
+END_VAR
+VAR_IN_OUT
+	ref : TelemetryFlatfieldLeds;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[actualStatus(text  := ref.actualStatus,
+             color := BusyToColor(ref.statuses.busyStatus));
+
+output1(ref := ref.parts.output1);
+output2(ref := ref.parts.output2);
+output3(ref := ref.parts.output3);
+output4(ref := ref.parts.output4);
+output5(ref := ref.parts.output5);
+output6(ref := ref.parts.output6);
+output7(ref := ref.parts.output7);
+output8(ref := ref.parts.output8);]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

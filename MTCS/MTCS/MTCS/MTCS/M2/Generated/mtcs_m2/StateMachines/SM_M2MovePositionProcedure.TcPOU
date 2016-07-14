@@ -1,0 +1,50 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="SM_M2MovePositionProcedure" Id="{f29a2ab9-49ae-4183-b25c-617a14b3e357}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK SM_M2MovePositionProcedure
+VAR_INPUT
+	///New state, to be set by the manual implementation
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	state: M2MoveProcedureStates;
+END_VAR
+VAR_OUTPUT
+	///Current status description
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	actualStatus: STRING;
+	///Statuses of the state machine
+	statuses: M2MovePositionProcedureStatuses;
+END_VAR
+VAR_IN_OUT
+	{attribute 'OPC.UA.DA' := '0'}
+	powerOn: Process;
+	{attribute 'OPC.UA.DA' := '0'}
+	x: M2XAxis;
+	{attribute 'OPC.UA.DA' := '0'}
+	y: M2YAxis;
+	{attribute 'OPC.UA.DA' := '0'}
+	z: M2ZAxis;
+	{attribute 'OPC.UA.DA' := '0'}
+	tiltX: M2TiltXAxis;
+	{attribute 'OPC.UA.DA' := '0'}
+	tiltY: M2TiltYAxis;
+	{attribute 'OPC.UA.DA' := '0'}
+	multiplexer: M2Multiplexer;
+	{attribute 'OPC.UA.DA' := '0'}
+	moveStepsProcedure: M2MoveStepsProcedure;
+	{attribute 'OPC.UA.DA' := '0'}
+	config: M2Config;
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[statuses.busyStatus( isBusy := NOT((state = M2MoveProcedureStates.IDLE) OR ((state = M2MoveProcedureStates.ABORTED) OR (state = M2MoveProcedureStates.ERROR))) );
+statuses.healthStatus(
+    isGood := NOT(state = M2MoveProcedureStates.ERROR),
+    hasWarning := state = M2MoveProcedureStates.ABORTED);
+]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

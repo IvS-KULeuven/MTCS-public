@@ -1,0 +1,64 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.5">
+  <POU Name="ForceMeasurement" Id="{ccb6d82a-154c-4cef-97fb-f85552a4d1ae}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK ForceMeasurement EXTENDS SM_ForceMeasurement
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR
+    noOfSamples : UINT := 100;
+    _toStatus : MeasurementToStatus;
+	_executeMovingAverage : BOOL;
+    _ctrl_moving_avg : FB_CTRL_MOVING_AVERAGE;
+    _params : ST_CTRL_MOVING_AVERAGE_PARAMS;
+    _array : ARRAY [1..100] OF LREAL;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[SUPER^(config := config);
+
+_params.nSamplesToFilter  := noOfSamples;
+_params.tCtrlCycleTime    := GLOBAL.config.PLC_CTRL_TIME;
+
+// only call the _ctrl_moving_avg FB once per task cycle (not once every time the xxxMeasurement FB is called)
+IF _executeMovingAverage <> GLOBAL.config.PLC_TASK_FLIP THEN
+	_executeMovingAverage := GLOBAL.config.PLC_TASK_FLIP;
+	_ctrl_moving_avg(
+		fIn             := actual.newton.value,
+		fManSyncValue   := 0.0,
+		bSync           := FALSE,
+		eMode           := E_CTRL_MODE.eCTRL_MODE_ACTIVE,
+		bHold           := FALSE,
+		stParams        := _params);
+END_IF
+
+// update the average value
+average(newNewtonValue := _ctrl_moving_avg.fOut);
+	
+_toStatus(
+    overrange     := overrange,
+    underrange    := underrange,
+    error         := error,
+    alarmStatus   := statuses.alarmStatus,
+    enabledStatus := statuses.enabledStatus,
+    actualStatus  => actualStatus);
+	
+SUPER^(config := config);
+]]></ST>
+    </Implementation>
+    <Method Name="FB_init" Id="{e55f5c7b-9b43-46ca-944c-82c2b455a492}">
+      <Declaration><![CDATA[METHOD FB_init : BOOL
+VAR_INPUT
+	bInitRetains : BOOL; // if TRUE, the retain variables are initialized (warm start / cold start)
+	bInCopyCode : BOOL;  // if TRUE, the instance afterwards gets moved into the copy code (online change)
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[_params.tTaskCycleTime    := GLOBAL.config.PLC_TASK_TIME;
+_params.pWorkArray_ADR    := ADR(_array);
+_params.nWorkArray_SIZEOF := SIZEOF(_array);]]></ST>
+      </Implementation>
+    </Method>
+  </POU>
+</TcPlcObject>

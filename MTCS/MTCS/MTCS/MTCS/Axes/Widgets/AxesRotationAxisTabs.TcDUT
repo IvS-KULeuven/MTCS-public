@@ -1,0 +1,15 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="AxesRotationAxisTabs" Id="{24acb370-81ce-472b-911b-159534021c93}">
+    <Declaration><![CDATA[TYPE AxesRotationAxisTabs :
+(
+	OVERVIEW := 0,
+    PROCESSES := 1,
+    DRIVE_CHANNEL := 2,
+    VIRTUAL_AXIS := 3,
+    PHYSICAL_AXIS := 4
+);
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

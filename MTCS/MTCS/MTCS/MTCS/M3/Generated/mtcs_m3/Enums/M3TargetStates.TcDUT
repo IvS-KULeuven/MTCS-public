@@ -1,0 +1,13 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="M3TargetStates" Id="{378c64db-1756-4ab7-a72b-4ca100c0f8a3}">
+    <Declaration><![CDATA[TYPE M3TargetStates :
+(
+	NO_TARGET_GIVEN := 0,
+	KNOWN_POSITION := 1,
+	NEW_POSITION := 2
+);
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

@@ -1,0 +1,67 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="SM_M2Multiplexer" Id="{7c674b92-c605-45ec-9e40-4b601c29e1f2}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK SM_M2Multiplexer
+VAR_INPUT
+	///FALSE if the drive selected by the multiplexer is in faulty state, TRUE if it is in a healthy state
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	noFault AT %I*: BOOL;
+	///TRUE if the multiplexer is enabled, FALSE if not
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	isEnabled: BOOL;
+	///TRUE if the axis is powered
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	powered: BOOL;
+END_VAR
+VAR_OUTPUT
+	///Current status description
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	actualStatus: STRING;
+	///Statuses of the state machine
+	statuses: M2MultiplexerStatuses;
+	///Parts of the state machine
+	parts: M2MultiplexerParts;
+	///Processes of the state machine
+	processes: M2MultiplexerProcesses;
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[parts.A( isEnabled := isEnabled );
+parts.B( isEnabled := isEnabled );
+parts.C( isEnabled := isEnabled );
+parts.driveEnable( isEnabled := isEnabled );
+parts.CW( isEnabled := isEnabled );
+parts.release( isEnabled := isEnabled );
+statuses.healthStatus( isGood := (noFault OR (NOT(powered))) AND processes.selectAxis.statuses.healthStatus.good );
+statuses.busyStatus( isBusy := parts.A.statuses.busyStatus.busy OR (parts.B.statuses.busyStatus.busy OR (parts.C.statuses.busyStatus.busy OR (parts.driveEnable.statuses.busyStatus.busy OR (parts.CW.statuses.busyStatus.busy OR parts.release.statuses.busyStatus.busy)))) );
+processes.selectAxis( isEnabled := isEnabled );
+]]></ST>
+    </Implementation>
+    <Method Name="selectAxis" Id="{23404f33-9e67-4c5b-a654-cf83044a2d89}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD selectAxis : RequestResults
+VAR_INPUT
+	axis: M2Axes;
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[selectAxis := THIS^.processes.selectAxis.request( axis := axis );
+]]></ST>
+      </Implementation>
+    </Method>
+  </POU>
+</TcPlcObject>

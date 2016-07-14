@@ -1,0 +1,38 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="AxesFeedbackWidget" Id="{4ab62f15-8634-4f75-b067-191141512a4d}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK AxesFeedbackWidget
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+	actualStatus : StatusWidget;
+    alpha : AxesAlphaWidget;
+    delta : AxesDeltaWidget;
+    
+    aziPos : AxesAngleWidget;
+    elePos : AxesAngleWidget;
+    rocPos : AxesAngleWidget;
+    ronPos : AxesAngleWidget;
+END_VAR
+VAR_IN_OUT
+    ref : AxesFeedback;
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[actualStatus(text  := ref.actualStatus,
+             color := HealthToColor(healthStatus := ref.statuses.healthStatus));
+
+alpha(radians := ref.alpha.radians.value);
+delta(radians := ref.delta.radians.value);
+
+
+aziPos(degrees := ref.aziPos.degrees.value, showPlus := FALSE, showMinus := TRUE);
+elePos(degrees := ref.elePos.degrees.value, showPlus := TRUE, showMinus := TRUE);
+rocPos(degrees := ref.rocPos.degrees.value, showPlus := TRUE, showMinus := TRUE);
+ronPos(degrees := ref.ronPos.degrees.value, showPlus := TRUE, showMinus := TRUE);
+]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

@@ -1,0 +1,26 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="M2ConstantsX" Id="{6b07d217-55fe-4f8c-80ab-5d61d0b07f87}">
+    <Declaration><![CDATA[TYPE M2ConstantsX :
+STRUCT
+	///Motor reduction ratio
+	MOT_TO_RED_RATIO: LREAL := 415.0;
+	///Transmission ratio between the motor reduction and the screw
+	RED_TO_SCREW_RATIO: LREAL := 2.0;
+	///Transmission ratio between the potentiometer and the screw
+	SCREW_TO_POT_RATIO: LREAL := 0.5;
+	///Minimum position of the axis, in micrometer
+	MIN_POSITION: LREAL := 400.0;
+	///Maximum position of the axis, in micrometer
+	MAX_POSITION: LREAL := 4700.0;
+	///Screw pitch, in micrometer
+	SCREW_PITCH: LREAL := 1000.0;
+	///Motor feedback resolution (pulses per revolution of the motor rotor)
+	FEEDBACK_RESOLUTION: LREAL := 3;
+	///Max number of revolutions of the potentiometer
+	POTENTIOMETER_REVOLUTIONS: LREAL := 10;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

@@ -1,0 +1,140 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="AxesSetTargetProcess" Id="{9ec6525d-9859-4ec1-8cdb-c564178da18b}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK AxesSetTargetProcess EXTENDS BaseProcess
+VAR_INPUT
+	///Arguments to be set, before writing do_request TRUE
+	{attribute 'OPC.UA.DA' := '1'}
+	set: AxesSetTargetProcessArgs;
+END_VAR
+VAR_OUTPUT
+	///Arguments in use by the process, if do_request was accepted
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	get: AxesSetTargetProcessArgs;
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[IF do_request THEN
+    do_request_result := request(
+    alphaUnits := set.alphaUnits,
+    alpha := set.alpha,
+    deltaUnits := set.deltaUnits,
+    delta := set.delta,
+    muUnits := set.muUnits,
+    muAlpha := set.muAlpha,
+    muDelta := set.muDelta,
+    parallax := set.parallax,
+    radialVelocity := set.radialVelocity,
+    epoch := set.epoch);
+    do_request := FALSE;
+END_IF;
+SUPER^();
+]]></ST>
+    </Implementation>
+    <Method Name="start" Id="{6547cae2-d5cf-41a7-9b42-57fafde7fa70}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD start
+VAR_INPUT
+	///The units in which alpha is given
+	alphaUnits: AxesAlphaUnits;
+	///Right ascention, in the units of the alphaUnits argument
+	alpha: LREAL;
+	///The units in which delta is given
+	deltaUnits: AxesDeltaUnits;
+	///Declination, in the units of the deltaUnits argument
+	delta: LREAL;
+	///The units in which muAlpha and muDelta are given
+	muUnits: AxesMuUnits;
+	///Right ascention proper motion, the units of muUmits (do not multiply by cos(delta)!)
+	muAlpha: LREAL;
+	///Declination proper motion, in radians/year
+	muDelta: LREAL;
+	///Object parallax, in arcseconds
+	parallax: LREAL;
+	///Object radial velocity, in km/s
+	radialVelocity: LREAL;
+	///Epoch, e.g. 2000.0
+	epoch: LREAL := 2000;
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[THIS^.get.alphaUnits := alphaUnits;
+THIS^.get.alpha := alpha;
+THIS^.get.deltaUnits := deltaUnits;
+THIS^.get.delta := delta;
+THIS^.get.muUnits := muUnits;
+THIS^.get.muAlpha := muAlpha;
+THIS^.get.muDelta := muDelta;
+THIS^.get.parallax := parallax;
+THIS^.get.radialVelocity := radialVelocity;
+THIS^.get.epoch := epoch;
+THIS^.statuses.busyStatus( isBusy := TRUE );
+THIS^.statuses.healthStatus( isGood := TRUE );
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="request" Id="{ce0b9ce5-9128-4420-b546-c3d4a92b2d2b}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD request : RequestResults
+VAR_INPUT
+	///The units in which alpha is given
+	alphaUnits: AxesAlphaUnits;
+	///Right ascention, in the units of the alphaUnits argument
+	alpha: LREAL;
+	///The units in which delta is given
+	deltaUnits: AxesDeltaUnits;
+	///Declination, in the units of the deltaUnits argument
+	delta: LREAL;
+	///The units in which muAlpha and muDelta are given
+	muUnits: AxesMuUnits;
+	///Right ascention proper motion, the units of muUmits (do not multiply by cos(delta)!)
+	muAlpha: LREAL;
+	///Declination proper motion, in radians/year
+	muDelta: LREAL;
+	///Object parallax, in arcseconds
+	parallax: LREAL;
+	///Object radial velocity, in km/s
+	radialVelocity: LREAL;
+	///Epoch, e.g. 2000.0
+	epoch: LREAL := 2000;
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF THIS^.statuses.enabledStatus.enabled THEN
+    THIS^.start(
+        alphaUnits := alphaUnits,
+        alpha := alpha,
+        deltaUnits := deltaUnits,
+        delta := delta,
+        muUnits := muUnits,
+        muAlpha := muAlpha,
+        muDelta := muDelta,
+        parallax := parallax,
+        radialVelocity := radialVelocity,
+        epoch := epoch);
+    request := RequestResults.ACCEPTED;
+ELSE
+    request := RequestResults.REJECTED;
+END_IF;
+]]></ST>
+      </Implementation>
+    </Method>
+  </POU>
+</TcPlcObject>

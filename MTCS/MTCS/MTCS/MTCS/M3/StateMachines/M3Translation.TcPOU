@@ -1,0 +1,231 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.2">
+  <POU Name="M3Translation" Id="{84da9f88-e7fa-4dc5-bbf4-80ffe1cf62bc}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK M3Translation EXTENDS SM_M3Translation
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR
+    _formatString : FB_FormatString;
+    _resettingSubstate : INT := 0;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[_update();
+
+_goto();
+_reset();
+_abort();
+_home();
+
+_update();]]></ST>
+    </Implementation>
+    <Method Name="_goto" Id="{2f63ba5c-a439-424d-b953-e539705f1a8b}">
+      <Declaration><![CDATA[METHOD _goto
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF processes.goto.isBusy() THEN
+    
+            
+    IF NOT processes.goto.isStarted() THEN
+        // update the target
+        target(
+            isTargetGiven           := TRUE,
+            newPositionMillimeters  := processes.goto.get.position,
+            knownPositions          := m3Config.knownPositions);
+        // start the procedure
+        parts.gotoProcedure.start();
+        // okay, the process is now started. 
+        // In the coming seconds we can simply monitor the gotoProcedure
+        // to decide when the goto process is finished.
+        processes.goto.setStarted();
+    ELSE
+        // if the goto was called, but it was already started, then we check if we need to 
+        // update the target and re-call the gotoProcedure.start() method:
+        IF     processes.goto.get.position <> target.position.millimeters.value 
+        THEN
+            // update the target
+            target(
+                isTargetGiven           := TRUE,
+                newPositionMillimeters  := processes.goto.get.position,
+                knownPositions          := m3Config.knownPositions);
+            // update the procedure
+            parts.gotoProcedure.start();
+		END_IF
+    
+        // monitor the gotoProcedure to decide when the goto process is finished.
+        IF parts.gotoProcedure.statuses.busyStatus.IDLE THEN
+            
+            IF parts.gotoProcedure.statuses.healthStatus.good THEN
+                processes.goto.setGood();
+                processes.goto.setFinished();
+            ELSE
+                processes.goto.setBad();
+                processes.goto.setFinished();
+			END_IF
+        
+		END_IF
+    
+	END_IF
+    
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_reset" Id="{333394a6-39b3-47c8-91ef-d6ed6d65a685}">
+      <Declaration><![CDATA[METHOD _reset
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF processes.reset.isBusy() THEN
+
+    CASE _resettingSubstate OF
+        0:
+            parts.motorAxis.processes.reset.start();
+            _resettingSubstate := 1;
+        1:
+            IF parts.motorAxis.processes.reset.isIdle() THEN
+                IF parts.motorAxis.processes.reset.isGood() THEN
+                    _resettingSubstate := 2;
+                ELSE
+                    _resettingSubstate := 99;
+                END_IF
+            END_IF
+        2:
+            processes.reset.setStarted();
+            parts.gotoProcedure.reset();
+            _resettingSubstate := 3;
+        3:
+            IF parts.gotoProcedure.statuses.busyStatus.idle THEN
+                IF parts.gotoProcedure.statuses.healthStatus.good THEN
+                    _resettingSubstate := 4;
+                ELSE
+                    _resettingSubstate := 99;
+				END_IF
+            END_IF
+        4:
+            parts.homingProcedure.reset();
+            _resettingSubstate := 5;
+        5:
+            IF parts.homingProcedure.statuses.busyStatus.idle  THEN
+                IF parts.gotoProcedure.statuses.healthStatus.good  THEN
+                    _resettingSubstate := 100;
+                ELSE
+                    _resettingSubstate := 99;
+				END_IF
+            END_IF
+        99:
+            processes.reset.setBad();
+            processes.reset.setFinished();
+            _resettingSubstate := 0;
+        100:
+            processes.reset.setGood();
+            processes.reset.setFinished();
+            _resettingSubstate := 0;
+	END_CASE
+    
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_abort" Id="{8ee1a299-3244-4080-9892-2404d42cca16}">
+      <Declaration><![CDATA[METHOD _abort
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF processes.abort.isBusy() THEN
+
+    IF NOT processes.abort.isStarted() THEN
+        parts.gotoProcedure.abort();
+        parts.homingProcedure.abort();
+        processes.abort.setStarted();
+    ELSE
+        // monitor the gotoProcedure to decide when the abort process is finished.
+        IF parts.gotoProcedure.statuses.busyStatus.idle AND parts.homingProcedure.statuses.busyStatus.idle THEN
+            
+            IF parts.gotoProcedure.statuses.healthStatus.good AND parts.homingProcedure.statuses.healthStatus.good THEN
+                processes.abort.setGood();
+                processes.abort.setFinished();
+            ELSE
+                processes.abort.setBad();
+                processes.abort.setFinished();
+			END_IF
+            
+		END_IF
+    
+	END_IF
+    
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_update" Id="{90fbadba-1e1b-4053-86ca-221069fa37fd}">
+      <Declaration><![CDATA[METHOD _update
+VAR_INPUT
+END_VAR]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[SUPER^(
+	initializationStatus := initializationStatus, 
+	operatingStatus      := operatingStatus, 
+	operatorStatus       := operatorStatus, 
+	config               := config, 
+	m3Config             := m3Config);
+    
+IF statuses.healthStatus.bad THEN
+    actualStatus := 'Error';
+ELSE
+    IF statuses.busyStatus.idle THEN
+        actualStatus := 'Idle';
+    ELSE
+        IF parts.homingProcedure.statuses.busyStatus.busy THEN
+            actualStatus := 'Homing...';
+        ELSIF parts.gotoProcedure.statuses.busyStatus.busy THEN
+            _formatString(
+                                sFormat := 'Going to target %.4f mm', 
+                                arg1 := F_LREAL(target.position.millimeters.value),
+                                sOut => actualStatus);
+        ELSE
+            actualStatus := 'Busy';
+		END_IF
+	END_IF
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_home" Id="{a6539f79-9e57-46b2-ab71-4b09abbee9f8}">
+      <Declaration><![CDATA[METHOD _home
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF processes.startHoming.isBusy() THEN
+
+    IF NOT processes.startHoming.isStarted() THEN
+        // reset the procedure
+        parts.homingProcedure.start();
+        // okay, the procedure is now busy homing. 
+        // In the coming seconds we can simply monitor the homingProcedure
+        // to decide when the startHoming process is finished.
+        processes.startHoming.setStarted();
+    ELSE
+        // monitor the homingProcedure to decide when the reset process is finished.
+        IF parts.homingProcedure.statuses.busyStatus.idle THEN
+            
+            IF parts.homingProcedure.statuses.healthStatus.good THEN
+                processes.startHoming.setGood();
+                processes.startHoming.setFinished();
+            ELSE
+                processes.startHoming.setBad();
+                processes.startHoming.setFinished();
+			END_IF
+            
+		END_IF
+    
+	END_IF
+    
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+  </POU>
+</TcPlcObject>

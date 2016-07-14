@@ -1,0 +1,54 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="AxesManualMoveVelocityWidget" Id="{2115acfd-ddee-42b3-888d-1266c6c6baa1}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK AxesManualMoveVelocityWidget
+VAR_INPUT
+    field_alphaVelocity : LREAL;
+    field_deltaVelocity : LREAL;
+    field_units : AxesMoveVelocityUnits;
+    label_units : STRING;
+    do_start : BOOL;
+    do_stop : BOOL;
+    
+    setAlphaDeltaVelocityStatus : StatusWidget;
+END_VAR
+VAR_OUTPUT
+    alphaTravelledSoFar : AxesAlphaWidget;
+    deltaTravelledSoFar : AxesDeltaWidget;
+    alphaPerMinute : AxesAlphaWidget;
+    deltaPerMinute : AxesDeltaWidget;
+END_VAR
+VAR_IN_OUT
+    ref : Axes;
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[
+setAlphaDeltaVelocityStatus(
+    text  := ref.processes.setAlphaDeltaVelocity.actualStatus,
+    color := HealthBusyToColor(healthStatus := ref.processes.setAlphaDeltaVelocity.statuses.healthStatus, 
+                               busyStatus   := ref.processes.setAlphaDeltaVelocity.statuses.busyStatus));
+
+label_units := AxesMoveVelocityUnitsToString(field_units);
+                      
+alphaTravelledSoFar(radians := ref.target.alphaTravelled.radians.value);
+deltaTravelledSoFar(radians := ref.target.deltaTravelled.radians.value);
+
+alphaPerMinute(radians := ref.target.alphaVelocity.radiansPerSecond.value * 60.0);
+deltaPerMinute(radians := ref.target.deltaVelocity.radiansPerSecond.value * 60.0);
+
+IF do_start THEN
+    ref.processes.setAlphaDeltaVelocity.request( units := field_units, alphaVelocity := field_alphaVelocity, deltaVelocity := field_deltaVelocity);
+    do_start := FALSE;
+END_IF
+
+IF do_stop THEN
+    ref.processes.setAlphaDeltaVelocity.request( units := AxesMoveVelocityUnits.ARCSECONDS_PER_SECOND, alphaVelocity := 0.0, deltaVelocity := 0.0);
+    do_stop := FALSE;
+END_IF
+]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

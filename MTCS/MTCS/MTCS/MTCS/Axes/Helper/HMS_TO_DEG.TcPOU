@@ -1,0 +1,22 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.5">
+  <POU Name="HMS_TO_DEG" Id="{0c33a1cd-e22e-47f6-b5bc-92900fcac4d8}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION HMS_TO_DEG : LREAL
+VAR_INPUT
+    positive : BOOL;
+    hours : LREAL;
+    minutes : LREAL;
+    seconds : LREAL;
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[HMS_TO_DEG := (hours/24.0 + minutes/(24.0*60.0) + seconds/(24.0*60.0*60.0)) * 360.0;
+
+IF NOT positive THEN
+    HMS_TO_DEG := -HMS_TO_DEG;
+END_IF]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

@@ -1,0 +1,29 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.2">
+  <POU Name="ConfigManagerWidget" Id="{6a8aba40-88af-4925-8ef4-d598e96c1c07}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK ConfigManagerWidget
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+    actualStatus : StatusWidget;
+    load : ReadXmlProcessWidget;
+    save : WriteXmlProcessWidget;
+END_VAR
+VAR_IN_OUT
+    mgr : ConfigManager;
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[actualStatus(
+    text  := mgr.actualStatus,
+    color := HealthBusyToColor(
+        healthStatus := mgr.statuses.healthStatus,
+        busyStatus := mgr.statuses.busyStatus));
+
+load(process := mgr.processes.load);
+save(process := mgr.processes.save);]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

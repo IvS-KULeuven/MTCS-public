@@ -1,0 +1,46 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="AxesPointingModelConfig" Id="{f753593b-e06a-4e8d-a948-76b72d6a8d1a}">
+    <Declaration><![CDATA[TYPE AxesPointingModelConfig :
+STRUCT
+	///This name can be matched against the instrument name in the MTCS config and the focal station name in the M3 config.
+	name: STRING;
+	///Index error in elevation
+	IE: LREAL;
+	///Index error in azimuth
+	IA: LREAL;
+	///Nonperpendicularity of elevation and pointing axes
+	CA: LREAL;
+	///NS misalignment of azimuth axis
+	AN: LREAL;
+	///EW misalignment of azimuth axis
+	AW: LREAL;
+	///Nonperpendicularity of azimuth and elevation axes
+	NPAE: LREAL;
+	///Horizontal displacement of Nasmyth rotation
+	NRX: LREAL;
+	///Vertical displacement of Nasmyth rotation
+	NRY: LREAL;
+	///Az centering error (sin component)
+	ACES: LREAL;
+	///Az centering error (cos component)
+	ACEC: LREAL;
+	///El centering error (sin component)
+	ECES: LREAL;
+	///El centering error (cos component)
+	ECEC: LREAL;
+	///Tube flexure - sin(zeta) law
+	TF: LREAL;
+	///Tube flexure - tan(zeta) law
+	TX: LREAL;
+	///Constant vertical displacement
+	FLOP: LREAL;
+	///The x-coordinate of a pointing origin on a derotator
+	POX: LREAL;
+	///The y-coordinate of a pointing origin on a derotator
+	POY: LREAL;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

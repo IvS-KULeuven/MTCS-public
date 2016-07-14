@@ -1,0 +1,14 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="McMoveAbsoluteProcessArgs" Id="{842dd488-94c3-4dad-a5c2-80539a264d84}">
+    <Declaration><![CDATA[TYPE McMoveAbsoluteProcessArgs :
+STRUCT
+	///New position setpoint
+	position: LREAL;
+	///Maximum velocity
+	maxVelocity: LREAL;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

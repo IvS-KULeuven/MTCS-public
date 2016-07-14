@@ -1,0 +1,15 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.5">
+  <DUT Name="TelemetryTabs" Id="{86856185-0573-40ba-bf1b-f7404a7eccb5}">
+    <Declaration><![CDATA[TYPE TelemetryTabs :
+(
+	OVERVIEW := 0,
+    LEDS := 1,
+    ACCELEROMETERS := 2,
+    IO := 3,
+    CONFIG := 4
+);
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

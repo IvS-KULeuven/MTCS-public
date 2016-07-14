@@ -1,0 +1,188 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="AxesMoveOutOfLimitSwitchHelper" Id="{2aa210f4-14b7-475f-91bc-0f09cb5bb876}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK AxesMoveOutOfLimitSwitchHelper
+VAR_INPUT
+    positiveLimitSwitchError : BOOL;
+    negativeLimitSwitchError : BOOL;
+    positiveLimitSwitchInput : SINT;
+    negativeLimitSwitchInput : SINT;
+    moveOutOfLimitSwitchDistance : LREAL;
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+    setpointGenerator : AxesExternalSetpointGenerator;
+    moveOutOfLimitSwitch : AxesMoveOutOfLimitSwitchProcess;
+    moveRelative : AxesMoveRelativeProcess;
+    powerOn : AxesPowerOnProcess;
+    reset : Process;
+    virtual : AngularAxis;
+    physical : AngularAxis;
+    driveChannel : AX52XXDriveChannel;
+END_VAR
+VAR
+    offset : SINT;
+    forceValue : DWORD;
+    relativeMoveDistance : LREAL;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[
+// see documentation on P-0-0805 Force digital inputs!!!
+
+
+IF moveOutOfLimitSwitch.isBusy() THEN
+    
+    CASE moveOutOfLimitSwitch.get.switch OF
+        LimitSwitches.POSITIVE_LIMIT_SWITCH:
+            offset := positiveLimitSwitchInput * 2;
+            relativeMoveDistance := -ABS(moveOutOfLimitSwitchDistance);
+        LimitSwitches.NEGATIVE_LIMIT_SWITCH:
+            offset := negativeLimitSwitchInput * 2;
+            relativeMoveDistance := ABS(moveOutOfLimitSwitchDistance);
+    END_CASE
+
+    IF NOT moveOutOfLimitSwitch.isStarted() THEN
+        moveOutOfLimitSwitch._state := 0;
+        moveOutOfLimitSwitch.setStarted();
+	END_IF
+    
+    CASE moveOutOfLimitSwitch._state OF
+        0:
+            moveOutOfLimitSwitch.setActualStatus('Moving out of limit switch');
+            
+            forceValue := CSETBIT32( inVal32 := forceValue, bitNo := offset     , bitVal := TRUE);
+            forceValue := CSETBIT32( inVal32 := forceValue, bitNo := offset + 1 , bitVal := FALSE);
+            
+            driveChannel.processes.write.start(
+                    index       := P_0_IDN + 805, 
+                    noOfBytes   := 4, 
+                    value1Byte  := 0, 
+                    value2Bytes := 0, 
+                    value4Bytes := DWORD_TO_UDINT(forceValue));
+                    
+            moveOutOfLimitSwitch._state := 1;
+        1:
+            IF  driveChannel.processes.write.isIdle() THEN
+                IF driveChannel.processes.write.isGood() THEN
+                    moveOutOfLimitSwitch._state := 2;
+                ELSE
+                    moveOutOfLimitSwitch.setActualStatus('Could not force the limit switch input');
+                    moveOutOfLimitSwitch._state := 999;
+				END_IF
+			END_IF
+        2:
+            // now we can reset the error
+            reset.start();
+            moveOutOfLimitSwitch._state := 3;
+        3:
+            IF reset.isIdle() THEN
+                IF reset.isGood() THEN
+                    moveOutOfLimitSwitch._state := 4;
+                ELSE
+                    moveOutOfLimitSwitch.setActualStatus('Could not reset the axis');
+                    moveOutOfLimitSwitch._state := 999;
+				END_IF
+			END_IF
+        4:
+            // make sure the axis is powered on
+            powerOn.start();
+            moveOutOfLimitSwitch._state := 5;
+        5:
+            IF powerOn.isIdle() THEN
+                IF powerOn.isIdle() THEN
+                    moveOutOfLimitSwitch._state := 6;
+                ELSE
+                    moveOutOfLimitSwitch.setActualStatus('Could not power on the axis');
+                    moveOutOfLimitSwitch._state := 999;
+				END_IF
+			END_IF
+        6:
+            // try to move out of the limit switch!
+            moveRelative.start(
+                        units   := AxesMoveUnits.DEGREES, 
+                        value   := relativeMoveDistance);
+            moveOutOfLimitSwitch._state := 7;
+        7:
+            IF moveRelative.isIdle() THEN
+                IF moveRelative.isGood() THEN
+                    moveOutOfLimitSwitch._state := 8;
+                ELSE
+                    moveOutOfLimitSwitch.setActualStatus('Could not move out');
+                    moveOutOfLimitSwitch._state := 999;
+                END_IF
+            END_IF
+        8:
+            // now unforce the digital input
+            forceValue := CSETBIT32( inVal32 := forceValue, bitNo := offset     , bitVal := FALSE);
+            forceValue := CSETBIT32( inVal32 := forceValue, bitNo := offset + 1 , bitVal := FALSE);
+            
+            
+            driveChannel.processes.write.start(
+                    index       := P_0_IDN + 805, 
+                    noOfBytes   := 4, 
+                    value1Byte  := 0, 
+                    value2Bytes := 0, 
+                    value4Bytes := DWORD_TO_UDINT(forceValue));
+            
+            moveOutOfLimitSwitch._state := 9;
+        9:
+            IF  driveChannel.processes.write.isIdle() THEN
+                IF driveChannel.processes.write.isGood() THEN
+                    moveOutOfLimitSwitch._state := 10;
+                ELSE
+                    moveOutOfLimitSwitch.setActualStatus('Could not unforce the limit switch input');
+                    moveOutOfLimitSwitch._state := 999;
+				END_IF
+			END_IF
+        10:
+            IF moveOutOfLimitSwitch.get.switch = LimitSwitches.POSITIVE_LIMIT_SWITCH AND positiveLimitSwitchError THEN
+                moveOutOfLimitSwitch.setActualStatus('Positive limit switch still active!');
+                moveOutOfLimitSwitch._state := 999;
+            ELSIF moveOutOfLimitSwitch.get.switch = LimitSwitches.NEGATIVE_LIMIT_SWITCH AND negativeLimitSwitchError THEN
+                moveOutOfLimitSwitch.setActualStatus('Negative limit switch still active!');
+                moveOutOfLimitSwitch._state := 999;
+            ELSE
+                // all done!
+                moveOutOfLimitSwitch._state := 1000;
+			END_IF
+            
+        999:
+            // error!
+            // try to un-force the inputs!!!
+            moveOutOfLimitSwitch._state := 9991;
+            
+        1000:
+            moveOutOfLimitSwitch.setActualStatus('Moved out of limit switch');
+            // ok done
+            moveOutOfLimitSwitch.setFinished();
+            moveOutOfLimitSwitch.setGood();
+            
+            
+        9991:
+            // unforce the digital input
+            forceValue := CSETBIT32( inVal32 := forceValue, bitNo := offset     , bitVal := FALSE);
+            forceValue := CSETBIT32( inVal32 := forceValue, bitNo := offset + 1 , bitVal := FALSE);
+            
+            driveChannel.processes.write.start(
+                    index       := P_0_IDN + 805, 
+                    noOfBytes   := 4, 
+                    value1Byte  := 0, 
+                    value2Bytes := 0, 
+                    value4Bytes := DWORD_TO_UDINT(forceValue));
+            moveOutOfLimitSwitch._state := 9992;
+        9992:
+            IF driveChannel.processes.write.isIdle() THEN
+                moveOutOfLimitSwitch._state := 9993;
+			END_IF
+        9993:
+            // nothing can be done anymore
+            moveOutOfLimitSwitch.setBad();
+            moveOutOfLimitSwitch.setFinished();
+    END_CASE
+    
+END_IF]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

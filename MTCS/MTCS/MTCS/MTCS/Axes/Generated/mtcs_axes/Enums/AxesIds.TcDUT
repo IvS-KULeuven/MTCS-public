@@ -1,0 +1,15 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="AxesIds" Id="{b80a9bee-8edf-4c24-9d32-0ec3bb61ac87}">
+    <Declaration><![CDATA[TYPE AxesIds :
+(
+	AZI := 0,
+	ABL := 1,
+	ELE := 2,
+	ROC := 3,
+	RON := 4
+);
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

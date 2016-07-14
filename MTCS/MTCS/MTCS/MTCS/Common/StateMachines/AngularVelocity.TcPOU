@@ -1,0 +1,17 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.5">
+  <POU Name="AngularVelocity" Id="{08c034e3-63ab-4bd5-87b5-ac1d75d97172}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK AngularVelocity EXTENDS SM_AngularVelocity
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR
+    _testVar : INT;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[SUPER^();]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

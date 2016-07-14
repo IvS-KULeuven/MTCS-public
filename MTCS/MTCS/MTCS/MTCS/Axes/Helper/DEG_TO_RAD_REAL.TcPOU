@@ -1,0 +1,15 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.5">
+  <POU Name="DEG_TO_RAD_REAL" Id="{4518c506-42be-4c07-87f3-5dd67d551226}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION DEG_TO_RAD_REAL : REAL
+VAR_INPUT
+    degrees : REAL;
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[DEG_TO_RAD_REAL := LREAL_TO_REAL( REAL_TO_LREAL(degrees) / 180.0 * PI );]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

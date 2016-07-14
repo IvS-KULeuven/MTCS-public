@@ -1,0 +1,23 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="AxesAlphaUnitsToDeg" Id="{b3b3add3-a4aa-44bb-884f-9933fbc8bfdc}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION AxesAlphaUnitsToDeg : LREAL
+VAR_INPUT
+    units : AxesAlphaUnits;
+    value : LREAL;
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[CASE units OF
+    AxesAlphaUnits.RADIANS:
+        AxesAlphaUnitsToDeg := RAD_TO_DEG(value);
+    AxesAlphaUnits.DEGREES:
+        AxesAlphaUnitsToDeg := value; 
+    AxesAlphaUnits.HOURS:
+        AxesAlphaUnitsToDeg := HOUR_TO_DEG(value);   
+END_CASE]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

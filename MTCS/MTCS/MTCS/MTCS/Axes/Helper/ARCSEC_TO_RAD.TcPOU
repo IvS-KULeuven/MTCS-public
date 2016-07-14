@@ -1,0 +1,15 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="ARCSEC_TO_RAD" Id="{00eb3aec-c58d-4f39-becf-cbe5f70d3551}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION ARCSEC_TO_RAD : LREAL
+VAR_INPUT
+    arcsec : LREAL;
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[ARCSEC_TO_RAD := DEG_TO_RAD(ARCSEC_TO_DEG(arcsec));]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

@@ -1,0 +1,22 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="TelemetryAccelerometerStatuses" Id="{0554a650-7e33-413d-81f1-4efeafb10072}">
+    <Declaration><![CDATA[TYPE TelemetryAccelerometerStatuses :
+STRUCT
+	///Is the X angle being measured?
+	xEnabledStatus: EnabledStatus;
+	///Is the Y angle being measured?
+	yEnabledStatus: EnabledStatus;
+	///Is the X angle measurement OK?
+	xHealthStatus: HealthStatus;
+	///Is the Y angle measurement OK?
+	yHealthStatus: HealthStatus;
+	///Alarm status of the X angle
+	xAlarmStatus: HiHiLoLoAlarmStatus;
+	///Alarm status of the Y angle
+	yAlarmStatus: HiHiLoLoAlarmStatus;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

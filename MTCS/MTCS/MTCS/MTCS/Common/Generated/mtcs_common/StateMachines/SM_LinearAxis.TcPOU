@@ -1,0 +1,29 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="SM_LinearAxis" Id="{c82c0b0a-65a5-4aca-bc76-f4445f6a15ce}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK SM_LinearAxis EXTENDS BaseAxis
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+	///Actual position of the axis
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	actPos: LinearPosition;
+	///Actual velocity of the axis
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	actVel: LinearVelocity;
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[actPos( newMillimetersValue := axis_ref.NcToPlc.ActPos );
+actVel( newMillimetersPerSecondValue := axis_ref.NcToPlc.ActVelo );
+SUPER^();
+]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

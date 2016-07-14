@@ -1,0 +1,38 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="M2Processes" Id="{cc662c51-f307-4e42-8d67-451a879dd545}">
+    <Declaration><![CDATA[TYPE M2Processes :
+STRUCT
+	///Start initializing
+	initialize: Process;
+	///Lock the system
+	lock: Process;
+	///Unlock the system
+	unlock: Process;
+	///Change the operating state (e.g. AUTO, MANUAL, ...)
+	changeOperatingState: ChangeOperatingStateProcess;
+	///Move the position of one axis in an absolute way
+	moveAbsolute: M2MoveProcess;
+	///Move the position of one axis relative to the current position
+	moveRelative: M2MoveProcess;
+	///Move the position of one axis by providing a number of steps (i.e. motor pulses)
+	moveSteps: M2MoveStepsProcess;
+	///Do a thermal focus for the currently active focus
+	doThermalFocus: Process;
+	///Do a thermal focus for a specified focal station (based on the configured name of the station)
+	doThermalFocusForStationName: M2DoThermalFocusForStationName;
+	///Do a thermal focus for a specified focal station (based on the station numerical ID)
+	doThermalFocusForStationPosition: M2DoThermalFocusForStationPosition;
+	///Verify (and adjust if necessary) the fixed positions of X, Y, TiltX, and TiltY
+	verifyFixedPositions: Process;
+	///Power on the M2 electronics
+	powerOn: Process;
+	///Power off the M2 electronics
+	powerOff: Process;
+	///Abort the move procedure
+	abort: Process;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

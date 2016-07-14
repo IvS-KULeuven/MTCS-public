@@ -1,0 +1,47 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.2">
+  <POU Name="LockingButtonWidget" Id="{2bb11438-3d3d-4851-a871-6ed6dd46ff6c}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK LockingButtonWidget
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+    text : STRING;
+    deactivate : BOOL;
+END_VAR
+VAR_IN_OUT
+    status : InitializationStatus;
+	lock : Process;
+	unlock : Process;
+END_VAR
+VAR
+    do_request : BOOL := FALSE;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[IF status.locked THEN
+    text := 'Unlock';
+    deactivate := unlock.statuses.enabledStatus.disabled;
+    
+    IF do_request THEN
+        unlock.request();
+        do_request := FALSE;
+    END_IF
+
+ELSIF status.initialized THEN
+    text := 'Lock';
+    deactivate := lock.statuses.enabledStatus.disabled;
+    
+    IF do_request THEN
+        lock.request();
+        do_request := FALSE;
+    END_IF
+ELSE
+    text := 'Unlock';
+    deactivate := TRUE;
+    do_request := FALSE;
+END_IF
+
+]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

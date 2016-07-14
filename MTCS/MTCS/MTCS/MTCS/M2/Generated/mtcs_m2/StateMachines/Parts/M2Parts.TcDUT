@@ -1,0 +1,32 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="M2Parts" Id="{221e015b-f8ee-410d-a091-75160f10edc0}">
+    <Declaration><![CDATA[TYPE M2Parts :
+STRUCT
+	///Relay to power on/off the power of the M2 field electronics
+	powerRelay: SimpleRelay;
+	///Digital output to power on/off the heater of M2
+	heater: SimpleRelay;
+	///The X axis
+	x: M2XAxis;
+	///The Y axis
+	y: M2YAxis;
+	///The Z axis
+	z: M2ZAxis;
+	///The TiltX axis
+	tiltX: M2TiltXAxis;
+	///The TiltY axis
+	tiltY: M2TiltYAxis;
+	///The multiplexer inputs and outputs
+	multiplexer: M2Multiplexer;
+	///The config manager (to load/save/activate configuration data)
+	configManager: ConfigManager;
+	///The move steps procedure
+	moveStepsProcedure: M2MoveStepsProcedure;
+	///The move to a certain position procedure
+	movePositionProcedure: M2MovePositionProcedure;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

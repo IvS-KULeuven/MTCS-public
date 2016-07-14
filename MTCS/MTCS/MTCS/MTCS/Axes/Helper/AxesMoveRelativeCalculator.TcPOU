@@ -1,0 +1,115 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="AxesMoveRelativeCalculator" Id="{be1713c4-40f2-4ecb-9721-fddf2d62fff4}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK AxesMoveRelativeCalculator
+VAR_INPUT
+    distance : LREAL;
+    trackingVelo : LREAL; // only needed when the position with most travel must be found
+    minPos : LREAL;
+    maxPos : LREAL;
+    actPos : LREAL; // only needed when the closest distance must be found
+    doMostTravel : BOOL; // TRUE: prefer the position with most travel. FALSE: prefer the closest position
+END_VAR
+VAR_OUTPUT
+    adjustedDistance : LREAL;
+    outOfRange : BOOL;
+END_VAR
+VAR
+    moreNegativeTargetPos : LREAL;
+    morePositiveTargetPos : LREAL;
+   
+    targetPos : LREAL;
+ 
+    targetWithinRange : BOOL;
+    moreNegativeTargetWithinRange : BOOL;
+    morePositiveTargetWithinRange : BOOL;
+    
+    travelTarget : LREAL;  
+    travelMoreNegativeTarget : LREAL; 
+    travelMorePositiveTarget : LREAL;
+    shortestTravel : LREAL;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[
+targetPos := actPos + LMOD(distance, 360.0);
+moreNegativeTargetPos := targetPos - 360.0;
+morePositiveTargetPos := targetPos + 360.0;
+
+
+targetWithinRange := minPos < targetPos AND targetPos < maxPos;
+moreNegativeTargetWithinRange := minPos < moreNegativeTargetPos AND moreNegativeTargetPos < maxPos;
+morePositiveTargetWithinRange := minPos < morePositiveTargetPos AND morePositiveTargetPos < maxPos;
+
+
+IF doMostTravel THEN
+    
+    IF trackingVelo > 0 THEN
+        // the target moves in positive direction, so we must start as much negative as we can
+        IF moreNegativeTargetWithinRange THEN
+            adjustedDistance := LMOD(distance, 180.0) - 360.0;
+            outOfRange := FALSE;
+        ELSIF targetWithinRange THEN
+            adjustedDistance := LMOD(distance, 180.0);
+            outOfRange := FALSE;
+        ELSIF morePositiveTargetWithinRange THEN
+            adjustedDistance := LMOD(distance, 180.0) + 360.0;
+            outOfRange := FALSE;
+        ELSE
+            outOfRange := TRUE;
+        END_IF
+    
+    ELSE
+        // the target moves in negative direction, so we must start as much positive as we can
+        IF morePositiveTargetWithinRange THEN
+            adjustedDistance := LMOD(distance, 180.0) + 360.0;
+            outOfRange := FALSE;
+        ELSIF targetWithinRange THEN
+            adjustedDistance := LMOD(distance, 180.0);
+            outOfRange := FALSE;
+        ELSIF moreNegativeTargetWithinRange THEN
+            adjustedDistance := LMOD(distance, 180.0) - 360.0;
+            outOfRange := FALSE;
+        ELSE
+            outOfRange := TRUE;
+        END_IF
+    END_IF
+ELSE
+    // don't prefer the direction with most travel, so we go in the fastest direction
+    
+    IF ABS(distance) <= 180.0 AND targetWithinRange THEN
+        adjustedDistance := distance;
+        outOfRange := FALSE;
+    ELSE
+        travelTarget             := ABS(targetPos - actPos);
+        travelMoreNegativeTarget := ABS(moreNegativeTargetPos - actPos);
+        travelMorePositiveTarget := ABS(morePositiveTargetPos - actPos);
+    
+        outOfRange := TRUE;
+        shortestTravel := 999999;
+        
+        IF travelTarget < shortestTravel AND targetWithinRange THEN
+            shortestTravel := travelTarget;
+            adjustedDistance := distance;
+            outOfRange := FALSE;
+        END_IF
+        
+        IF travelMoreNegativeTarget < shortestTravel AND moreNegativeTargetWithinRange THEN
+            shortestTravel := travelMoreNegativeTarget;
+            adjustedDistance := LMOD(distance, 180.0) - 360.0;
+            outOfRange := FALSE;
+        END_IF
+        
+        IF travelMorePositiveTarget < shortestTravel AND morePositiveTargetWithinRange THEN
+            shortestTravel := travelMorePositiveTarget;
+            adjustedDistance := LMOD(distance, 180.0) + 360.0;
+            outOfRange := FALSE;
+        END_IF
+        
+    
+	END_IF
+    
+END_IF]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

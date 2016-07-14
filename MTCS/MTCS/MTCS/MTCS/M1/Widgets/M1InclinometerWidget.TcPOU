@@ -1,0 +1,33 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.5">
+  <POU Name="M1InclinometerWidget" Id="{638f82c8-14b4-4a78-8a57-2bd2444dc1e0}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK M1InclinometerWidget
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+    ref : M1Inclinometer;
+END_VAR
+VAR
+	actualStatus        : StatusWidget;
+    voltageMeasurement  : MeasurementWidget('Inclinometer voltage', '%.2f V');
+    elevation           : MeasurementWidget('Inclinometer angle (not used)', '%.2f °');
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[actualStatus(text  := ref.actualStatus, 
+             color := HealthToColor(healthStatus := ref.voltageMeasurement.statuses.healthStatus));
+
+voltageMeasurement( 
+    value        := ref.voltageMeasurement.average.volt.value, 
+    actualStatus := ref.voltageMeasurement.actualStatus, 
+    healthStatus := ref.voltageMeasurement.statuses.healthStatus);
+    
+elevation(
+    value        := ref.averageElevation.degrees.value,
+    actualStatus := ref.actualStatus, 
+    healthStatus := ref.statuses.healthStatus);]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

@@ -1,0 +1,60 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.5">
+  <POU Name="HydraulicsSideWidget" Id="{ed304e99-cdd5-4d51-90c7-5f99b9400968}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK HydraulicsSideWidget
+VAR_INPUT
+    powered : BOOL;
+END_VAR
+VAR_OUTPUT
+	actualStatus : StatusWidget;
+	driveStatus : StatusWidget;
+	pressureStatus : StatusWidget;
+END_VAR
+VAR_IN_OUT
+    ref : HydraulicsSide;
+END_VAR
+VAR
+    _formatString : FB_FormatString;
+    
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[
+actualStatus(text  := ref.actualStatus,
+             color := HealthBusyToColor(healthStatus := ref.statuses.healthStatus, busyStatus := ref.statuses.busyStatus));
+             
+
+// update the driveStatus 
+IF NOT powered THEN
+   
+    driveStatus.color.fg := COLORS.BLACK;
+    driveStatus.color.bg := COLORS.GRAY;
+    driveStatus.text := 'Powered off';
+      
+ELSIF ref.driveTripOK THEN
+    IF ref.driveRelease THEN
+        driveStatus.color.fg := COLORS.BLACK;
+        driveStatus.color.bg := COLORS.GREEN;
+        IF ref.driveMinFrequency THEN
+            _formatString(sFormat := '%.1f Hz',  arg1 := F_LREAL(ref.frequencyMeasurement.average.hertz.value), sOut => driveStatus.text);
+        ELSE
+            _formatString(sFormat := '%.1f Hz (LOW)',  arg1 := F_LREAL(ref.frequencyMeasurement.average.hertz.value), sOut => driveStatus.text);
+		END_IF
+    ELSE
+        driveStatus.color.fg := COLORS.BLACK;
+        driveStatus.color.bg := COLORS.GRAY;
+        driveStatus.text := 'Not released';
+	END_IF
+ELSE
+        driveStatus.color.fg := COLORS.WHITE;
+        driveStatus.color.bg := COLORS.RED;
+        driveStatus.text := 'TRIPPED';
+END_IF
+
+// update the pressureStatus
+pressureStatus(color := HealthToColor(ref.pressureMeasurement.statuses.healthStatus));
+_formatString(sFormat := '%.1f Bar',  arg1 := F_LREAL(ref.pressureMeasurement.average.bar.value), sOut => pressureStatus.text);
+]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

@@ -1,0 +1,26 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="TelemetryFlatfieldLedsParts" Id="{1042fd74-ada3-4f39-a7ae-5231b36226f5}">
+    <Declaration><![CDATA[TYPE TelemetryFlatfieldLedsParts :
+STRUCT
+	///Output 1
+	output1: SimpleRelay;
+	///Output 2
+	output2: SimpleRelay;
+	///Output 3
+	output3: SimpleRelay;
+	///Output 4
+	output4: SimpleRelay;
+	///Output 5
+	output5: SimpleRelay;
+	///Output 6
+	output6: SimpleRelay;
+	///Output 7
+	output7: SimpleRelay;
+	///Output 8
+	output8: SimpleRelay;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

@@ -1,0 +1,60 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="SM_TelemetryIO" Id="{54d805d0-664c-42a8-a8c7-2d7554f55cf5}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK SM_TelemetryIO
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+	///Current status description
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	actualStatus: STRING;
+	///Statuses of the state machine
+	statuses: TelemetryIOStatuses;
+	///Parts of the state machine
+	parts: TelemetryIOParts;
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[parts.coupler(
+    id := 'COUPLER',
+    typeId := 'EK1100');
+parts.slot5(
+    id := '113A1',
+    typeId := 'EL3202-0010');
+parts.slot6(
+    id := '114A1',
+    typeId := 'EL3202-0010');
+parts.slot7(
+    id := '115A1',
+    typeId := 'EL3202-0010');
+parts.slot8(
+    id := '116A1',
+    typeId := 'EL3202-0010');
+parts.slot9(
+    id := '117A1',
+    typeId := 'EL3202-0010');
+parts.slot10(
+    id := '118A1',
+    typeId := 'EL3202-0010');
+parts.slot11(
+    id := '119A1',
+    typeId := 'EL3202-0010');
+parts.slot12(
+    id := '120A1',
+    typeId := 'EL3024');
+parts.slot13(
+    id := '121A1',
+    typeId := 'EL2008');
+parts.tubeAccelerometers(
+    id := 'ACCTUB',
+    typeId := 'EP1816-3008');
+statuses.healthStatus( isGood := parts.coupler.statuses.healthStatus.isGood AND (parts.slot5.statuses.healthStatus.isGood AND (parts.slot6.statuses.healthStatus.isGood AND (parts.slot7.statuses.healthStatus.isGood AND (parts.slot8.statuses.healthStatus.isGood AND (parts.slot9.statuses.healthStatus.isGood AND (parts.slot10.statuses.healthStatus.isGood AND (parts.slot11.statuses.healthStatus.isGood AND (parts.slot12.statuses.healthStatus.isGood AND (parts.slot13.statuses.healthStatus.isGood AND parts.tubeAccelerometers.statuses.healthStatus.isGood))))))))) );
+]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

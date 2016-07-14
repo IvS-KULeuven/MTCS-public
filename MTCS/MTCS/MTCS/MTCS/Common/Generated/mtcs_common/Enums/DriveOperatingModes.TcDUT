@@ -1,0 +1,14 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="DriveOperatingModes" Id="{2b6643f9-0e60-4699-a84f-0673702908df}">
+    <Declaration><![CDATA[TYPE DriveOperatingModes :
+(
+	OPERATING_MODE_NONE := 0,
+	OPERATING_MODE_TORQUE_CONTROL := 1,
+	OPERATING_MODE_VELOCITY_CONTROL := 2,
+	OPERATING_MODE_POSITION_CONTROL := 3
+);
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

@@ -1,0 +1,22 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.5">
+  <POU Name="TmcTimingErrorsToString" Id="{ddd5a015-12e5-4dbb-911f-46a1cdd11929}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION TmcTimingErrorsToString : STRING
+VAR_INPUT
+    error : TmcTimingErrors;
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[CASE error OF 
+    TIMING_NO_ERROR:
+        TmcTimingErrorsToString := 'No error';
+    TIMING_DUT_OUT_OF_RANGE:
+        TmcTimingErrorsToString := 'DUT out-of-range';
+    TIMING_GETCURDCTIME_FAILED:
+        TmcTimingErrorsToString := 'GetCurDcTime failed';
+END_CASE]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

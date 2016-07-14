@@ -1,0 +1,135 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.5">
+  <POU Name="TelemetryAccelerometer" Id="{5dd47199-2e93-4d4c-b048-e98ef0b30d2e}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK TelemetryAccelerometer EXTENDS SM_TelemetryAccelerometer
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR
+    // reason of naming the variables below: same as Beckhoff example!
+    fX_11 : INT;
+	fY_11 : INT;
+	fZ_11 : INT;
+	fRoll  : LREAL;  (* Angle about X-axis *)
+	fPitch  : LREAL; (* Angle about Y-axis *)
+    
+    noOfSamples : UINT := 100;
+	_executeMovingAverage : BOOL;
+    _x_ctrl_moving_avg : FB_CTRL_MOVING_AVERAGE;
+    _x_params : ST_CTRL_MOVING_AVERAGE_PARAMS;
+    _x_array : ARRAY [1..100] OF LREAL;
+    _y_ctrl_moving_avg : FB_CTRL_MOVING_AVERAGE;
+    _y_params : ST_CTRL_MOVING_AVERAGE_PARAMS;
+    _y_array : ARRAY [1..100] OF LREAL;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[SUPER^(xConfig := xConfig, yConfig := yConfig);
+
+X1plus();
+Y1plus();
+Z1minus();
+X2minus();
+Y2plus();
+Z2minus();
+
+fX_11 := LREAL_TO_INT(X1plus.average.milliG.value);
+fY_11 := LREAL_TO_INT(Y1plus.average.milliG.value);
+fZ_11 := LREAL_TO_INT(Z1minus.average.milliG.value);
+
+(* 1. Roll and Pitch angle according to Beckhof example  *)
+IF fX_11 <> 0 AND fZ_11 <> 0 THEN
+                fRoll := ATAN( fY_11 / SQRT(  EXPT(fX_11,2)+EXPT(fZ_11,2)  ) );
+                fRoll := fRoll*180/PI;
+END_IF
+
+IF fY_11 <> 0 AND fZ_11 <> 0 THEN
+                fPitch := ATAN(fX_11/SQRT(EXPT(fY_11,2)+EXPT(fZ_11,2)));
+                fPitch := fPitch*180/PI;
+END_IF
+
+
+actualXAngle(newDegreesValue := fRoll);
+actualYAngle(newDegreesValue := fPitch);
+
+
+
+// only call the _ctrl_moving_avg FB once per task cycle (not once every time the FB is called)
+_x_params.nSamplesToFilter  := noOfSamples;
+_x_params.tCtrlCycleTime    := GLOBAL.config.PLC_CTRL_TIME;
+_y_params.nSamplesToFilter  := noOfSamples;
+_y_params.tCtrlCycleTime    := GLOBAL.config.PLC_CTRL_TIME;
+IF _executeMovingAverage <> GLOBAL.config.PLC_TASK_FLIP THEN
+	_executeMovingAverage := GLOBAL.config.PLC_TASK_FLIP;
+	_x_ctrl_moving_avg(
+		fIn             := actualXAngle.degrees.value,
+		fManSyncValue   := 0.0,
+		bSync           := FALSE,
+		eMode           := E_CTRL_MODE.eCTRL_MODE_ACTIVE,
+		bHold           := FALSE,
+		stParams        := _x_params);
+	_y_ctrl_moving_avg(
+		fIn             := actualYAngle.degrees.value,
+		fManSyncValue   := 0.0,
+		bSync           := FALSE,
+		eMode           := E_CTRL_MODE.eCTRL_MODE_ACTIVE,
+		bHold           := FALSE,
+		stParams        := _y_params);
+END_IF
+
+// update the average values
+averageXAngle(newDegreesValue := _x_ctrl_moving_avg.fOut);
+averageYAngle(newDegreesValue := _y_ctrl_moving_avg.fOut);
+
+
+
+// update the display and actualStatus
+IF statuses.xEnabledStatus.enabled AND statuses.yEnabledStatus.enabled THEN
+    IF X1plus.error OR Y1plus.error OR Z1minus.error OR X2minus.error OR Y2plus.error OR Z2minus.error THEN
+        actualStatus := 'Sensors error';
+    ELSE
+        // update actualStatus:
+        IF statuses.xAlarmStatus.disabled AND statuses.yAlarmStatus.disabled THEN
+            actualStatus := 'Valid';
+        ELSIF statuses.xAlarmStatus.ok AND statuses.yAlarmStatus.ok THEN
+            actualStatus := 'Valid and within range';
+        ELSIF statuses.xAlarmStatus.hiHi OR statuses.yAlarmStatus.hiHi THEN
+            actualStatus := 'Critically high!';
+        ELSIF statuses.xAlarmStatus.loLo OR statuses.yAlarmStatus.loLo THEN
+            actualStatus := 'Critically low!';
+        ELSIF statuses.xAlarmStatus.hi OR statuses.yAlarmStatus.hi THEN
+            actualStatus := 'High!';
+        ELSIF statuses.xAlarmStatus.lo OR statuses.yAlarmStatus.lo THEN
+            actualStatus := 'Low!';
+        ELSE
+            actualStatus := ' Within range';
+        END_IF
+    END_IF
+ELSIF statuses.xEnabledStatus.disabled OR statuses.yEnabledStatus.disabled THEN
+    actualStatus := 'Disabled';
+ELSE
+    actualStatus := 'UNKNOWN';
+END_IF
+	
+]]></ST>
+    </Implementation>
+    <Method Name="FB_init" Id="{abb8f6ad-753a-4bbd-8295-09f1ac9bb9a5}">
+      <Declaration><![CDATA[METHOD FB_init : BOOL
+VAR_INPUT
+	bInitRetains : BOOL; // if TRUE, the retain variables are initialized (warm start / cold start)
+	bInCopyCode : BOOL;  // if TRUE, the instance afterwards gets moved into the copy code (online change)
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[_x_params.tTaskCycleTime    := GLOBAL.config.PLC_TASK_TIME;
+_x_params.pWorkArray_ADR    := ADR(_x_array);
+_x_params.nWorkArray_SIZEOF := SIZEOF(_x_array);
+
+_y_params.tTaskCycleTime    := GLOBAL.config.PLC_TASK_TIME;
+_y_params.pWorkArray_ADR    := ADR(_y_array);
+_y_params.nWorkArray_SIZEOF := SIZEOF(_y_array);]]></ST>
+      </Implementation>
+    </Method>
+  </POU>
+</TcPlcObject>

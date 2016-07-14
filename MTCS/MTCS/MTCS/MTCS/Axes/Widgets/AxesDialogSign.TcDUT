@@ -1,0 +1,12 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.5">
+  <DUT Name="AxesDialogSign" Id="{02feb5e7-c7c1-4507-bda5-725d72308f0b}">
+    <Declaration><![CDATA[TYPE AxesDialogSign :
+(
+	DIALOG_PLUS := 0,
+    DIALOG_MINUS := 1
+);
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

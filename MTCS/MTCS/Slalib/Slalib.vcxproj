@@ -1,0 +1,416 @@
+<?xml version="1.0" encoding="us-ascii"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(TWINCATSDK)\MsBuild\TwinCAT Common\*.targets" />
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|TwinCAT RT (x64)">
+      <Configuration>Debug</Configuration>
+      <Platform>TwinCAT RT (x64)</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|TwinCAT RT (x86)">
+      <Configuration>Debug</Configuration>
+      <Platform>TwinCAT RT (x86)</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|TwinCAT UM (x64)">
+      <Configuration>Debug</Configuration>
+      <Platform>TwinCAT UM (x64)</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|TwinCAT UM (x86)">
+      <Configuration>Debug</Configuration>
+      <Platform>TwinCAT UM (x86)</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|TwinCAT RT (x64)">
+      <Configuration>Release</Configuration>
+      <Platform>TwinCAT RT (x64)</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|TwinCAT RT (x86)">
+      <Configuration>Release</Configuration>
+      <Platform>TwinCAT RT (x86)</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|TwinCAT UM (x64)">
+      <Configuration>Release</Configuration>
+      <Platform>TwinCAT UM (x64)</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|TwinCAT UM (x86)">
+      <Configuration>Release</Configuration>
+      <Platform>TwinCAT UM (x86)</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Resource.h" />
+    <ClInclude Include="slalib\slalib.h" />
+    <ClInclude Include="slalib\slamac.h" />
+    <ClInclude Include="SlaPointing.h" />
+    <ClInclude Include="SlaPointingFunctions.h" />
+    <ClInclude Include="TcPch.h" />
+    <ClInclude Include="SlalibClassFactory.h" />
+    <ClInclude Include="SlalibCtrl.h" />
+    <ClInclude Include="SlalibDriver.h" />
+    <ClInclude Include="SlalibInterfaces.h" />
+    <ClInclude Include="SlalibServices.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="slalib\addet.c" />
+    <ClCompile Include="slalib\afin.c" />
+    <ClCompile Include="slalib\airmas.c" />
+    <ClCompile Include="slalib\altaz.c" />
+    <ClCompile Include="slalib\amp.c" />
+    <ClCompile Include="slalib\ampqk.c" />
+    <ClCompile Include="slalib\aop.c" />
+    <ClCompile Include="slalib\aoppa.c" />
+    <ClCompile Include="slalib\aoppat.c" />
+    <ClCompile Include="slalib\aopqk.c" />
+    <ClCompile Include="slalib\atmdsp.c" />
+    <ClCompile Include="slalib\av2m.c" />
+    <ClCompile Include="slalib\bear.c" />
+    <ClCompile Include="slalib\c2i.c" />
+    <ClCompile Include="slalib\c2ipa.c" />
+    <ClCompile Include="slalib\c2ipad.c" />
+    <ClCompile Include="slalib\c2ipas.c" />
+    <ClCompile Include="slalib\c2iqk.c" />
+    <ClCompile Include="slalib\c2iqkz.c" />
+    <ClCompile Include="slalib\caf2r.c" />
+    <ClCompile Include="slalib\caldj.c" />
+    <ClCompile Include="slalib\calyd.c" />
+    <ClCompile Include="slalib\cc2s.c" />
+    <ClCompile Include="slalib\cc62s.c" />
+    <ClCompile Include="slalib\cd2tf.c" />
+    <ClCompile Include="slalib\cldj.c" />
+    <ClCompile Include="slalib\clyd.c" />
+    <ClCompile Include="slalib\combn.c" />
+    <ClCompile Include="slalib\cr2af.c" />
+    <ClCompile Include="slalib\cr2tf.c" />
+    <ClCompile Include="slalib\cs2c.c" />
+    <ClCompile Include="slalib\cs2c6.c" />
+    <ClCompile Include="slalib\ctf2d.c" />
+    <ClCompile Include="slalib\ctf2r.c" />
+    <ClCompile Include="slalib\daf2r.c" />
+    <ClCompile Include="slalib\dafin.c" />
+    <ClCompile Include="slalib\dat.c" />
+    <ClCompile Include="slalib\dav2m.c" />
+    <ClCompile Include="slalib\dbear.c" />
+    <ClCompile Include="slalib\dbjin.c" />
+    <ClCompile Include="slalib\dc62s.c" />
+    <ClCompile Include="slalib\dcc2s.c" />
+    <ClCompile Include="slalib\dcmpf.c" />
+    <ClCompile Include="slalib\dcs2c.c" />
+    <ClCompile Include="slalib\dd2tf.c" />
+    <ClCompile Include="slalib\de2h.c" />
+    <ClCompile Include="slalib\deuler.c" />
+    <ClCompile Include="slalib\dfltin.c" />
+    <ClCompile Include="slalib\dh2e.c" />
+    <ClCompile Include="slalib\dimxv.c" />
+    <ClCompile Include="slalib\djcal.c" />
+    <ClCompile Include="slalib\djcl.c" />
+    <ClCompile Include="slalib\dm2av.c" />
+    <ClCompile Include="slalib\dmat.c" />
+    <ClCompile Include="slalib\dmoon.c" />
+    <ClCompile Include="slalib\dmxm.c" />
+    <ClCompile Include="slalib\dmxv.c" />
+    <ClCompile Include="slalib\dpav.c" />
+    <ClCompile Include="slalib\dr2af.c" />
+    <ClCompile Include="slalib\dr2tf.c" />
+    <ClCompile Include="slalib\drange.c" />
+    <ClCompile Include="slalib\dranrm.c" />
+    <ClCompile Include="slalib\ds2c6.c" />
+    <ClCompile Include="slalib\ds2tp.c" />
+    <ClCompile Include="slalib\dsep.c" />
+    <ClCompile Include="slalib\dsepv.c" />
+    <ClCompile Include="slalib\dt.c" />
+    <ClCompile Include="slalib\dtf2d.c" />
+    <ClCompile Include="slalib\dtf2r.c" />
+    <ClCompile Include="slalib\dtp2s.c" />
+    <ClCompile Include="slalib\dtp2v.c" />
+    <ClCompile Include="slalib\dtps2c.c" />
+    <ClCompile Include="slalib\dtpv2c.c" />
+    <ClCompile Include="slalib\dtt.c" />
+    <ClCompile Include="slalib\dv2tp.c" />
+    <ClCompile Include="slalib\dvdv.c" />
+    <ClCompile Include="slalib\dvn.c" />
+    <ClCompile Include="slalib\dvxv.c" />
+    <ClCompile Include="slalib\e2h.c" />
+    <ClCompile Include="slalib\earth.c" />
+    <ClCompile Include="slalib\ecleq.c" />
+    <ClCompile Include="slalib\ecmat.c" />
+    <ClCompile Include="slalib\ecor.c" />
+    <ClCompile Include="slalib\eg50.c" />
+    <ClCompile Include="slalib\el2ue.c" />
+    <ClCompile Include="slalib\eo.c" />
+    <ClCompile Include="slalib\eors.c" />
+    <ClCompile Include="slalib\epb.c" />
+    <ClCompile Include="slalib\epb2d.c" />
+    <ClCompile Include="slalib\epco.c" />
+    <ClCompile Include="slalib\epj.c" />
+    <ClCompile Include="slalib\epj2d.c" />
+    <ClCompile Include="slalib\epv.c" />
+    <ClCompile Include="slalib\eqecl.c" />
+    <ClCompile Include="slalib\eqeqx.c" />
+    <ClCompile Include="slalib\eqgal.c" />
+    <ClCompile Include="slalib\era.c" />
+    <ClCompile Include="slalib\etrms.c" />
+    <ClCompile Include="slalib\euler.c" />
+    <ClCompile Include="slalib\evp.c" />
+    <ClCompile Include="slalib\fitxy.c" />
+    <ClCompile Include="slalib\fk425.c" />
+    <ClCompile Include="slalib\fk45z.c" />
+    <ClCompile Include="slalib\fk524.c" />
+    <ClCompile Include="slalib\fk52h.c" />
+    <ClCompile Include="slalib\fk54z.c" />
+    <ClCompile Include="slalib\fk5hz.c" />
+    <ClCompile Include="slalib\flotin.c" />
+    <ClCompile Include="slalib\fw2m.c" />
+    <ClCompile Include="slalib\fw2xy.c" />
+    <ClCompile Include="slalib\g2ixys.c" />
+    <ClCompile Include="slalib\galeq.c" />
+    <ClCompile Include="slalib\galsup.c" />
+    <ClCompile Include="slalib\ge50.c" />
+    <ClCompile Include="slalib\geoc.c" />
+    <ClCompile Include="slalib\gmst.c" />
+    <ClCompile Include="slalib\gmsta.c" />
+    <ClCompile Include="slalib\gst.c" />
+    <ClCompile Include="slalib\h2e.c" />
+    <ClCompile Include="slalib\h2fk5.c" />
+    <ClCompile Include="slalib\hfk5z.c" />
+    <ClCompile Include="slalib\i2c.c" />
+    <ClCompile Include="slalib\i2cqk.c" />
+    <ClCompile Include="slalib\i2o.c" />
+    <ClCompile Include="slalib\i2opa.c" />
+    <ClCompile Include="slalib\i2opad.c" />
+    <ClCompile Include="slalib\i2opat.c" />
+    <ClCompile Include="slalib\i2oqk.c" />
+    <ClCompile Include="slalib\imxv.c" />
+    <ClCompile Include="slalib\int2in.c" />
+    <ClCompile Include="slalib\intin.c" />
+    <ClCompile Include="slalib\invf.c" />
+    <ClCompile Include="slalib\kbj.c" />
+    <ClCompile Include="slalib\m2av.c" />
+    <ClCompile Include="slalib\map.c" />
+    <ClCompile Include="slalib\mappa.c" />
+    <ClCompile Include="slalib\mapqk.c" />
+    <ClCompile Include="slalib\mapqkz.c" />
+    <ClCompile Include="slalib\moon.c" />
+    <ClCompile Include="slalib\mxm.c" />
+    <ClCompile Include="slalib\mxv.c" />
+    <ClCompile Include="slalib\nu.c" />
+    <ClCompile Include="slalib\nu00a.c" />
+    <ClCompile Include="slalib\nut.c" />
+    <ClCompile Include="slalib\nutc.c" />
+    <ClCompile Include="slalib\nutc80.c" />
+    <ClCompile Include="slalib\o2i.c" />
+    <ClCompile Include="slalib\o2iqk.c" />
+    <ClCompile Include="slalib\oap.c" />
+    <ClCompile Include="slalib\oapqk.c" />
+    <ClCompile Include="slalib\obs.c" />
+    <ClCompile Include="slalib\pa.c" />
+    <ClCompile Include="slalib\pav.c" />
+    <ClCompile Include="slalib\pcd.c" />
+    <ClCompile Include="slalib\pda2h.c" />
+    <ClCompile Include="slalib\pdq2h.c" />
+    <ClCompile Include="slalib\permut.c" />
+    <ClCompile Include="slalib\pertel.c" />
+    <ClCompile Include="slalib\pertue.c" />
+    <ClCompile Include="slalib\pfw.c" />
+    <ClCompile Include="slalib\planel.c" />
+    <ClCompile Include="slalib\planet.c" />
+    <ClCompile Include="slalib\plante.c" />
+    <ClCompile Include="slalib\plantu.c" />
+    <ClCompile Include="slalib\pm.c" />
+    <ClCompile Include="slalib\pncio.c" />
+    <ClCompile Include="slalib\pneqx.c" />
+    <ClCompile Include="slalib\polmo.c" />
+    <ClCompile Include="slalib\pomom.c" />
+    <ClCompile Include="slalib\prebn.c" />
+    <ClCompile Include="slalib\prec.c" />
+    <ClCompile Include="slalib\preces.c" />
+    <ClCompile Include="slalib\precl.c" />
+    <ClCompile Include="slalib\prenut.c" />
+    <ClCompile Include="slalib\pv2el.c" />
+    <ClCompile Include="slalib\pv2ue.c" />
+    <ClCompile Include="slalib\pvobs.c" />
+    <ClCompile Include="slalib\pxy.c" />
+    <ClCompile Include="slalib\range.c" />
+    <ClCompile Include="slalib\ranorm.c" />
+    <ClCompile Include="slalib\rcc.c" />
+    <ClCompile Include="slalib\rdplan.c" />
+    <ClCompile Include="slalib\refco.c" />
+    <ClCompile Include="slalib\refcoq.c" />
+    <ClCompile Include="slalib\refro.c" />
+    <ClCompile Include="slalib\refv.c" />
+    <ClCompile Include="slalib\refz.c" />
+    <ClCompile Include="slalib\rverot.c" />
+    <ClCompile Include="slalib\rvgalc.c" />
+    <ClCompile Include="slalib\rvlg.c" />
+    <ClCompile Include="slalib\rvlsrd.c" />
+    <ClCompile Include="slalib\rvlsrk.c" />
+    <ClCompile Include="slalib\s.c" />
+    <ClCompile Include="slalib\s2tp.c" />
+    <ClCompile Include="slalib\sep.c" />
+    <ClCompile Include="slalib\sepv.c" />
+    <ClCompile Include="slalib\smat.c" />
+    <ClCompile Include="slalib\sp.c" />
+    <ClCompile Include="slalib\subet.c" />
+    <ClCompile Include="slalib\supgal.c" />
+    <ClCompile Include="slalib\svd.c" />
+    <ClCompile Include="slalib\svdcov.c" />
+    <ClCompile Include="slalib\svdsol.c" />
+    <ClCompile Include="slalib\tp2s.c" />
+    <ClCompile Include="slalib\tp2v.c" />
+    <ClCompile Include="slalib\tps2c.c" />
+    <ClCompile Include="slalib\tpv2c.c" />
+    <ClCompile Include="slalib\ue2el.c" />
+    <ClCompile Include="slalib\ue2pv.c" />
+    <ClCompile Include="slalib\unpcd.c" />
+    <ClCompile Include="slalib\v2tp.c" />
+    <ClCompile Include="slalib\vdv.c" />
+    <ClCompile Include="slalib\vn.c" />
+    <ClCompile Include="slalib\vxv.c" />
+    <ClCompile Include="slalib\xy2xy.c" />
+    <ClCompile Include="slalib\zd.c" />
+    <ClCompile Include="SlaPointing.cpp" />
+    <ClCompile Include="SlaPointingFunctions.cpp" />
+    <ClCompile Include="TcPch.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|TwinCAT UM (x86)'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|TwinCAT RT (x86)'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|TwinCAT UM (x64)'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|TwinCAT RT (x64)'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|TwinCAT UM (x86)'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|TwinCAT RT (x86)'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|TwinCAT UM (x64)'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|TwinCAT RT (x64)'">Create</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="SlalibClassFactory.cpp" />
+    <ClCompile Include="SlalibCtrl.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|TwinCAT RT (x86)'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|TwinCAT RT (x64)'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|TwinCAT RT (x86)'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|TwinCAT RT (x64)'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="SlalibDriver.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|TwinCAT UM (x86)'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|TwinCAT UM (x64)'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|TwinCAT UM (x86)'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|TwinCAT UM (x64)'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="SlalibW32.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|TwinCAT RT (x86)'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|TwinCAT RT (x64)'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|TwinCAT RT (x86)'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|TwinCAT RT (x64)'">true</ExcludedFromBuild>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="Slalib.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="SlalibW32.def" />
+    <None Include="Slalib.tmc" />
+    <None Include="slalib\makefile" />
+    <None Include="slalib\read.me" />
+    <None Include="slalib\sla.pdf" />
+  </ItemGroup>
+  <ItemGroup>
+    <Midl Include="SlalibW32.idl">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|TwinCAT RT (x86)'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|TwinCAT RT (x64)'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|TwinCAT RT (x86)'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|TwinCAT RT (x64)'">true</ExcludedFromBuild>
+    </Midl>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="slalib\readme.txt" />
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{989bb679-88fc-4f03-947d-20bc1d28b658}</ProjectGuid>
+    <RootNamespace>Slalib</RootNamespace>
+    <Keyword>Win32Proj</Keyword>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|TwinCAT RT (x86)'" Label="Configuration">
+    <PlatformToolset>v120</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|TwinCAT RT (x86)'" Label="Configuration">
+    <PlatformToolset>v120</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|TwinCAT UM (x86)'" Label="Configuration">
+    <PlatformToolset>v120</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|TwinCAT UM (x86)'" Label="Configuration">
+    <PlatformToolset>v120</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|TwinCAT RT (x64)'" Label="Configuration">
+    <PlatformToolset>v120</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|TwinCAT RT (x64)'" Label="Configuration">
+    <PlatformToolset>v120</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|TwinCAT UM (x64)'" Label="Configuration">
+    <PlatformToolset>v120</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|TwinCAT UM (x64)'" Label="Configuration">
+    <PlatformToolset>v120</PlatformToolset>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|TwinCAT RT (x86)'" Label="PropertySheets" />
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|TwinCAT RT (x86)'" Label="PropertySheets" />
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|TwinCAT UM (x86)'" Label="PropertySheets" />
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|TwinCAT UM (x86)'" Label="PropertySheets" />
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|TwinCAT RT (x64)'" Label="PropertySheets">
+    <Import Project="$(TwinCATSDK)\VsProps\TwinCAT Test Driver Signing.props" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|TwinCAT RT (x64)'" Label="PropertySheets">
+    <Import Project="$(TwinCATSDK)\VsProps\TwinCAT Test Driver Signing.props" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|TwinCAT UM (x64)'" Label="PropertySheets" />
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|TwinCAT UM (x64)'" Label="PropertySheets" />
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <_ProjectFileVersion>10.0.21006.1</_ProjectFileVersion>
+    <CodeAnalysisRuleSet Condition="'$(Configuration)|$(Platform)'=='Debug|TwinCAT UM (x86)'">AllRules.ruleset</CodeAnalysisRuleSet>
+    <CodeAnalysisRules Condition="'$(Configuration)|$(Platform)'=='Debug|TwinCAT UM (x86)'" />
+    <CodeAnalysisRuleAssemblies Condition="'$(Configuration)|$(Platform)'=='Debug|TwinCAT UM (x86)'" />
+    <CodeAnalysisRuleSet Condition="'$(Configuration)|$(Platform)'=='Release|TwinCAT UM (x86)'">AllRules.ruleset</CodeAnalysisRuleSet>
+    <CodeAnalysisRules Condition="'$(Configuration)|$(Platform)'=='Release|TwinCAT UM (x86)'" />
+    <CodeAnalysisRuleAssemblies Condition="'$(Configuration)|$(Platform)'=='Release|TwinCAT UM (x86)'" />
+    <CodeAnalysisRuleSet Condition="'$(Configuration)|$(Platform)'=='Debug|TwinCAT RT (x86)'">AllRules.ruleset</CodeAnalysisRuleSet>
+    <CodeAnalysisRules Condition="'$(Configuration)|$(Platform)'=='Debug|TwinCAT RT (x86)'" />
+    <CodeAnalysisRuleAssemblies Condition="'$(Configuration)|$(Platform)'=='Debug|TwinCAT RT (x86)'" />
+    <CodeAnalysisRuleSet Condition="'$(Configuration)|$(Platform)'=='Release|TwinCAT RT (x86)'">AllRules.ruleset</CodeAnalysisRuleSet>
+    <CodeAnalysisRules Condition="'$(Configuration)|$(Platform)'=='Release|TwinCAT RT (x86)'" />
+    <CodeAnalysisRuleAssemblies Condition="'$(Configuration)|$(Platform)'=='Release|TwinCAT RT (x86)'" />
+    <CodeAnalysisRuleSet Condition="'$(Configuration)|$(Platform)'=='Debug|TwinCAT UM (x64)'">AllRules.ruleset</CodeAnalysisRuleSet>
+    <CodeAnalysisRules Condition="'$(Configuration)|$(Platform)'=='Debug|TwinCAT UM (x64)'" />
+    <CodeAnalysisRuleAssemblies Condition="'$(Configuration)|$(Platform)'=='Debug|TwinCAT UM (x64)'" />
+    <CodeAnalysisRuleSet Condition="'$(Configuration)|$(Platform)'=='Release|TwinCAT UM (x64)'">AllRules.ruleset</CodeAnalysisRuleSet>
+    <CodeAnalysisRules Condition="'$(Configuration)|$(Platform)'=='Release|TwinCAT UM (x64)'" />
+    <CodeAnalysisRuleAssemblies Condition="'$(Configuration)|$(Platform)'=='Release|TwinCAT UM (x64)'" />
+    <CodeAnalysisRuleSet Condition="'$(Configuration)|$(Platform)'=='Debug|TwinCAT RT (x64)'">AllRules.ruleset</CodeAnalysisRuleSet>
+    <CodeAnalysisRules Condition="'$(Configuration)|$(Platform)'=='Debug|TwinCAT RT (x64)'" />
+    <CodeAnalysisRuleAssemblies Condition="'$(Configuration)|$(Platform)'=='Debug|TwinCAT RT (x64)'" />
+    <CodeAnalysisRuleSet Condition="'$(Configuration)|$(Platform)'=='Release|TwinCAT RT (x64)'">AllRules.ruleset</CodeAnalysisRuleSet>
+    <CodeAnalysisRules Condition="'$(Configuration)|$(Platform)'=='Release|TwinCAT RT (x64)'" />
+    <CodeAnalysisRuleAssemblies Condition="'$(Configuration)|$(Platform)'=='Release|TwinCAT RT (x64)'" />
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|TwinCAT UM (x86)'">
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|TwinCAT UM (x86)'">
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|TwinCAT RT (x86)'">
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|TwinCAT RT (x86)'">
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|TwinCAT UM (x64)'">
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|TwinCAT UM (x64)'">
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|TwinCAT RT (x64)'">
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|TwinCAT RT (x64)'">
+    <ClCompile>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

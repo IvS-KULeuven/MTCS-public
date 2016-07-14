@@ -1,0 +1,48 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.5">
+  <POU Name="AxesPointingModelsSetupWidget" Id="{29882fe7-6ff7-44c3-82d2-e9422bdb500b}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK AxesPointingModelsSetupWidget
+VAR_INPUT
+    activeModel : INT;
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR
+	actualStatus : StatusWidget;
+    
+    model0 : AxesPointingModelSetupWidget;
+    model1 : AxesPointingModelSetupWidget;
+    model2 : AxesPointingModelSetupWidget;
+    model3 : AxesPointingModelSetupWidget;
+    model4 : AxesPointingModelSetupWidget;
+    model5 : AxesPointingModelSetupWidget;
+    model6 : AxesPointingModelSetupWidget;
+    model7 : AxesPointingModelSetupWidget;
+    model8 : AxesPointingModelSetupWidget;
+    model9 : AxesPointingModelSetupWidget;
+END_VAR
+VAR_IN_OUT
+	ref : AxesPointingModelsSetup;
+    ref_enable : AxesEnablePointingModelProcess;
+    ref_disable : Process;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[actualStatus(text  := ref.actualStatus,
+             color := HealthBusyToColor(
+                        healthStatus := ref.statuses.healthStatus, 
+                        busyStatus   := ref.statuses.busyStatus));
+
+model0(ref := ref.parts.model0, ref_enable := ref_enable, ref_disable := ref_disable);
+model1(ref := ref.parts.model1, ref_enable := ref_enable, ref_disable := ref_disable);
+model2(ref := ref.parts.model2, ref_enable := ref_enable, ref_disable := ref_disable);
+model3(ref := ref.parts.model3, ref_enable := ref_enable, ref_disable := ref_disable);
+model4(ref := ref.parts.model4, ref_enable := ref_enable, ref_disable := ref_disable);
+model5(ref := ref.parts.model5, ref_enable := ref_enable, ref_disable := ref_disable);
+model6(ref := ref.parts.model6, ref_enable := ref_enable, ref_disable := ref_disable);
+model7(ref := ref.parts.model7, ref_enable := ref_enable, ref_disable := ref_disable);
+model8(ref := ref.parts.model8, ref_enable := ref_enable, ref_disable := ref_disable);
+model9(ref := ref.parts.model9, ref_enable := ref_enable, ref_disable := ref_disable);]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

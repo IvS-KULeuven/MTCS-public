@@ -1,0 +1,21 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.36">
+  <POU Name="TelemetryIO" Id="{1137fc99-4890-47ef-9990-00b465da8fba}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK TelemetryIO EXTENDS SM_TelemetryIO
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR
+    _testVar_TelemetryIO : BOOL;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[SUPER^();
+
+// do stuff
+
+//SUPER^();]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

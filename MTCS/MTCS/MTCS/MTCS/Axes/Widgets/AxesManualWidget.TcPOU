@@ -1,0 +1,34 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="AxesManualWidget" Id="{faabf9b2-94ba-4d94-91be-b55811be151a}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK AxesManualWidget
+VAR_INPUT
+
+    activeTab : AxesManualTabs := AxesManualTabs.TAB_POSITIONS;
+
+    joystickAziEle : AxesManualJoystickAziEleWidget;
+    joystickRot : AxesManualJoystickRotWidget;
+    offsets : AxesManualOffsetsWidget;
+    positions : AxesManualPositionsWidget;
+    moveAbsolute : AxesManualMoveAbsoluteWidget;
+    moveVelocity : AxesManualMoveVelocityWidget;
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+    ref : Axes;
+    ref_operatorStatus : OperatorStatus;
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[joystickAziEle(ref := ref);
+joystickRot(ref := ref);
+offsets(ref := ref);
+positions(ref := ref, ref_operatorStatus := ref_operatorStatus);
+moveAbsolute(ref := ref);
+moveVelocity(ref := ref);]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

@@ -1,0 +1,488 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.2">
+  <POU Name="M3GotoProcedure" Id="{c47ae8bd-66ea-4359-a055-42983ecb072b}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK M3GotoProcedure EXTENDS SM_M3GotoProcedure
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR
+    
+    substate : INT;
+    _cause : M3GotoProcedureStates;
+    _ton : TON;
+    ///Position of the rotation stage, in degrees
+	_rotationPosition: LREAL;
+	///Offset between the motors of the rotation stage, in degrees
+	_rotationOffset: LREAL;
+	///Position of the rotation stage, in millimeters
+	_translationPosition: LREAL;
+    _doRotation : BOOL;
+    _doTranslation : BOOL;
+    
+    _name : STRING;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[_update();
+
+// run the procedure
+CASE state OF
+    M3GotoProcedureStates.IDLE:
+        _idle();
+    M3GotoProcedureStates.ABORTED:
+        _aborted();
+    M3GotoProcedureStates.PREPARE_PROCESS:
+        _prepareProcess();
+    M3GotoProcedureStates.GOING_TO_POSITION:
+        _goingToPosition();
+    M3GotoProcedureStates.IMPROVING_POSITION:
+        _improvingPosition();
+    M3GotoProcedureStates.ERROR:
+        _error();
+    M3GotoProcedureStates.RESETTING:
+        _resetting();
+    M3GotoProcedureStates.ABORTING:
+        _aborting();
+END_CASE
+
+IF state = M3GotoProcedureStates.ERROR THEN
+    actualStatus := CONCAT('Error @ ',_stateToString(_cause));
+ELSE
+    actualStatus := _stateToString(state);
+END_IF
+
+_update();]]></ST>
+    </Implementation>
+    <Method Name="_aborting" Id="{02b55dca-f077-460d-8e52-e051ca7a2bf3}">
+      <Declaration><![CDATA[METHOD _aborting
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[CASE substate OF
+    0:
+        IF _doRotation THEN
+            rotation.parts.gotoProcedure.abort();
+        END_IF
+        IF _doTranslation THEN
+            translation.parts.gotoProcedure.abort();
+        END_IF
+        substate := 1;
+    1:
+        IF     rotation.parts.gotoProcedure.statuses.busyStatus.idle 
+           AND translation.parts.gotoProcedure.statuses.busyStatus.idle 
+        THEN
+            IF     (NOT rotation.parts.gotoProcedure.statuses.healthStatus.bad)
+               AND (NOT translation.parts.gotoProcedure.statuses.healthStatus.bad) 
+            THEN
+                state := M3GotoProcedureStates.ABORTED;
+                substate := 0;
+            ELSE
+                state := M3GotoProcedureStates.ERROR;
+                substate := 0;
+                _cause := M3GotoProcedureStates.ABORTING;
+			END_IF
+		END_IF
+END_CASE]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="reset" Id="{0395bb0e-740d-46c2-8193-9cbdea52e081}">
+      <Declaration><![CDATA[METHOD reset
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF state = M3GotoProcedureStates.ERROR THEN
+    // return to the idle state
+    state    := M3GotoProcedureStates.RESETTING;
+    substate := 0;
+    _cause   := M3GotoProcedureStates.ERROR;
+    _update();
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_idle" Id="{0f8f1aa1-7637-45e7-83f5-f9f92fd8f5b2}">
+      <Declaration><![CDATA[METHOD _idle
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// not doing anything, just being idle... :-)
+;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="abort" Id="{3ce04a43-3271-47d4-9213-aa857d741b68}">
+      <Declaration><![CDATA[METHOD abort : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF statuses.busyStatus.busy THEN
+    // go to the aborting state
+    state    := M3GotoProcedureStates.ABORTING;
+    substate := 0;
+    _cause   := M3GotoProcedureStates.ABORTING;
+    _update();
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_resetting" Id="{6da78233-1e15-417d-8ecf-99428a93a021}">
+      <Declaration><![CDATA[METHOD _resetting
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[CASE substate OF
+    0:
+        rotation.parts.gotoProcedure.reset();
+        translation.parts.gotoProcedure.reset();
+        substate := 1;
+    1:
+        IF     rotation.parts.gotoProcedure.statuses.busyStatus.idle 
+           AND translation.parts.gotoProcedure.statuses.busyStatus.idle 
+        THEN
+            IF     rotation.parts.gotoProcedure.statuses.healthStatus.good 
+               AND translation.parts.gotoProcedure.statuses.healthStatus.good 
+            THEN
+                state := M3GotoProcedureStates.IDLE;
+                substate := 0;
+            ELSE
+                state := M3GotoProcedureStates.ERROR;
+                substate := 0;
+                _cause := M3GotoProcedureStates.RESETTING;
+			END_IF
+		END_IF
+END_CASE]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_update" Id="{7a0895da-9b2f-429a-86ba-67f9e5447358}">
+      <Declaration><![CDATA[METHOD _update
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[SUPER^(rotation := rotation, translation := translation, m3Config := m3Config);
+
+isGotoAllowed := rotation.parts.gotoProcedure.isGotoAllowed 
+                 AND translation.parts.gotoProcedure.isGotoAllowed;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_goingToPosition" Id="{85df2711-810f-4583-a43b-8cf00c797697}">
+      <Declaration><![CDATA[METHOD _goingToPosition
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[CASE substate OF
+    0:
+        IF _doRotation THEN
+            rotation.processes.goto.start(position := _rotationPosition, offset := _rotationOffset);
+        END_IF
+        IF _doTranslation THEN
+            translation.processes.goto.start(position := _translationPosition);
+        END_IF
+        substate := 1;
+    1:
+        IF     rotation.parts.gotoProcedure.statuses.busyStatus.idle 
+           AND translation.parts.gotoProcedure.statuses.busyStatus.idle 
+        THEN
+            IF     rotation.parts.gotoProcedure.statuses.healthStatus.good 
+               AND translation.parts.gotoProcedure.statuses.healthStatus.good 
+            THEN
+                state := M3GotoProcedureStates.IMPROVING_POSITION;
+                substate := 0;
+            ELSE
+                state := M3GotoProcedureStates.ERROR;
+                substate := 0;
+                _cause := M3GotoProcedureStates.GOING_TO_POSITION;
+			END_IF
+		END_IF
+END_CASE]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_isKnownTargetActive" Id="{a894e18d-50b4-476b-94ac-457c18ff7610}">
+      <Declaration><![CDATA[METHOD _isKnownTargetActive : BOOL
+VAR_INPUT
+    cfg : M3PositionConfig;
+END_VAR
+VAR
+END_VAR]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF _doRotation AND _doTranslation THEN
+    _isKnownTargetActive := cfg.doRotation 
+                            AND _rotationPosition = cfg.rotationPosition
+                            AND _rotationOffset = cfg.rotationOffset
+                            AND cfg.doTranslation
+                            AND _translationPosition = cfg.translationPosition;
+ELSIF _doRotation THEN
+    _isKnownTargetActive := cfg.doRotation 
+                            AND _rotationPosition = cfg.rotationPosition
+                            AND _rotationOffset = cfg.rotationOffset;
+ELSIF _doTranslation THEN
+    _isKnownTargetActive := cfg.doTranslation
+                            AND _translationPosition = cfg.translationPosition;
+ELSE
+    _isKnownTargetActive := FALSE;
+END_IF
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_prepareProcess" Id="{daf71103-2785-427d-b0b9-a067caf15734}">
+      <Declaration><![CDATA[METHOD _prepareProcess
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// nothing to do here
+substate := 0;
+state := M3GotoProcedureStates.GOING_TO_POSITION;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="start" Id="{e05a2b04-8b82-4536-8291-38099d7e8fa7}">
+      <Declaration><![CDATA[METHOD start
+VAR_INPUT
+    ///Position of the rotation stage, in degrees
+	rotationPosition: LREAL;
+	///Offset between the motors of the rotation stage, in degrees
+	rotationOffset: LREAL;
+	///Position of the rotation stage, in millimeters
+	translationPosition: LREAL;
+    doRotation : BOOL;
+    doTranslation : BOOL;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF state = M3GotoProcedureStates.IDLE OR state = M3GotoProcedureStates.ERROR OR state = M3GotoProcedureStates.ABORTED THEN
+    
+    _name := '';
+    _rotationPosition := rotationPosition;
+    _rotationOffset := rotationOffset;
+    _translationPosition := translationPosition;
+    _doRotation := doRotation;
+    _doTranslation := doTranslation;
+
+    state    := M3GotoProcedureStates.PREPARE_PROCESS;
+    substate := 0;
+ELSIF state = M3GotoProcedureStates.GOING_TO_POSITION THEN
+    
+    _name := '';
+    _rotationPosition := rotationPosition;
+    _rotationOffset := rotationOffset;
+    _translationPosition := translationPosition;
+    _doRotation := doRotation;
+    _doTranslation := doTranslation;
+    
+    // stay in the M3GotoProcedureStates.GOING_TO_POSITION state, but "restart" from substate 0 
+    substate := 0;
+END_IF
+
+_update();]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="startCfg" Id="{e0dd5208-4de9-43a0-b986-5a248054a0a1}">
+      <Declaration><![CDATA[METHOD startCfg
+VAR_INPUT
+    cfg : M3PositionConfig;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF state = M3GotoProcedureStates.IDLE OR state = M3GotoProcedureStates.ERROR OR state = M3GotoProcedureStates.ABORTED THEN
+    
+    _name                := cfg.name;
+    _rotationPosition    := cfg.rotationPosition;
+    _rotationOffset      := cfg.rotationOffset;
+    _translationPosition := cfg.translationPosition;
+    _doRotation          := cfg.doRotation;
+    _doTranslation       := cfg.doTranslation;
+
+    state    := M3GotoProcedureStates.PREPARE_PROCESS;
+    substate := 0;
+ELSIF state = M3GotoProcedureStates.GOING_TO_POSITION THEN
+    
+    _name                := cfg.name;
+    _rotationPosition    := cfg.rotationPosition;
+    _rotationOffset      := cfg.rotationOffset;
+    _translationPosition := cfg.translationPosition;
+    _doRotation          := cfg.doRotation;
+    _doTranslation       := cfg.doTranslation;
+    
+    // stay in the M3GotoProcedureStates.GOING_TO_POSITION state, but "restart" from substate 0 
+    substate := 0;
+END_IF
+
+_update();]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_improvingPosition" Id="{e6cd6b6a-0083-4d54-b653-a02f24d8833d}">
+      <Declaration><![CDATA[METHOD _improvingPosition
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[CASE substate OF
+    0:
+        IF _doRotation THEN
+            rotation.parts.positioningAxis.processes.power.start(enable := TRUE);
+        END_IF
+        IF _doTranslation THEN
+            translation.parts.motorAxis.processes.power.start(enable := TRUE);
+        END_IF
+        substate := 1;
+    1:
+        IF     (rotation.parts.positioningAxis.processes.power.isIdle() OR (NOT _doRotation))
+           AND (translation.parts.motorAxis.processes.power.isIdle() OR (NOT _doTranslation))
+        THEN
+            IF     (rotation.parts.positioningAxis.processes.power.isGood() OR (NOT _doRotation))
+               AND (translation.parts.motorAxis.processes.power.isGood() OR (NOT _doTranslation))
+            THEN
+                substate := 2;
+            ELSE
+                state := M3GotoProcedureStates.ERROR;
+                substate := 0;
+                _cause := M3GotoProcedureStates.IMPROVING_POSITION;
+			END_IF
+		END_IF
+    2:
+        IF _doRotation THEN
+            rotation.parts.positioningAxis.processes.moveAbsolute.start(
+                    position := _rotationPosition, 
+                    maxVelocity := m3Config.rotation.gotoTargetVelocity);
+        END_IF
+        IF _doTranslation THEN
+            translation.parts.motorAxis.processes.moveAbsolute.start(
+                    position := _translationPosition, 
+                    maxVelocity := m3Config.translation.gotoVelocity);
+        END_IF
+        substate := 3;
+    3:
+        IF     (rotation.parts.positioningAxis.processes.moveAbsolute.isIdle() OR (NOT _doRotation))
+           AND (translation.parts.motorAxis.processes.moveAbsolute.isIdle() OR (NOT _doTranslation))
+        THEN
+            IF     (rotation.parts.positioningAxis.processes.moveAbsolute.isGood() OR (NOT _doRotation))
+               AND (translation.parts.motorAxis.processes.moveAbsolute.isGood() OR (NOT _doTranslation))
+            THEN
+                substate := 4;
+            ELSE
+                state := M3GotoProcedureStates.ERROR;
+                substate := 0;
+                _cause := M3GotoProcedureStates.IMPROVING_POSITION;
+			END_IF
+		END_IF
+    4:
+        _ton(IN := FALSE);
+        _ton(IN := TRUE,
+             PT := LREAL_TO_TIME(1000.0 * MIN(m3config.translation.gotoImprovingPositionTime, 
+                                              m3Config.rotation.gotoImprovingPositionTime))); // convert sec to millisec
+        substate := 5;
+    5:
+        _ton(IN := TRUE);
+        IF _ton.Q THEN
+            substate := 6;
+		END_IF
+    6:
+        IF _doRotation THEN
+            rotation.parts.positioningAxis.processes.power.start(enable := FALSE);
+        END_IF
+        IF _doTranslation THEN
+            translation.parts.motorAxis.processes.power.start(enable := FALSE);
+        END_IF
+        substate := 7;
+    7:
+        IF     (rotation.parts.positioningAxis.processes.power.isIdle() OR (NOT _doRotation))
+           AND (translation.parts.motorAxis.processes.power.isIdle() OR (NOT _doTranslation))
+        THEN
+            IF     (rotation.parts.positioningAxis.processes.power.isGood() OR (NOT _doRotation))
+               AND (translation.parts.motorAxis.processes.power.isGood() OR (NOT _doTranslation))
+            THEN
+                state := M3GotoProcedureStates.IDLE;
+                substate := 0;
+            ELSE
+                state := M3GotoProcedureStates.ERROR;
+                substate := 0;
+                _cause := M3GotoProcedureStates.IMPROVING_POSITION;
+			END_IF
+		END_IF
+END_CASE]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_stateToString" Id="{f848ba09-b6de-44bd-a3a9-12b45fd6a7ff}">
+      <Declaration><![CDATA[METHOD _stateToString : STRING
+VAR_INPUT
+    x : M3GotoProcedureStates;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[CASE x OF    
+    M3GotoProcedureStates.IDLE:
+        _stateToString := 'Idle';
+    M3GotoProcedureStates.ABORTED:
+        _stateToString := 'Aborted';
+    M3GotoProcedureStates.PREPARE_PROCESS:
+        _stateToString := 'Preparing process';
+    M3GotoProcedureStates.GOING_TO_POSITION:
+        
+        IF _isKnownTargetActive(m3Config.knownPositions.cassegrain) THEN
+            _stateToString := CONCAT('Going to ', m3Config.knownPositions.cassegrain.name);
+        ELSIF _isKnownTargetActive(m3Config.knownPositions.nasmythA) THEN
+            _stateToString := CONCAT('Going to ', m3Config.knownPositions.nasmythA.name);
+        ELSIF _isKnownTargetActive(m3Config.knownPositions.nasmythB) THEN
+            _stateToString := CONCAT('Going to ', m3Config.knownPositions.nasmythB.name);
+        ELSIF _isKnownTargetActive(m3Config.knownPositions.nasmythC) THEN
+            _stateToString := CONCAT('Going to ', m3Config.knownPositions.nasmythC.name);
+        ELSIF _isKnownTargetActive(m3Config.knownPositions.nasmythD) THEN
+            _stateToString := CONCAT('Going to ', m3Config.knownPositions.nasmythD.name);
+        ELSIF _isKnownTargetActive(m3Config.knownPositions.other0) THEN
+            _stateToString := CONCAT('Going to ', m3Config.knownPositions.other0.name);
+        ELSIF _isKnownTargetActive(m3Config.knownPositions.other1) THEN
+            _stateToString := CONCAT('Going to ', m3Config.knownPositions.other1.name);
+        ELSIF _isKnownTargetActive(m3Config.knownPositions.other2) THEN
+            _stateToString := CONCAT('Going to ', m3Config.knownPositions.other2.name);
+        ELSIF _isKnownTargetActive(m3Config.knownPositions.other3) THEN
+            _stateToString := CONCAT('Going to ', m3Config.knownPositions.other3.name);
+        ELSIF _isKnownTargetActive(m3Config.knownPositions.other4) THEN
+            _stateToString := CONCAT('Going to ', m3Config.knownPositions.other4.name);
+        ELSE
+            _stateToString := CONCAT( 
+                                'Going to (', 
+                                CONCAT(
+                                    rotation.target.actualStatus,
+                                    CONCAT(
+                                        ', ',
+                                        CONCAT(
+                                            translation.target.actualStatus,
+                                            ')'))));
+		END_IF
+    M3GotoProcedureStates.IMPROVING_POSITION:
+        _stateToString := 'Improving position';
+    M3GotoProcedureStates.ERROR:
+        _stateToString := 'Error';
+    M3GotoProcedureStates.RESETTING:
+        _stateToString := 'Resetting';
+    M3GotoProcedureStates.ABORTING:
+        _stateToString := 'Aborting';
+END_CASE]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_aborted" Id="{fb36169c-9798-4872-817c-88f9c254cc6a}">
+      <Declaration><![CDATA[METHOD _aborted : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// not doing anything, just being aborted... :-)
+;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_error" Id="{fd960168-c4be-4f52-826a-09c91a67c0f8}">
+      <Declaration><![CDATA[METHOD _error
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// nothing to do, just waiting for the reset...
+;]]></ST>
+      </Implementation>
+    </Method>
+  </POU>
+</TcPlcObject>

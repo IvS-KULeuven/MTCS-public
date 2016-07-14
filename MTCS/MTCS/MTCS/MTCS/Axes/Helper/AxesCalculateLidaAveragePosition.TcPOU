@@ -1,0 +1,54 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="AxesCalculateLidaAveragePosition" Id="{a2e8d0f4-363e-4f28-ab81-72463b30b203}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION AxesCalculateLidaAveragePosition : LREAL
+VAR_INPUT
+    lida1Position : LREAL;
+    lida2Position : LREAL;
+    lida3Position : LREAL;
+    lida4Position : LREAL;
+    useLida1 : BOOL;
+    useLida2 : BOOL;
+    useLida3 : BOOL;
+    useLida4 : BOOL;
+END_VAR
+VAR_OUTPUT
+    error : BOOL;
+END_VAR
+VAR
+    sumOfPositions : LREAL := 0.0;
+    noOfLidasUsed : INT := 0;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[IF useLida1 THEN
+    noOfLidasUsed := noOfLidasUsed + 1;
+    sumOfPositions := sumOfPositions + lida1Position;
+END_IF
+
+IF useLida2 THEN
+    noOfLidasUsed := noOfLidasUsed + 1;
+    sumOfPositions := sumOfPositions + lida2Position;
+END_IF
+
+IF useLida3 THEN
+    noOfLidasUsed := noOfLidasUsed + 1;
+    sumOfPositions := sumOfPositions + lida3Position;
+END_IF
+
+IF useLida4 THEN
+    noOfLidasUsed := noOfLidasUsed + 1;
+    sumOfPositions := sumOfPositions + lida4Position;
+END_IF
+
+// watch for division by zero!
+error := noOfLidasUsed = 0;
+
+IF error THEN
+    AxesCalculateLidaAveragePosition := 0.0;
+ELSE
+    AxesCalculateLidaAveragePosition := sumOfPositions / noOfLidasUsed;
+END_IF]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

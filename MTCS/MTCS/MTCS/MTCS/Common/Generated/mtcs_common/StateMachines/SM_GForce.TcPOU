@@ -1,0 +1,39 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="SM_GForce" Id="{d72a428a-dac9-4e4e-b44e-93767af00fa9}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK SM_GForce
+VAR_INPUT
+	///New milliG value
+	{attribute 'OPC.UA.DA' := '0'}
+	newMilliGValue: LREAL;
+END_VAR
+VAR_OUTPUT
+	///Current status description
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	actualStatus: STRING;
+	///Acceleration in g units
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	g: QuantityValue;
+	///Acceleration in in milli g units
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	milliG: QuantityValue;
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[g(
+    value := newMilliGValue / 1000.0,
+    unit := Units.G);
+milliG(
+    value := newMilliGValue,
+    unit := Units.MILLIG);
+]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

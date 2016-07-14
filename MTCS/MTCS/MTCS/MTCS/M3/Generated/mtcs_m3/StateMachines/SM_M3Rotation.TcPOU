@@ -1,0 +1,194 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="SM_M3Rotation" Id="{efbec07d-b2df-4f04-bdcc-03e6640d00b6}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK SM_M3Rotation
+VAR_INPUT
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	target: M3RotationTarget;
+	///TRUE if the positive limit switch is active
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	positiveLimitSwitchActive AT %I*: BOOL;
+	///TRUE if the negative limit switch is active
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	negativeLimitSwitchActive AT %I*: BOOL;
+END_VAR
+VAR_OUTPUT
+	///Current status description
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	actualStatus: STRING;
+	///The actual position of the rotation
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	actualPosition: AngularPosition;
+	///The actual position error of the rotation
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	actualPositionError: AngularPosition;
+	///The actual offset of the rotation
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	actualOffset: AngularPosition;
+	///The actual offset error of the rotation
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	actualOffsetError: AngularPosition;
+	///Statuses of the state machine
+	statuses: M3RotationStatuses;
+	///Parts of the state machine
+	parts: M3RotationParts;
+	///Processes of the state machine
+	processes: M3RotationProcesses;
+END_VAR
+VAR_IN_OUT
+	{attribute 'OPC.UA.DA' := '0'}
+	initializationStatus: InitializationStatus;
+	{attribute 'OPC.UA.DA' := '0'}
+	operatorStatus: OperatorStatus;
+	{attribute 'OPC.UA.DA' := '0'}
+	operatingStatus: OperatingStatus;
+	{attribute 'OPC.UA.DA' := '0'}
+	config: M3RotationConfig;
+	{attribute 'OPC.UA.DA' := '0'}
+	m3Config: M3Config;
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[target( knownPositions := m3Config.knownPositions );
+actualPosition( newDegreesValue := parts.positioningAxis.actPos.degrees.value );
+actualPositionError( newDegreesValue := actualPosition.degrees.value - target.position.degrees.value );
+actualOffset( newDegreesValue := parts.antiBacklashAxis.actPos.degrees.value - parts.positioningHallAxis.actPos.degrees.value );
+actualOffsetError( newDegreesValue := actualOffset.degrees.value - target.offset.degrees.value );
+parts.positioningAxis(
+    isEnabled := operatorStatus.tech AND initializationStatus.initialized,
+    standstillTolerance := config.standstillTolerance,
+    isGearingSupported := FALSE);
+parts.antiBacklashAxis(
+    isEnabled := operatorStatus.tech AND initializationStatus.initialized,
+    standstillTolerance := config.standstillTolerance * config.motorToMirrorRatio,
+    isGearingSupported := TRUE);
+parts.positioningDrive(
+    isEnabled := operatorStatus.tech AND initializationStatus.initialized,
+    config := config.positioningDrive);
+parts.antiBacklashDrive(
+    isEnabled := operatorStatus.tech AND initializationStatus.initialized,
+    config := config.antiBacklashDrive);
+parts.positioningHallAxis(
+    isEnabled := FALSE,
+    standstillTolerance := config.standstillTolerance * config.motorToMirrorRatio,
+    isGearingSupported := FALSE);
+parts.gotoProcedure(
+    config := config,
+    positioningAxis := parts.positioningAxis,
+    antiBacklashAxis := parts.antiBacklashAxis,
+    positioningDrive := parts.positioningDrive,
+    antiBacklashDrive := parts.antiBacklashDrive,
+    positioningHallAxis := parts.positioningHallAxis,
+    target := target,
+    positiveLimitSwitchActive := positiveLimitSwitchActive,
+    negativeLimitSwitchActive := negativeLimitSwitchActive,
+    actualPosition := actualPosition,
+    actualPositionError := actualPositionError,
+    actualOffset := actualOffset,
+    actualOffsetError := actualOffsetError);
+parts.calibrateProcedure(
+    config := config,
+    positioningAxis := parts.positioningAxis,
+    antiBacklashAxis := parts.antiBacklashAxis,
+    positioningDrive := parts.positioningDrive,
+    antiBacklashDrive := parts.antiBacklashDrive,
+    positioningHallAxis := parts.positioningHallAxis,
+    target := target,
+    actualPosition := actualPosition,
+    actualPositionError := actualPositionError,
+    actualOffset := actualOffset,
+    actualOffsetError := actualOffsetError);
+statuses.healthStatus(
+    isGood := parts.positioningAxis.statuses.healthStatus.isGood AND (parts.antiBacklashAxis.statuses.healthStatus.isGood AND (parts.positioningDrive.statuses.healthStatus.isGood AND (parts.antiBacklashDrive.statuses.healthStatus.isGood AND (parts.positioningHallAxis.statuses.healthStatus.isGood AND parts.gotoProcedure.statuses.healthStatus.isGood)))),
+    hasWarning := parts.positioningAxis.statuses.healthStatus.hasWarning OR (parts.antiBacklashAxis.statuses.healthStatus.hasWarning OR (parts.positioningDrive.statuses.healthStatus.hasWarning OR (parts.antiBacklashDrive.statuses.healthStatus.hasWarning OR (parts.positioningHallAxis.statuses.healthStatus.hasWarning OR parts.gotoProcedure.statuses.healthStatus.hasWarning)))));
+statuses.busyStatus( isBusy := parts.positioningAxis.statuses.busyStatus.busy OR (parts.antiBacklashAxis.statuses.busyStatus.busy OR (parts.positioningDrive.statuses.busyStatus.busy OR (parts.antiBacklashDrive.statuses.busyStatus.busy OR parts.gotoProcedure.statuses.busyStatus.busy))) );
+processes.goto( isEnabled := operatingStatus.manual AND (initializationStatus.initialized AND parts.gotoProcedure.isGotoAllowed) );
+processes.abort( isEnabled := parts.gotoProcedure.statuses.busyStatus.busy OR parts.calibrateProcedure.statuses.busyStatus.busy );
+processes.reset( isEnabled := statuses.healthStatus.bad );
+processes.calibrate( isEnabled := operatingStatus.manual AND initializationStatus.initialized );
+]]></ST>
+    </Implementation>
+    <Method Name="abort" Id="{6cf4f046-47d3-4869-b7a8-1d0aeb1987c1}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD abort : RequestResults
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[abort := THIS^.processes.abort.request();
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="calibrate" Id="{cd0f1ded-3357-41ec-a2f4-ad256e8da2ba}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD calibrate : RequestResults
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[calibrate := THIS^.processes.calibrate.request();
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="reset" Id="{fa5238a3-b069-4161-8912-cffa9851ecd7}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD reset : RequestResults
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[reset := THIS^.processes.reset.request();
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="goto" Id="{fd91cb08-d86b-42a6-9add-bbc586134951}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD goto : RequestResults
+VAR_INPUT
+	position: LREAL;
+	offset: LREAL;
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[goto := THIS^.processes.goto.request(
+    position := position,
+    offset := offset);
+]]></ST>
+      </Implementation>
+    </Method>
+  </POU>
+</TcPlcObject>

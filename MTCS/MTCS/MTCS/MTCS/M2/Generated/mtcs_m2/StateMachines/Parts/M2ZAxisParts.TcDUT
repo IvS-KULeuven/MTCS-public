@@ -1,0 +1,14 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="M2ZAxisParts" Id="{01eaae38-9741-4d7a-a2d4-8a4707651e63}">
+    <Declaration><![CDATA[TYPE M2ZAxisParts :
+STRUCT
+	///Enabled (TRUE) to enable the high-speed motion of the Z axis, Disabled (FALSE) to leave it low-speed
+	highSpeed: SimpleRelay;
+	///The SSI encoder of the Z axis
+	encoder: SSIEncoder;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

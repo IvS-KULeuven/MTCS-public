@@ -1,0 +1,23 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.5">
+  <POU Name="IncrementalEncoderWidget" Id="{78a49e48-5c49-4e3d-8dd8-83c6fe74bb8c}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK IncrementalEncoderWidget
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+    ref : IncrementalEncoder;
+END_VAR
+VAR
+	actualStatus : StatusWidget;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[actualStatus(text := ref.actualStatus, 
+             color := HealthBusyToColor(healthStatus := ref.statuses.healthStatus, 
+                                        busyStatus := ref.statuses.busyStatus));
+                                        ]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

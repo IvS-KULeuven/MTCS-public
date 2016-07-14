@@ -1,0 +1,14 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="AxesMuUnits" Id="{a56fa8c0-26d8-4705-bc13-d6fff6df6883}">
+    <Declaration><![CDATA[TYPE AxesMuUnits :
+(
+	ARCSECONDS_PER_YEAR := 0,
+	MILLIARCSECONDS_PER_YEAR := 1,
+	DEGREES_PER_YEAR := 2,
+	RADIANS_PER_YEAR := 3
+);
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

@@ -1,0 +1,65 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.2">
+  <POU Name="TelemetryDewpoint" Id="{a0c76390-f32d-4821-ad08-c8706c4dc302}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK TelemetryDewpoint EXTENDS SM_TelemetryDewpoint
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR
+    _toStatus : MeasurementToStatus;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[
+actual(newCelsiusValue := _calculate(relativeHumidity.actual, temperature.actual));
+average(newCelsiusValue := _calculate(relativeHumidity.average, temperature.average));
+
+SUPER^(config := config, temperature := temperature, relativeHumidity := relativeHumidity);
+
+_toStatus(
+    overrange     := relativeHumidity.overrange OR temperature.overrange,
+    underrange    := relativeHumidity.underrange OR temperature.underrange,
+    error         := relativeHumidity.error OR temperature.error,
+    alarmStatus   := statuses.alarmStatus,
+    enabledStatus := statuses.enabledStatus,
+    actualStatus  => actualStatus);
+	
+]]></ST>
+    </Implementation>
+    <Method Name="_calculate" Id="{cd0c1fc9-48be-4367-afa1-6666a5f1e43d}">
+      <Declaration><![CDATA[METHOD _calculate : LREAL // returns: dewpoint in degrees celsius
+VAR_IN_OUT
+	relativeHumidity : Fraction; 		(* relative humidity *)
+	temperature      : Temperature;		(* temperature *)
+END_VAR
+VAR
+	rh      : LREAL;					(* relative humidity in percent *)
+	a		: LREAL		:= 6.1121;		(*mbar*)
+	b		: LREAL		:= 18.678;
+	c		: LREAL		:= 257.14;		(*Centigrades*)
+	d		: LREAL		:= 234.5;		(*Centigrades*)
+	t       : LREAL;					(* temperature in degrees celsius *)
+	pswv	: LREAL;					(* Saturated water vapor pressure*)
+	gamma	: LREAL;
+END_VAR]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF  relativeHumidity.percent.value < 0.01 THEN
+	rh := 0.01;
+ELSE
+	rh := relativeHumidity.percent.value;
+END_IF
+t  := temperature.celsius.value;
+
+pswv 	:= a * EXP((b - t/d) * (t/(c + t)));
+gamma	:= LN(rh/100.0 * EXP((b - t/d)*(t/(c + t))));
+
+IF b = gamma THEN
+	_calculate := 0.0;
+ELSE
+	_calculate := c * gamma / (b - gamma); 
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+  </POU>
+</TcPlcObject>

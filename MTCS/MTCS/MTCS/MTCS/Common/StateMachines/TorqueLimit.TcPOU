@@ -1,0 +1,17 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.5">
+  <POU Name="TorqueLimit" Id="{16be5de0-d415-4101-ae02-1b9165bb2092}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK TorqueLimit EXTENDS SM_TorqueLimit
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR
+    _testVar : INT;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[SUPER^();]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

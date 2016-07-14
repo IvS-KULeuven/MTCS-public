@@ -1,0 +1,14 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="M2MultiplexerStatuses" Id="{e16cde86-bd27-4519-8bb7-ed955eeea6b2}">
+    <Declaration><![CDATA[TYPE M2MultiplexerStatuses :
+STRUCT
+	///Is the selected drive healthy?
+	healthStatus: HealthStatus;
+	///Is the selected drive busy?
+	busyStatus: BusyStatus;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

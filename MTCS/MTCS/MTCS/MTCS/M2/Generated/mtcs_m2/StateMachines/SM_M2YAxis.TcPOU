@@ -1,0 +1,52 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="SM_M2YAxis" Id="{2e1b08ba-898d-499c-a7fd-5fbacfdfda16}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK SM_M2YAxis
+VAR_INPUT
+	///Actual position of the axis
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	position: LinearPositionMeasurement16;
+	///TRUE if the backlash was previously lifted
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	backlashLifted: BOOL;
+	///TRUE if the axis is powered
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	powered: BOOL;
+END_VAR
+VAR_OUTPUT
+	///Current status description
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	actualStatus: STRING;
+	///Some constants particular for this axis
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	constants: M2ConstantsY;
+	///Statuses of the state machine
+	statuses: M2YAxisStatuses;
+END_VAR
+VAR_IN_OUT
+	///The general M2 config
+	{attribute 'OPC.UA.DA' := '0'}
+	config: M2Config;
+	///The config particular for this axis
+	{attribute 'OPC.UA.DA' := '0'}
+	axisConfig: M2PotentiometerAxisConfig;
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[position(
+    config := axisConfig.general.measurement,
+    conversionFactor := (constants.POTENTIOMETER_REVOLUTIONS * (constants.SCREW_TO_POT_RATIO * constants.SCREW_PITCH)) / (32768.0 * 1000.0));
+statuses.healthStatus(
+    isGood := position.statuses.healthStatus.isGood,
+    hasWarning := position.statuses.healthStatus.hasWarning);
+]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

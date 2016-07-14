@@ -1,0 +1,52 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="SM_M3TranslationGotoProcedure" Id="{172f03c0-61c6-44e9-ac4a-45d992560bab}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK SM_M3TranslationGotoProcedure
+VAR_INPUT
+	///New state, to be set by the manual implementation
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	state: M3TranslateProcedureStates;
+END_VAR
+VAR_OUTPUT
+	///Current status description
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	actualStatus: STRING;
+	///TRUE if a goto command is allowed
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	isGotoAllowed: BOOL;
+	///Statuses of the state machine
+	statuses: M3TranslationGotoProcedureStatuses;
+END_VAR
+VAR_IN_OUT
+	{attribute 'OPC.UA.DA' := '0'}
+	config: M3TranslationConfig;
+	{attribute 'OPC.UA.DA' := '0'}
+	motorAxis: LinearAxis;
+	{attribute 'OPC.UA.DA' := '0'}
+	motorDrive: FaulhaberDrive;
+	{attribute 'OPC.UA.DA' := '0'}
+	target: M3TranslationTarget;
+	{attribute 'OPC.UA.DA' := '0'}
+	positiveLimitSwitchActive: BOOL;
+	{attribute 'OPC.UA.DA' := '0'}
+	negativeLimitSwitchActive: BOOL;
+	{attribute 'OPC.UA.DA' := '0'}
+	actualPosition: LinearPosition;
+	{attribute 'OPC.UA.DA' := '0'}
+	actualPositionError: LinearPosition;
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[statuses.busyStatus( isBusy := NOT((state = M3TranslateProcedureStates.IDLE) OR ((state = M3TranslateProcedureStates.ABORTED) OR (state = M3TranslateProcedureStates.ERROR))) );
+statuses.healthStatus(
+    isGood := NOT(state = M3TranslateProcedureStates.ERROR),
+    hasWarning := state = M3TranslateProcedureStates.ABORTED);
+]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

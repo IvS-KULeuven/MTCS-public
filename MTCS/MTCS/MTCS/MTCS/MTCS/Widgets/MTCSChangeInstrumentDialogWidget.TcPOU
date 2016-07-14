@@ -1,0 +1,44 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.5">
+  <POU Name="MTCSChangeInstrumentDialogWidget" Id="{764196e5-ec87-46d7-9c06-3319b6da9bb3}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK MTCSChangeInstrumentDialogWidget
+VAR_INPUT
+    buttonsDoRequest : ARRAY[1..5] OF BOOL;
+END_VAR
+VAR_OUTPUT
+    buttonsText : ARRAY[1..5] OF STRING;
+    buttonsInvisible : ARRAY[1..5] OF BOOL;
+    buttonsSelected : ARRAY[1..5] OF BOOL;
+END_VAR
+VAR_IN_OUT
+    cfg : MTCSInstrumentsConfig;
+    process : MTCSChangeInstrumentProcess;
+END_VAR
+VAR
+    index : INT := 1;
+    remainingIndex : INT;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[
+// set the text of the buttons
+buttonsText[1] := cfg.instrument0.name;
+buttonsText[2] := cfg.instrument1.name;
+buttonsText[3] := cfg.instrument2.name;
+buttonsText[4] := cfg.instrument3.name;
+buttonsText[5] := cfg.instrument4.name;
+
+// loop through the buttons
+FOR index := 1 TO 5 DO
+    // set the visibility
+    buttonsInvisible[index] := buttonsText[index] = '';
+    // start the process if needed
+    IF buttonsDoRequest[index] THEN
+        process.start(name := buttonsText[index]);
+        buttonsDoRequest[index] := FALSE;
+	END_IF
+END_FOR
+]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

@@ -1,0 +1,14 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="SoEReadProcessArgs" Id="{5f6c0fef-11af-4996-a94f-3c169d4a0b75}">
+    <Declaration><![CDATA[TYPE SoEReadProcessArgs :
+STRUCT
+	///SDO Index
+	index: UINT;
+	///Number of bytes to be read
+	noOfBytes: UDINT;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

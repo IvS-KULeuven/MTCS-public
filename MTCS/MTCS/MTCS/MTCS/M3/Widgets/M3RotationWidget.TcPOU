@@ -1,0 +1,102 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.2">
+  <POU Name="M3RotationWidget" Id="{edaee61e-7721-48e0-a675-4b8fe8f0adde}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK M3RotationWidget
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+    ref : M3Rotation;
+    config : M3Config;
+END_VAR
+VAR
+    actualStatus : StatusWidget;
+    positioningAxis : AngularAxisWidget;
+    antiBacklashAxis : AngularAxisWidget;
+    positioningDrive : FaulhaberDriveWidget;
+    antiBacklashDrive : FaulhaberDriveWidget;
+    gotoProcedureStatus : StatusWidget;
+    calibrateProcedureStatus : StatusWidget;
+    
+    activeTab         : M3RotationTabs := M3RotationTabs.GENERAL;
+    button_general    : SubSubSystemButtonWidget('General'     , M3RotationTabs.GENERAL);
+    button_posAxis    : SubSubSystemButtonWidget('POS axis'    , M3RotationTabs.POS_AXIS);
+    button_posDrive   : SubSubSystemButtonWidget('POS drive'   , M3RotationTabs.POS_DRIVE);
+    button_ablAxis    : SubSubSystemButtonWidget('ABL axis'    , M3RotationTabs.ABL_AXIS);
+    button_ablDrive   : SubSubSystemButtonWidget('ABL drive'   , M3RotationTabs.ABL_DRIVE);
+    
+    
+    
+    mirrorAngle : LREAL;
+    targetAngle : LREAL;
+    offsetAngle : LREAL;
+    negativeLimitAngle : LREAL; // degrees
+    positiveLimitAngle : LREAL; // degrees
+    FIGURE_START_ANGLE : LREAL; // degrees
+    HARDWARE_LIMIT_START_ANGLE : LREAL; // degrees
+    hardwareLimitAngle : LREAL;
+    
+    offsetStartAngle : LREAL; // degrees
+    offsetEndAngle : LREAL; // degrees
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[positioningAxis(baseRef := ref.parts.positioningAxis, ref := ref.parts.positioningAxis);
+antiBacklashAxis(baseRef := ref.parts.antiBacklashAxis, ref := ref.parts.antiBacklashAxis);
+positioningDrive(ref := ref.parts.positioningDrive);
+antiBacklashDrive(ref := ref.parts.antiBacklashDrive);
+
+actualStatus(text := ref.actualStatus,
+             color := HealthBusyToColor(healthStatus := ref.statuses.healthStatus, 
+                                        busyStatus   := ref.statuses.busyStatus));
+
+gotoProcedureStatus(text := ref.parts.gotoProcedure.actualStatus,
+                    color := HealthBusyToColor( healthStatus := ref.parts.gotoProcedure.statuses.healthStatus, 
+                                                busyStatus   := ref.parts.gotoProcedure.statuses.busyStatus));
+
+calibrateProcedureStatus( text := ref.parts.calibrateProcedure.actualStatus,
+                          color := HealthBusyToColor( healthStatus := ref.parts.calibrateProcedure.statuses.healthStatus, 
+                                                      busyStatus   := ref.parts.calibrateProcedure.statuses.busyStatus));
+
+button_general(    color := actualStatus.color                       , activeTab := activeTab);
+button_posAxis(    color := positioningAxis.base.actualStatus.color  , activeTab := activeTab);
+button_posDrive(   color := positioningDrive.actualStatus.color      , activeTab := activeTab);
+button_ablAxis(    color := antiBacklashAxis.base.actualStatus.color , activeTab := activeTab);
+button_ablDrive(   color := antiBacklashDrive.actualStatus.color     , activeTab := activeTab);
+                                                      
+                                                      
+// Drawing constraints for the MIRROR:
+// (Mirror position increasing from 0 to 360 degrees = drawing angle decreasing from 350 to 0 degrees!)
+// 0 degrees = pixels in Y direction on the monitor from top to bottom
+// knownPositions[0] = irrelevant (CASSEGRAIN)
+// knownPositions[1] = Nasmyth RIGHT on the drawing
+// knownPositions[2] = Nasmyth LEFT on the drawing
+// limit switches must be drawn at the bottom (left and right of 0 degrees)
+FIGURE_START_ANGLE := 90.0 - config.knownPositions.nasmythA.rotationPosition; // e.g. 90.0 - 100.0 = -10.0
+
+mirrorAngle := - (FIGURE_START_ANGLE + ref.actualPosition.degrees.value); // e.g. - (-10 + 100.0) = -90.0
+targetAngle := - (FIGURE_START_ANGLE + ref.target.position.degrees.value);
+HARDWARE_LIMIT_START_ANGLE := ((config.rotation.positiveSoftLimit - 360.0) + config.rotation.negativeSoftLimit) / 2.0; // e.g. ((420-360+70))/2 = 65 deg
+negativeLimitAngle := -(config.rotation.negativeSoftLimit - HARDWARE_LIMIT_START_ANGLE); // -(70-65) = -5 deg
+positiveLimitAngle := -(config.rotation.positiveSoftLimit - HARDWARE_LIMIT_START_ANGLE); // -(420-65) = -355 deg
+hardwareLimitAngle := mirrorAngle + HARDWARE_LIMIT_START_ANGLE; // -90 + 65 = -25 deg
+
+// motor angle reference system:
+offsetAngle := ref.parts.antiBacklashAxis.actPos.degrees.value + 90.0; 
+IF ABS(ref.actualOffset.degrees.value) < 360 THEN
+    
+    IF ref.actualOffset.degrees.value >= 0 THEN
+        offsetStartAngle := ref.actualOffset.degrees.value;
+        offsetEndAngle := 0.0;
+    ELSE
+        offsetStartAngle := 0.0;
+        offsetEndAngle := ref.actualOffset.degrees.value;
+	END_IF
+ELSE
+    offsetStartAngle := 0.0;
+    offsetEndAngle := 361.0;
+END_IF]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

@@ -1,0 +1,97 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="M1RadialSupport" Id="{55df6b1d-963b-4cdf-b5ae-dcfcf5df7ec8}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK M1RadialSupport EXTENDS SM_M1RadialSupport
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR
+    _unlimitedAutoPressureSetpointBar : LREAL;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[_update();
+
+_changePressureSetpointState();
+_changePressureSetpoint();
+
+// calculate the new value in bar
+_unlimitedAutoPressureSetpointBar :=  config.correctionCoefficient 
+                                      * 1.33 
+                                      *  COS(inclinometer.averageElevation.radians.value);
+
+// update the autoPressureSetpoint, and obey the limits
+autoPressureSetpoint(newBarValue := LIMIT(config.controllerLimitMin,
+                                          _unlimitedAutoPressureSetpointBar,
+                                          config.controllerLimitMax));
+
+// use the autoPressureSetpoint if needed
+IF parts.vacuumRelay.digitalOutput THEN
+    actualPressureSetpoint(newBarValue := 0.0);
+    actualStatus := 'Vacuum ON';
+ELSIF statuses.pressureSetpointStatus.auto THEN
+    actualPressureSetpoint(newBarValue := autoPressureSetpoint.bar.value);
+    // also update the manualPressureSetpoint
+    manualPressureSetpoint(newBarValue := autoPressureSetpoint.bar.value);
+    actualStatus := 'Automatic setpoint';
+ELSIF statuses.pressureSetpointStatus.manual THEN
+    actualPressureSetpoint(newBarValue := manualPressureSetpoint.bar.value);
+    actualStatus := 'Fixed setpoint';
+END_IF
+
+// update the outputm, but be careful about division-by-zero!
+IF config.pressureRegulatorRange = 0 THEN
+    pressureSetpointOutput := 0;
+ELSE
+    pressureSetpointOutput := LREAL_TO_INT(
+                                MIN(actualPressureSetpoint.bar.value, config.controllerLimitMax) // [0..max] bar
+                                / config.pressureRegulatorRange // e.g. 10 bar
+                                * EXPT(2,15)); // 15 bits resolution
+END_IF
+
+// update the statemachine
+_update();]]></ST>
+    </Implementation>
+    <Method Name="_changePressureSetpoint" Id="{058c00b4-a0c5-4e92-8a2f-ef1da2426a01}">
+      <Declaration><![CDATA[METHOD _changePressureSetpoint
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF processes.changePressureSetpoint.statuses.busyStatus.busy THEN
+	processes.changePressureSetpoint.setStarted();
+    manualPressureSetpoint(newBarValue := processes.changePressureSetpoint.get.setpoint);
+	processes.changePressureSetpoint.setFinished();
+END_IF
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_changePressureSetpointState" Id="{97cd823c-0700-4434-ac5e-d82d7a3a84bc}">
+      <Declaration><![CDATA[METHOD _changePressureSetpointState
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF SUPER^.processes.changePressureSetpointState.statuses.busyStatus.busy THEN
+	SUPER^.processes.changePressureSetpointState.setStarted();
+	SUPER^.statuses.pressureSetpointStatus(state := SUPER^.processes.changePressureSetpointState.get.state);
+	SUPER^.processes.changePressureSetpointState.setFinished();
+END_IF
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_update" Id="{d86a3fd1-dcf8-4126-a3cd-077ca0c7f08a}">
+      <Declaration><![CDATA[METHOD _update
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[SUPER^(config 			:= config,
+	   inclinometer 	:= inclinometer,
+	   operatorStatus 	:= operatorStatus,
+	   operatingStatus 	:= operatingStatus);]]></ST>
+      </Implementation>
+    </Method>
+  </POU>
+</TcPlcObject>

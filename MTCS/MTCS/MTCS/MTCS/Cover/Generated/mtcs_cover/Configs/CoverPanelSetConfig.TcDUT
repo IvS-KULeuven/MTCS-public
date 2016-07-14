@@ -1,0 +1,20 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="CoverPanelSetConfig" Id="{cb9a951b-d879-47b6-acf9-e77aae816a80}">
+    <Declaration><![CDATA[TYPE CoverPanelSetConfig :
+STRUCT
+	///The config of the first panel of this set
+	p1: CoverPanelConfig;
+	///The config of the second panel of this set
+	p2: CoverPanelConfig;
+	///The config of the third panel of this set
+	p3: CoverPanelConfig;
+	///The config of the fourth panel of this set
+	p4: CoverPanelConfig;
+	///The name of the panel set
+	name: STRING;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

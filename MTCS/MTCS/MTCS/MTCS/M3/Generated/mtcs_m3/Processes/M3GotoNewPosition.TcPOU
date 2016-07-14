@@ -1,0 +1,105 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="M3GotoNewPosition" Id="{5747431f-4745-4e09-9146-cbaa75a2e141}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK M3GotoNewPosition EXTENDS BaseProcess
+VAR_INPUT
+	///Arguments to be set, before writing do_request TRUE
+	{attribute 'OPC.UA.DA' := '1'}
+	set: M3GotoNewPositionArgs;
+END_VAR
+VAR_OUTPUT
+	///Arguments in use by the process, if do_request was accepted
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	get: M3GotoNewPositionArgs;
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[IF do_request THEN
+    do_request_result := request(
+    rotationPosition := set.rotationPosition,
+    rotationOffset := set.rotationOffset,
+    translationPosition := set.translationPosition,
+    doRotation := set.doRotation,
+    doTranslation := set.doTranslation);
+    do_request := FALSE;
+END_IF;
+SUPER^();
+]]></ST>
+    </Implementation>
+    <Method Name="request" Id="{31bfd6df-d578-4b40-896d-29df655f8f80}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD request : RequestResults
+VAR_INPUT
+	///Position of the rotation stage, in degrees
+	rotationPosition: LREAL;
+	///Offset between the motors of the rotation stage, in degrees
+	rotationOffset: LREAL;
+	///Position of the rotation stage, in millimeters
+	translationPosition: LREAL;
+	///Do a rotation for this position (TRUE) or not (FALSE)
+	doRotation: BOOL;
+	///Do a translation for this position (TRUE) or not (FALSE)
+	doTranslation: BOOL;
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF THIS^.statuses.enabledStatus.enabled THEN
+    THIS^.start(
+        rotationPosition := rotationPosition,
+        rotationOffset := rotationOffset,
+        translationPosition := translationPosition,
+        doRotation := doRotation,
+        doTranslation := doTranslation);
+    request := RequestResults.ACCEPTED;
+ELSE
+    request := RequestResults.REJECTED;
+END_IF;
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="start" Id="{fbc5239f-1725-419a-83b7-8c4fa44047db}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD start
+VAR_INPUT
+	///Position of the rotation stage, in degrees
+	rotationPosition: LREAL;
+	///Offset between the motors of the rotation stage, in degrees
+	rotationOffset: LREAL;
+	///Position of the rotation stage, in millimeters
+	translationPosition: LREAL;
+	///Do a rotation for this position (TRUE) or not (FALSE)
+	doRotation: BOOL;
+	///Do a translation for this position (TRUE) or not (FALSE)
+	doTranslation: BOOL;
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[THIS^.get.rotationPosition := rotationPosition;
+THIS^.get.rotationOffset := rotationOffset;
+THIS^.get.translationPosition := translationPosition;
+THIS^.get.doRotation := doRotation;
+THIS^.get.doTranslation := doTranslation;
+THIS^.statuses.busyStatus( isBusy := TRUE );
+THIS^.statuses.healthStatus( isGood := TRUE );
+]]></ST>
+      </Implementation>
+    </Method>
+  </POU>
+</TcPlcObject>

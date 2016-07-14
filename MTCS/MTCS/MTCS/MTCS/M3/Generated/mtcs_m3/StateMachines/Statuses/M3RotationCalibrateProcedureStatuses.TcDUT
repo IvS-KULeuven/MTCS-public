@@ -1,0 +1,14 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="M3RotationCalibrateProcedureStatuses" Id="{2a9e2946-d719-402d-af2e-4be902c9cf09}">
+    <Declaration><![CDATA[TYPE M3RotationCalibrateProcedureStatuses :
+STRUCT
+	///Is the M3RotationCalibrateProcedure in a busy state?
+	busyStatus: BusyStatus;
+	///Is the M3RotationCalibrateProcedure in a healthy state?
+	healthStatus: HealthStatus;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

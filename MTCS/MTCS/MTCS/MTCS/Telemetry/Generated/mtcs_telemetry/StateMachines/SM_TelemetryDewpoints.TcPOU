@@ -1,0 +1,52 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="SM_TelemetryDewpoints" Id="{e6835dc0-e2d5-4e21-ac5d-f66ec7cbe14c}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK SM_TelemetryDewpoints
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+	///Current status description
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	actualStatus: STRING;
+	///Dewpoint of the air at the top of the tube
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	topAir: TelemetryDewpoint;
+	///Dewpoint of the air inside the tube
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	insideTube: TelemetryDewpoint;
+	///Statuses of the state machine
+	statuses: TelemetryDewpointsStatuses;
+END_VAR
+VAR_IN_OUT
+	///Configuration of the dewpoints
+	{attribute 'OPC.UA.DA' := '0'}
+	config: TelemetryDewpointsConfig;
+	///Measured temperatures
+	{attribute 'OPC.UA.DA' := '0'}
+	temperatures: TelemetryTemperatures;
+	///Measured relative humidities
+	{attribute 'OPC.UA.DA' := '0'}
+	relativeHumidities: TelemetryRelativeHumidities;
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[topAir(
+    config := config.topAir,
+    temperature := temperatures.topAir,
+    relativeHumidity := relativeHumidities.topAir);
+insideTube(
+    config := config.insideTube,
+    temperature := temperatures.insideTube,
+    relativeHumidity := relativeHumidities.insideTube);
+statuses.healthStatus(
+    isGood := (topAir.statuses.healthStatus.isGood OR topAir.statuses.enabledStatus.disabled) AND (insideTube.statuses.healthStatus.isGood OR insideTube.statuses.enabledStatus.disabled),
+    hasWarning := topAir.statuses.healthStatus.hasWarning OR insideTube.statuses.healthStatus.hasWarning);
+]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

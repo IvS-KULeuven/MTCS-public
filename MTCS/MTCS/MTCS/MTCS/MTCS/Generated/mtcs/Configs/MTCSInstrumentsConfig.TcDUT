@@ -1,0 +1,30 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="MTCSInstrumentsConfig" Id="{78bd920e-15ef-4a67-a9f5-41cfc2e7930b}">
+    <Declaration><![CDATA[TYPE MTCSInstrumentsConfig :
+STRUCT
+	///Instrument 0
+	instrument0: InstrumentConfig;
+	///Instrument 1
+	instrument1: InstrumentConfig;
+	///Instrument 2
+	instrument2: InstrumentConfig;
+	///Instrument 3
+	instrument3: InstrumentConfig;
+	///Instrument 4
+	instrument4: InstrumentConfig;
+	///Instrument 5
+	instrument5: InstrumentConfig;
+	///Instrument 6
+	instrument6: InstrumentConfig;
+	///Instrument 7
+	instrument7: InstrumentConfig;
+	///Instrument 8
+	instrument8: InstrumentConfig;
+	///Instrument 9
+	instrument9: InstrumentConfig;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

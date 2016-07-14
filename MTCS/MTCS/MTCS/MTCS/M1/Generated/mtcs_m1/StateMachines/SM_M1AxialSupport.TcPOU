@@ -1,0 +1,140 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="SM_M1AxialSupport" Id="{0610cd2b-228e-4c17-a4e2-225590cfe441}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK SM_M1AxialSupport
+VAR_INPUT
+	///Output value
+	{attribute 'OPC.UA.DA' := '0'}
+	pressureSetpointOutput AT %Q*: INT;
+END_VAR
+VAR_OUTPUT
+	///Current status description
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	actualStatus: STRING;
+	///Pressure measurement at the regulator
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	regulatorPressure: PressureMeasurement;
+	///Pressure measurement at the mirror
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	mirrorPressure: PressureMeasurement;
+	///Force measurement South (SO)
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	mirrorSouthForce: ForceMeasurement;
+	///Force measurement North East (NE)
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	mirrorNorthEastForce: ForceMeasurement;
+	///Force measurement North West (NW)
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	mirrorNorthWestForce: ForceMeasurement;
+	///Average of SO, NE and NW
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	mirrorAverageForce: ForceMeasurement;
+	///Pressure setpoint actually used
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	actualPressureSetpoint: Pressure;
+	///Pressure setpoint in AUTO mode
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	autoPressureSetpoint: Pressure;
+	///Pressure setpoint in MANUAL mode
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	manualPressureSetpoint: Pressure;
+	///Force setpoint of the controller
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	controllerSetpoint: Force;
+	///Statuses of the state machine
+	statuses: M1AxialSupportStatuses;
+	///Processes of the state machine
+	processes: M1AxialSupportProcesses;
+END_VAR
+VAR_IN_OUT
+	{attribute 'OPC.UA.DA' := '0'}
+	config: M1AxialSupportConfig;
+	{attribute 'OPC.UA.DA' := '0'}
+	inclinometer: M1Inclinometer;
+	{attribute 'OPC.UA.DA' := '0'}
+	operatorStatus: OperatorStatus;
+	{attribute 'OPC.UA.DA' := '0'}
+	operatingStatus: OperatingStatus;
+	{attribute 'OPC.UA.DA' := '0'}
+	tubeAngle: AngularPosition;
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[regulatorPressure(
+    config := config.regulatorPressure,
+    conversionFactor := config.regulatorPressureSensorFullScale / 32768.0);
+mirrorPressure(
+    config := config.mirrorPressure,
+    conversionFactor := config.mirrorPressureSensorFullScale / 32768.0);
+mirrorSouthForce(
+    config := config.mirrorSouthForce,
+    conversionFactor := (-200.0 * 20.0) / 2147483648.0);
+mirrorNorthEastForce(
+    config := config.mirrorNorthEastForce,
+    conversionFactor := (-200.0 * 20.0) / 2147483648.0);
+mirrorNorthWestForce(
+    config := config.mirrorNorthWestForce,
+    conversionFactor := (-200.0 * 20.0) / 2147483648.0);
+mirrorAverageForce(
+    config := config.mirrorAverageForce,
+    conversionFactor := (-200.0 * 20.0) / 2147483648.0);
+statuses.pressureSetpointStatus();
+statuses.healthStatus(
+    isGood := (processes.changePressureSetpointState.statuses.healthStatus.isGood AND (processes.changePressureSetpoint.statuses.healthStatus.isGood AND (regulatorPressure.statuses.healthStatus.isGood AND (mirrorSouthForce.statuses.healthStatus.isGood AND (mirrorNorthEastForce.statuses.healthStatus.isGood AND mirrorNorthWestForce.statuses.healthStatus.isGood))))) AND (mirrorPressure.statuses.healthStatus.isGood OR mirrorPressure.statuses.enabledStatus.disabled),
+    hasWarning := processes.changePressureSetpointState.statuses.healthStatus.hasWarning OR (processes.changePressureSetpoint.statuses.healthStatus.hasWarning OR (regulatorPressure.statuses.healthStatus.hasWarning OR (mirrorPressure.statuses.healthStatus.hasWarning OR (mirrorSouthForce.statuses.healthStatus.hasWarning OR (mirrorNorthEastForce.statuses.healthStatus.hasWarning OR mirrorNorthWestForce.statuses.healthStatus.hasWarning))))));
+statuses.busyStatus( isBusy := processes.changePressureSetpointState.statuses.busyStatus.busy OR processes.changePressureSetpoint.statuses.busyStatus.busy );
+processes.changePressureSetpoint( isEnabled := statuses.busyStatus.idle AND (operatingStatus.manual AND operatorStatus.tech) );
+processes.changePressureSetpointState( isEnabled := statuses.busyStatus.idle AND (operatingStatus.manual AND operatorStatus.tech) );
+]]></ST>
+    </Implementation>
+    <Method Name="changePressureSetpointState" Id="{6d7c3757-a170-40e7-96b9-e44cfd25b21f}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD changePressureSetpointState : RequestResults
+VAR_INPUT
+	state: OperatingStates;
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[changePressureSetpointState := THIS^.processes.changePressureSetpointState.request( state := state );
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="changePressureSetpoint" Id="{bc0f2f27-4d5d-4880-a77a-35b8c5c70033}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD changePressureSetpoint : RequestResults
+VAR_INPUT
+	setpoint: LREAL;
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[changePressureSetpoint := THIS^.processes.changePressureSetpoint.request( setpoint := setpoint );
+]]></ST>
+      </Implementation>
+    </Method>
+  </POU>
+</TcPlcObject>

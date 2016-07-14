@@ -1,0 +1,16 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="AxesElevationAxisStatuses" Id="{f1b2558c-28fc-491c-839c-46b5bec91c1d}">
+    <Declaration><![CDATA[TYPE AxesElevationAxisStatuses :
+STRUCT
+	///Is the axis in a busy state?
+	busyStatus: BusyStatus;
+	///Is the axis in a healthy state?
+	healthStatus: HealthStatus;
+	///Is the axis powered on or off?
+	poweredStatus: PoweredStatus;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

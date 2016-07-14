@@ -1,0 +1,24 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.5">
+  <POU Name="DriveBrakeStatesToString" Id="{b8030385-e7fd-4dff-bd4c-cc7cef2731d5}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION DriveBrakeStatesToString : STRING
+VAR_INPUT
+    state : DriveBrakeStates;
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[CASE state OF
+    
+    DriveBrakeStates.BRAKE_AUTOMATIC:
+        DriveBrakeStatesToString := 'Automatic';
+    DriveBrakeStates.BRAKE_FORCE_LOCK:
+        DriveBrakeStatesToString := 'Forced LOCK';
+    DriveBrakeStates.BRAKE_FORCE_UNLOCK:
+        DriveBrakeStatesToString := 'Forced UNLOCK';
+
+END_CASE]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

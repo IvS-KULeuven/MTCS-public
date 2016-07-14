@@ -1,0 +1,45 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="SM_M1Inclinometer" Id="{78c5df31-4c6e-47f9-b272-46619b1877bd}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK SM_M1Inclinometer
+VAR_INPUT
+	///Measured voltage
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	voltageMeasurement: VoltageMeasurement;
+END_VAR
+VAR_OUTPUT
+	///Current status description
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	actualStatus: STRING;
+	///Elevation actual value
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	actualElevation: AngularPosition;
+	///Elevation average value
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	averageElevation: AngularPosition;
+	///Statuses of the state machine
+	statuses: M1InclinometerStatuses;
+END_VAR
+VAR_IN_OUT
+	///Reference to the config
+	{attribute 'OPC.UA.DA' := '0'}
+	config: MeasurementConfig;
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[voltageMeasurement(
+    config := config,
+    conversionFactor := 10.0 / 32768.0);
+statuses.healthStatus(
+    isGood := voltageMeasurement.statuses.healthStatus.isGood,
+    hasWarning := voltageMeasurement.statuses.healthStatus.hasWarning);
+]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

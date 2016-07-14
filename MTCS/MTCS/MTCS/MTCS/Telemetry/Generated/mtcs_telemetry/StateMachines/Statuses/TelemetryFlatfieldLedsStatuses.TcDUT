@@ -1,0 +1,11 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="TelemetryFlatfieldLedsStatuses" Id="{063a6f72-4e55-4cab-9565-3daeec9c190b}">
+    <Declaration><![CDATA[TYPE TelemetryFlatfieldLedsStatuses :
+STRUCT
+	busyStatus: BusyStatus;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

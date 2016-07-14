@@ -1,0 +1,397 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="SM_AxesAzimuthAxis" Id="{41754fb0-5615-4903-9062-08d65539336c}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK SM_AxesAzimuthAxis
+VAR_INPUT
+	///Id of this axis
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	id: AxesIds;
+	///Is control enabled?
+	{attribute 'OPC.UA.DA' := '0'}
+	isEnabled: BOOL;
+	///The mechanical reduction between absolute encoder and telescope
+	{attribute 'OPC.UA.DA' := '0'}
+	REDUCTION_AZI_TO_TEL: LREAL := 1440.0;
+	///The mechanical reduction between absolute encoder and telescope
+	{attribute 'OPC.UA.DA' := '0'}
+	REDUCTION_ABL_TO_TEL: LREAL := 180.0;
+	///The mechanical reduction between absolute encoder and telescope
+	{attribute 'OPC.UA.DA' := '0'}
+	REDUCTION_ABS_ENC_TO_TEL: LREAL := 18.0;
+END_VAR
+VAR_OUTPUT
+	///Current status description
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	actualStatus: STRING;
+	///TRUE if the motor appears to be slipping w.r.t. the external encoder
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	slipError: BOOL;
+	///TRUE if the positive limit switch has detected the axis
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	positiveLimitSwitchError: BOOL;
+	///TRUE if the negative limit switch has detected the axis
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	negativeLimitSwitchError: BOOL;
+	///TRUE if the setpoint position has reached its limit
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	setPosLimitReached: BOOL;
+	///The deviation between target position and actual position, as a 1 second moving average
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	deviation1SecAverage: AngularPosition;
+	///The deviation between target position and actual position, as a 1 second moving RMS error
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	deviation1SecRMS: AngularPosition;
+	///The target position
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	targetPos: AngularPosition;
+	///Cumulative offset of targetPos. Equals targetPos - targetStart
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	targetOffset: AngularPosition;
+	///Last absolute movement end position of the axis
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	targetStart: AngularPosition;
+	///The setpoint position (same as parts.physicalAxis!)
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	setPos: AngularPosition;
+	///The setpoint velocity (same as parts.physicalAxis!)
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	setVelo: AngularVelocity;
+	///The setpoint acceleration (same as parts.physicalAxis!)
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	setAcc: AngularAcceleration;
+	///The actual position (same as parts.physicalAxis!)
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	actPos: AngularPosition;
+	///The actual velocity (same as parts.physicalAxis!)
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	actVelo: AngularVelocity;
+	///The actual acceleration (same as parts.physicalAxis!)
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	actAcc: AngularAcceleration;
+	///The actual torque on the telescope axis by the AZI motor
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	actTorqueAzi: Torque;
+	///The actual torque on the telescope axis by the ABL motor
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	actTorqueAbl: Torque;
+	///Position of the telescope according to LIDA encoder no. 1
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	lida1Position: AngularPosition;
+	///Position of the telescope according to LIDA encoder no. 2
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	lida2Position: AngularPosition;
+	///Position of the telescope according to LIDA encoder no. 3
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	lida3Position: AngularPosition;
+	///Position of the telescope according to LIDA encoder no. 4
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	lida4Position: AngularPosition;
+	///Position of the telescope according to the average of the LIDA encoders
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	lidaAveragePosition: AngularPosition;
+	///The position of the axis, based on the absolute encoder
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	absoluteEncoderPosition: AngularPosition;
+	///Statuses of the state machine
+	statuses: AxesAzimuthAxisStatuses;
+	///Parts of the state machine
+	parts: AxesAzimuthAxisParts;
+	///Processes of the state machine
+	processes: AxesAzimuthAxisProcesses;
+END_VAR
+VAR_IN_OUT
+	///Reference to the azimuth config
+	{attribute 'OPC.UA.DA' := '0'}
+	config: AxesAzimuthConfig;
+	///Reference to the AZI drive channel
+	{attribute 'OPC.UA.DA' := '0'}
+	aziDriveChannel: AX52XXDriveChannel;
+	///Reference to the ABL drive channel
+	{attribute 'OPC.UA.DA' := '0'}
+	ablDriveChannel: AX52XXDriveChannel;
+	///Reference to the main drive channel (channel A) of the drive
+	{attribute 'OPC.UA.DA' := '0'}
+	aziMainDriveChannel: AX52XXDriveChannel;
+	///Reference to the main drive channel (channel A) of the drive
+	{attribute 'OPC.UA.DA' := '0'}
+	ablMainDriveChannel: AX52XXDriveChannel;
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[parts.virtualAxis( isEnabled := isEnabled );
+parts.physicalAxis( isEnabled := isEnabled );
+parts.ablAxis( isEnabled := isEnabled );
+parts.lida1( isEnabled := isEnabled );
+parts.lida2( isEnabled := isEnabled );
+parts.lida3( isEnabled := isEnabled );
+parts.lida4( isEnabled := isEnabled );
+parts.absoluteEncoder();
+statuses.busyStatus( isBusy := aziDriveChannel.statuses.busyStatus.busy OR (ablDriveChannel.statuses.busyStatus.busy OR (parts.virtualAxis.statuses.busyStatus.busy OR (parts.physicalAxis.statuses.busyStatus.busy OR (parts.ablAxis.statuses.busyStatus.busy OR (parts.lida1.statuses.busyStatus.busy OR (parts.lida2.statuses.busyStatus.busy OR (parts.lida3.statuses.busyStatus.busy OR (parts.lida4.statuses.busyStatus.busy OR (processes.moveAbsolute.statuses.busyStatus.busy OR (processes.moveRelative.statuses.busyStatus.busy OR (processes.moveVelocity.statuses.busyStatus.busy OR (processes.reset.statuses.busyStatus.busy OR (processes.moveOutOfLimitSwitch.statuses.busyStatus.busy OR (processes.powerOn.statuses.busyStatus.busy OR (processes.powerOff.statuses.busyStatus.busy OR (processes.doHoming.statuses.busyStatus.busy OR (processes.stop.statuses.busyStatus.busy OR (processes.quickStop.statuses.busyStatus.busy OR (processes.unlockBrake.statuses.busyStatus.busy OR processes.setPosition.statuses.busyStatus.busy))))))))))))))))))) );
+statuses.healthStatus(
+    isGood := (aziDriveChannel.statuses.healthStatus.isGood AND (ablDriveChannel.statuses.healthStatus.isGood AND (parts.virtualAxis.statuses.healthStatus.isGood AND (parts.physicalAxis.statuses.healthStatus.isGood AND (parts.ablAxis.statuses.healthStatus.isGood AND (parts.lida1.statuses.healthStatus.isGood AND (parts.lida2.statuses.healthStatus.isGood AND (parts.lida3.statuses.healthStatus.isGood AND (parts.lida4.statuses.healthStatus.isGood AND (parts.absoluteEncoder.statuses.healthStatus.isGood AND (processes.moveAbsolute.statuses.healthStatus.isGood AND (processes.moveRelative.statuses.healthStatus.isGood AND (processes.moveVelocity.statuses.healthStatus.isGood AND (processes.reset.statuses.healthStatus.isGood AND (processes.moveOutOfLimitSwitch.statuses.healthStatus.isGood AND (processes.powerOn.statuses.healthStatus.isGood AND (processes.powerOff.statuses.healthStatus.isGood AND (processes.doHoming.statuses.healthStatus.isGood AND (processes.stop.statuses.healthStatus.isGood AND (processes.quickStop.statuses.healthStatus.isGood AND (processes.unlockBrake.statuses.healthStatus.isGood AND processes.setPosition.statuses.healthStatus.isGood))))))))))))))))))))) AND ((NOT(slipError)) AND ((NOT(positiveLimitSwitchError)) AND (NOT(negativeLimitSwitchError)))),
+    hasWarning := aziDriveChannel.statuses.healthStatus.hasWarning OR (ablDriveChannel.statuses.healthStatus.hasWarning OR (parts.virtualAxis.statuses.healthStatus.hasWarning OR (parts.physicalAxis.statuses.healthStatus.hasWarning OR (parts.ablAxis.statuses.healthStatus.hasWarning OR (parts.lida1.statuses.healthStatus.hasWarning OR (parts.lida2.statuses.healthStatus.hasWarning OR (parts.lida3.statuses.healthStatus.hasWarning OR (parts.lida4.statuses.healthStatus.hasWarning OR (parts.absoluteEncoder.statuses.healthStatus.hasWarning OR (processes.moveAbsolute.statuses.healthStatus.hasWarning OR (processes.moveRelative.statuses.healthStatus.hasWarning OR (processes.moveVelocity.statuses.healthStatus.hasWarning OR (processes.reset.statuses.healthStatus.hasWarning OR (processes.moveOutOfLimitSwitch.statuses.healthStatus.hasWarning OR (processes.powerOn.statuses.healthStatus.hasWarning OR (processes.powerOff.statuses.healthStatus.hasWarning OR (processes.doHoming.statuses.healthStatus.hasWarning OR (processes.stop.statuses.healthStatus.hasWarning OR (processes.quickStop.statuses.healthStatus.hasWarning OR (processes.unlockBrake.statuses.healthStatus.hasWarning OR processes.setPosition.statuses.healthStatus.hasWarning)))))))))))))))))))));
+statuses.poweredStatus( isEnabled := parts.virtualAxis.statuses.poweredStatus.enabled AND (parts.physicalAxis.statuses.poweredStatus.enabled AND parts.ablAxis.statuses.poweredStatus.enabled) );
+processes.moveAbsolute( isEnabled := isEnabled );
+processes.moveRelative( isEnabled := isEnabled );
+processes.moveVelocity( isEnabled := isEnabled );
+processes.reset( isEnabled := isEnabled );
+processes.moveOutOfLimitSwitch( isEnabled := isEnabled );
+processes.powerOn( isEnabled := isEnabled );
+processes.powerOff( isEnabled := isEnabled );
+processes.doHoming( isEnabled := isEnabled );
+processes.stop( isEnabled := isEnabled );
+processes.quickStop( isEnabled := isEnabled );
+processes.unlockBrake( isEnabled := isEnabled );
+processes.setPosition( isEnabled := isEnabled );
+]]></ST>
+    </Implementation>
+    <Method Name="setPosition" Id="{2406fb27-4b7a-43c3-9310-19d0303cbbb8}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD setPosition : RequestResults
+VAR_INPUT
+	value: LREAL;
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[setPosition := THIS^.processes.setPosition.request( value := value );
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="doHoming" Id="{33e7079d-705a-4e9c-bc5a-b346dca17b96}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD doHoming : RequestResults
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[doHoming := THIS^.processes.doHoming.request();
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="reset" Id="{4dc7047b-957a-4193-b16e-95034aef6923}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD reset : RequestResults
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[reset := THIS^.processes.reset.request();
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="moveAbsolute" Id="{5a54a804-78e5-4357-938c-320b79809674}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD moveAbsolute : RequestResults
+VAR_INPUT
+	units: AxesMoveUnits;
+	value: LREAL;
+	offset: LREAL;
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[moveAbsolute := THIS^.processes.moveAbsolute.request(
+    units := units,
+    value := value,
+    offset := offset);
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="stop" Id="{5d2861b2-4dff-4e55-91a8-d25fa4ffa2d7}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD stop : RequestResults
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[stop := THIS^.processes.stop.request();
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="moveRelative" Id="{7c70253c-b4dd-45bc-b719-cb42029d6464}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD moveRelative : RequestResults
+VAR_INPUT
+	units: AxesMoveUnits;
+	value: LREAL;
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[moveRelative := THIS^.processes.moveRelative.request(
+    units := units,
+    value := value);
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="moveVelocity" Id="{83e0b56d-7831-4a71-93c5-6af6f6c568c6}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD moveVelocity : RequestResults
+VAR_INPUT
+	units: AxesMoveVelocityUnits;
+	value: LREAL;
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[moveVelocity := THIS^.processes.moveVelocity.request(
+    units := units,
+    value := value);
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="moveOutOfLimitSwitch" Id="{9b17fb83-f159-4425-8506-72153016a237}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD moveOutOfLimitSwitch : RequestResults
+VAR_INPUT
+	switch: LimitSwitches;
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[moveOutOfLimitSwitch := THIS^.processes.moveOutOfLimitSwitch.request( switch := switch );
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="quickStop" Id="{a25abfb3-84e0-4796-bf1a-617456d207a9}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD quickStop : RequestResults
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[quickStop := THIS^.processes.quickStop.request();
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="powerOn" Id="{a4681c16-8a8c-4a97-aa5f-bdcdf271b85e}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD powerOn : RequestResults
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[powerOn := THIS^.processes.powerOn.request();
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="unlockBrake" Id="{bb550d50-8e61-46aa-97d3-bb0bf7fa219c}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD unlockBrake : RequestResults
+VAR_INPUT
+	seconds: LREAL;
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[unlockBrake := THIS^.processes.unlockBrake.request( seconds := seconds );
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="powerOff" Id="{ceec008b-84ff-4bcd-9d78-d66f739fe146}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD powerOff : RequestResults
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[powerOff := THIS^.processes.powerOff.request();
+]]></ST>
+      </Implementation>
+    </Method>
+  </POU>
+</TcPlcObject>

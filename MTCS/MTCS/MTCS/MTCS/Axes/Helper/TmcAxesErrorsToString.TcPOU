@@ -1,0 +1,61 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="TmcAxesErrorsToString" Id="{a769668e-2adc-49c3-b8bd-05c427ad4217}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION TmcAxesErrorsToString : STRING
+VAR_INPUT
+    error : TmcAxesErrors;
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[CASE error OF 
+    AXES_NO_ERROR:
+        TmcAxesErrorsToString := 'No error';
+    AXES_OBJECT_RC_OUT_OF_RANGE:
+        TmcAxesErrorsToString := 'Object alpha out-of-range';
+    AXES_OBJECT_DC_OUT_OF_RANGE:
+        TmcAxesErrorsToString := 'Object delta out-of-range';
+    AXES_OBJECT_PR_OUT_OF_RANGE:
+        TmcAxesErrorsToString := 'Object alpha proper motion out-of-range';
+    AXES_OBJECT_PD_OUT_OF_RANGE:
+        TmcAxesErrorsToString := 'Object delta proper motion out-of-range';
+    AXES_OBJECT_PX_OUT_OF_RANGE:
+        TmcAxesErrorsToString := 'Object parallax out-of-range';
+    AXES_EQ_OUT_OF_RANGE:
+        TmcAxesErrorsToString := 'Epoch out-of-range';
+    AXES_LOCATION_XP_OUT_OF_RANGE:
+        TmcAxesErrorsToString := 'Earth polar motion X out-of-range';
+    AXES_LOCATION_YP_OUT_OF_RANGE:
+        TmcAxesErrorsToString := 'Earth polar motion Y out-of-range';
+    AXES_LOCATION_DX_OUT_OF_RANGE:
+        TmcAxesErrorsToString := 'Earth nutation adjustment DX out-of-range';
+    AXES_LOCATION_DY_OUT_OF_RANGE:
+        TmcAxesErrorsToString := 'Earth nutation adjustment DY out-of-range';
+    AXES_LOCATION_ELONG_OUT_OF_RANGE:
+        TmcAxesErrorsToString := 'East longitude out-of-range';
+    AXES_LOCATION_PHI_OUT_OF_RANGE:
+        TmcAxesErrorsToString := 'Latitude out-of-range';
+    AXES_LOCATION_HM_OUT_OF_RANGE:
+        TmcAxesErrorsToString := 'Observatory height out-of-range';
+    AXES_LOCATION_TK_OUT_OF_RANGE:
+        TmcAxesErrorsToString := 'Local temperature out-of-range';
+    AXES_LOCATION_PHPA_OUT_OF_RANGE:
+        TmcAxesErrorsToString := 'Local pressure out-of-range';
+    AXES_LOCATION_RH_OUT_OF_RANGE:
+        TmcAxesErrorsToString := 'Local relative humidity out-of-range';
+    AXES_LOCATION_WLFQ_OUT_OF_RANGE:
+        TmcAxesErrorsToString := 'Observing wavelength out-of-range';
+    AXES_LOCATION_TLR_OUT_OF_RANGE:
+        TmcAxesErrorsToString := 'Tropospheric lapse rate out-of-range';
+    AXES_FEEDBACK_AZ_OUT_OF_RANGE:
+        TmcAxesErrorsToString := 'Feedback azimuth out-of-range';
+    AXES_FEEDBACK_EL_OUT_OF_RANGE:
+        TmcAxesErrorsToString := 'Feedback elevation out-of-range';
+END_CASE
+
+
+]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

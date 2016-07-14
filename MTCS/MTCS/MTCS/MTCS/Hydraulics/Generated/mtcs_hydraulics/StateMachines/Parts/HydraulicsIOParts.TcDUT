@@ -1,0 +1,12 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="HydraulicsIOParts" Id="{57da5879-2be4-480b-a9ea-0212b33a2f4c}">
+    <Declaration><![CDATA[TYPE HydraulicsIOParts :
+STRUCT
+	///PG: Pumps Group
+	pumpsGroup: HydraulicsPumpsGroupIO;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

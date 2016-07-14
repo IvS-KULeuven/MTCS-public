@@ -1,0 +1,274 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="SM_MTCS" Id="{18780fdf-c257-453e-aa88-c2fe43a7b605}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK SM_MTCS
+VAR_INPUT
+	///Editable configuration of the MTCS
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	editableConfig: MTCSConfig;
+END_VAR
+VAR_OUTPUT
+	///Current status description
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	actualStatus: STRING;
+	///How many times has a wrong password been entered?
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	noOfFailedOperatorChanges: UINT;
+	///Config of the currently active instrument (depending on M3 and possibly derotator) *if* isInstrumentActive is TRUE
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	activeInstrument: InstrumentConfig;
+	///Number of the currently active instrument (0..9, or -1 if no instrument is active)
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	activeInstrumentNumber: INT;
+	activeInstrumentName: STRING;
+	///Is an instrument currently active (i.e. is M3 static at a known position?)
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	isInstrumentActive: BOOL;
+	///Active configuration of the ServicesTiming subsystem
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	config: MTCSConfig;
+	///Statuses of the state machine
+	statuses: MTCSStatuses;
+	///Parts of the state machine
+	parts: MTCSParts;
+	///Processes of the state machine
+	processes: MTCSProcesses;
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[parts.telemetry( operatorStatus := statuses.operatorStatus );
+parts.cover( operatorStatus := statuses.operatorStatus );
+parts.m1(
+    operatorStatus := statuses.operatorStatus,
+    tubeAngleMeasurement := parts.telemetry.parts.accelerometers.tube);
+parts.m2(
+    operatorStatus := statuses.operatorStatus,
+    io := parts.m1.parts.io,
+    actualFocalStation := parts.m3.actualKnownPositionID,
+    m3KnownPositionsConfig := parts.m3.config.knownPositions,
+    temperatures := parts.telemetry.parts.temperatures);
+parts.m3( operatorStatus := statuses.operatorStatus );
+parts.services( operatorStatus := statuses.operatorStatus );
+parts.safety(
+    operatorStatus := statuses.operatorStatus,
+    activityStatus := statuses.activityStatus);
+parts.hydraulics(
+    operatorStatus := statuses.operatorStatus,
+    safetyHydraulics := parts.safety.parts.hydraulics,
+    safetyIO := parts.safety.parts.io);
+parts.configManager( isEnabled := statuses.operatorStatus.tech );
+statuses.initializationStatus();
+statuses.healthStatus(
+    isGood := parts.axes.statuses.healthStatus.isGood AND (parts.cover.statuses.healthStatus.isGood AND (parts.m1.statuses.healthStatus.isGood AND (parts.m2.statuses.healthStatus.isGood AND (parts.m3.statuses.healthStatus.isGood AND (parts.services.statuses.healthStatus.isGood AND (parts.telemetry.statuses.healthStatus.isGood AND (parts.safety.statuses.healthStatus.isGood AND parts.hydraulics.statuses.healthStatus.isGood))))))),
+    hasWarning := parts.axes.statuses.healthStatus.hasWarning OR (parts.cover.statuses.healthStatus.hasWarning OR (parts.m1.statuses.healthStatus.hasWarning OR (parts.m2.statuses.healthStatus.hasWarning OR (parts.m3.statuses.healthStatus.hasWarning OR (parts.services.statuses.healthStatus.hasWarning OR (parts.telemetry.statuses.healthStatus.hasWarning OR (parts.safety.statuses.healthStatus.hasWarning OR parts.hydraulics.statuses.healthStatus.hasWarning))))))));
+statuses.busyStatus( isBusy := parts.axes.statuses.busyStatus.busy OR (parts.cover.statuses.busyStatus.busy OR (parts.m1.statuses.busyStatus.busy OR (parts.m2.statuses.busyStatus.busy OR (parts.m3.statuses.busyStatus.busy OR (parts.services.statuses.busyStatus.busy OR (parts.telemetry.statuses.busyStatus.busy OR (parts.safety.statuses.busyStatus.busy OR parts.hydraulics.statuses.busyStatus.busy))))))) );
+statuses.operatorStatus();
+statuses.passwordHealthStatus( superState := statuses.operatorStatus.observer );
+statuses.activityStatus(
+    superState := (statuses.initializationStatus.initialized OR statuses.initializationStatus.initializingFailed) AND (statuses.healthStatus.good OR statuses.healthStatus.warning),
+    isAwake := (parts.hydraulics.pumpsState = HydraulicsPumpsStates.RUNNING) OR parts.axes.statuses.poweredStatus.enabled,
+    isMoving := parts.axes.statuses.busyStatus.busy OR parts.axes.isTracking);
+processes.initialize( isEnabled := NOT(statuses.initializationStatus.initializing) );
+processes.lock( isEnabled := statuses.operatorStatus.tech AND statuses.initializationStatus.initialized );
+processes.unlock( isEnabled := statuses.operatorStatus.tech AND statuses.initializationStatus.locked );
+processes.changeOperator( isEnabled := TRUE );
+processes.verifyPassword( isEnabled := TRUE );
+processes.reboot( isEnabled := TRUE );
+processes.shutdown( isEnabled := statuses.operatorStatus.tech );
+processes.wakeUp( isEnabled := statuses.activityStatus.sleeping );
+processes.goToSleep( isEnabled := statuses.activityStatus.awake OR statuses.healthStatus.bad );
+processes.changeInstrument( isEnabled := statuses.initializationStatus.initialized OR statuses.healthStatus.bad );
+]]></ST>
+    </Implementation>
+    <Method Name="changeOperator" Id="{2299e7f4-9c52-4222-abe9-bb58f717b1b4}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD changeOperator : RequestResults
+VAR_INPUT
+	state: OperatorStates;
+	password: STRING;
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[changeOperator := THIS^.processes.changeOperator.request(
+    state := state,
+    password := password);
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="wakeUp" Id="{273d0358-25af-41aa-a16f-3810e37c834d}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD wakeUp : RequestResults
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[wakeUp := THIS^.processes.wakeUp.request();
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="goToSleep" Id="{29d706d0-5e75-47c7-8945-8a28d25108e8}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD goToSleep : RequestResults
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[goToSleep := THIS^.processes.goToSleep.request();
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="reboot" Id="{5864162a-d0e8-47b5-9f6a-475638eb1b6f}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD reboot : RequestResults
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[reboot := THIS^.processes.reboot.request();
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="initialize" Id="{6bcee2c6-96f4-453e-b40c-268174c94014}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD initialize : RequestResults
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[initialize := THIS^.processes.initialize.request();
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="lock" Id="{7abb4d30-592b-4584-8439-5fbedbf33d60}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD lock : RequestResults
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[lock := THIS^.processes.lock.request();
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="verifyPassword" Id="{b6b385ef-2637-423d-adf0-991b7ca6323a}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD verifyPassword : RequestResults
+VAR_INPUT
+	state: OperatorStates;
+	password: STRING;
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[verifyPassword := THIS^.processes.verifyPassword.request(
+    state := state,
+    password := password);
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="unlock" Id="{c3c2d19b-7bc1-47b9-a9a6-559343912299}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD unlock : RequestResults
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[unlock := THIS^.processes.unlock.request();
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="changeInstrument" Id="{ce0ba625-0cbb-4a75-9f44-049f08dd6454}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD changeInstrument : RequestResults
+VAR_INPUT
+	name: STRING;
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[changeInstrument := THIS^.processes.changeInstrument.request( name := name );
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="shutdown" Id="{ddf47c25-e4ff-4509-aa8b-0212e963fb78}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD shutdown : RequestResults
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[shutdown := THIS^.processes.shutdown.request();
+]]></ST>
+      </Implementation>
+    </Method>
+  </POU>
+</TcPlcObject>

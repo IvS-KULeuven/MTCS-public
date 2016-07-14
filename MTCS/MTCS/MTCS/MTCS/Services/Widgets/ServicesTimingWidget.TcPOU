@@ -1,0 +1,118 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.5">
+  <POU Name="ServicesTimingWidget" Id="{392b2c45-af3c-4f20-9e88-937a70469bae}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK ServicesTimingWidget
+VAR_INPUT
+    activeTab : ServicesTimingTabs := ServicesTimingTabs.OVERVIEW;
+END_VAR
+VAR_OUTPUT
+	actualStatus            : StatusWidget;
+	portHealthStatus        : StatusWidget;
+	transmissionHealthStatus: StatusWidget;
+	checksumHealthStatus    : StatusWidget;
+    
+    name : STRING := 'Timing';
+
+    actualTimeSource : STRING;
+    actualLocationSource : STRING;
+    
+    longitude : LREAL;
+    latitude : LREAL;
+    
+    absLongitude : LREAL;
+    absLatitude : LREAL;
+    
+    
+    longitudeString : STRING;
+    latitudeString : STRING;
+    altitudeString : STRING;
+    
+    errorText : STRING;
+    
+    _formatString : FB_FormatString;
+    
+END_VAR
+VAR_IN_OUT
+	ref : ServicesTiming;
+END_VAR
+VAR
+    io : ServicesTimingIOWidget;
+    
+    button_overview   : SubSubSystemButtonWidget('Overview', ServicesTimingTabs.OVERVIEW);
+    button_io         : SubSubSystemButtonWidget('I/O'     , ServicesTimingTabs.IO);
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[io(ref := ref.parts.io);
+
+button_overview(    color := actualStatus.color                 , activeTab := activeTab);
+button_io(          color := io.actualStatus.color              , activeTab := activeTab);
+
+actualStatus(text  := ref.actualStatus,
+             color := HealthBusyToColor(
+                        healthStatus := ref.statuses.healthStatus,
+                        busyStatus   := ref.statuses.busyStatus));
+                                        
+portHealthStatus(text := ref.parts.serialInfo.comErrorDescription,
+                 color := HealthToColor(ref.parts.serialInfo.statuses.portHealthStatus));
+transmissionHealthStatus(color := HealthToColor(ref.parts.serialInfo.statuses.transmissionHealthStatus));
+checksumHealthStatus(color := HealthToColor(ref.parts.serialInfo.statuses.checksumHealthStatus));
+
+
+IF ref.parts.serialInfo.serialTimeout THEN
+    transmissionHealthStatus.text := 'Timeout!';
+ELSE
+    transmissionHealthStatus.text := 'OK';
+END_IF
+IF  ref.parts.serialInfo.statuses.checksumHealthStatus.good THEN
+    checksumHealthStatus.text := 'OK';
+ELSE
+    checksumHealthStatus.text := 'ERROR';
+END_IF
+checksumHealthStatus.text := CONCAT(checksumHealthStatus.text,
+                                        CONCAT(' (got:',
+                                            CONCAT(USINT_TO_STRING(ref.parts.serialInfo.checksum),
+                                                CONCAT('h, expected:',
+                                                    CONCAT(USINT_TO_STRING(ref.parts.serialInfo.calculatedChecksum), 
+                                                          'h)')))));
+
+CASE ref.fromCppTiming.utc.mode OF
+    TmcTimingMode.LOCAL_CLOCK    : actualTimeSource := 'Local clock';
+    TmcTimingMode.PTP_IEEE_1588  : actualTimeSource := 'GPS (PTP)';
+END_CASE
+
+errorText := TmcTimingErrorsToString(ref.fromCppTiming.error);
+
+longitude :=    USINT_TO_LREAL(ref.parts.serialInfo.longitude_deg)
+              + REAL_TO_LREAL(ref.parts.serialInfo.longitude_min) / 60.0;
+
+IF ref.parts.serialInfo.longitude_sign = 'S' THEN
+    longitude := longitude * -1;
+END_IF
+
+latitude :=    USINT_TO_LREAL(ref.parts.serialInfo.latitude_deg)
+             + REAL_TO_LREAL(ref.parts.serialInfo.latitude_min) / 60.0;
+IF ref.parts.serialInfo.latitude_sign = 'W' THEN
+    latitude := latitude * -1;
+END_IF
+
+absLongitude := ABS(longitude);
+absLatitude := ABS(latitude);
+
+IF longitude > 0 THEN
+    _formatString(sFormat:= '%.6f° N', arg1 := F_LREAL(absLongitude), sOut => longitudeString);
+ELSE
+    _formatString(sFormat:= '%.6f° S', arg1 := F_LREAL(absLongitude), sOut => longitudeString);
+END_IF
+
+IF latitude > 0 THEN
+    _formatString(sFormat:= '%.6f° E', arg1 := F_LREAL(absLatitude), sOut => latitudeString);
+ELSE
+    _formatString(sFormat:= '%.6f° W', arg1 := F_LREAL(absLatitude), sOut => latitudeString);
+END_IF
+
+_formatString(sFormat:= '%.1fm', arg1 := F_REAL(ref.parts.serialInfo.meanSeaLevelAltitude), sOut => altitudeString);
+]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

@@ -1,0 +1,49 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="SM_TorqueLimit" Id="{5f2150fe-9577-4ff9-b39f-91bf597ce31b}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK SM_TorqueLimit
+VAR_INPUT
+	///New torque limit as a unitless fraction (between 0 and 1)
+	{attribute 'OPC.UA.DA' := '0'}
+	newFractionValue: LREAL;
+	///Newtonmeters corresponding to 100 percent (fraction=1)
+	{attribute 'OPC.UA.DA' := '0'}
+	maxNewtonmeter: LREAL;
+END_VAR
+VAR_OUTPUT
+	///Current status description
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	actualStatus: STRING;
+	///Torque limit as a unitless fraction
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	unitless: QuantityValue;
+	///Torque limit in percent
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	percent: QuantityValue;
+	///Torque in Nm
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	newtonmeter: QuantityValue;
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[unitless(
+    value := newFractionValue,
+    unit := Units.UNITLESS);
+percent(
+    value := newFractionValue * 100.0,
+    unit := Units.PERCENT);
+newtonmeter(
+    value := newFractionValue * maxNewtonmeter,
+    unit := Units.NEWTONMETER);
+]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

@@ -1,0 +1,39 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.2">
+  <POU Name="TelemetryDewpointsWidget" Id="{5d78fe44-d388-48fa-acd2-36f83400ad4c}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK TelemetryDewpointsWidget 
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+    ref : SM_TelemetryDewpoints;
+END_VAR
+VAR
+    actualStatus : StatusWidget;
+    // dewpoints
+    topAir                  : MeasurementWidget('Top air', '%.2f °C');
+    insideTube              : MeasurementWidget('Inside tube', '%.2f °C');
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[actualStatus(text := ref.actualStatus, color := HealthToColor(ref.statuses.healthStatus));
+
+_updateTemperature(ref.topAir, topAir);
+_updateTemperature(ref.insideTube, insideTube);]]></ST>
+    </Implementation>
+    <Method Name="_updateTemperature" Id="{e25ed7c2-cf2f-4fbe-9207-b631449884d8}">
+      <Declaration><![CDATA[METHOD _updateTemperature : BOOL
+VAR_INPUT
+END_VAR
+VAR_IN_OUT
+    ref : TelemetryDewpoint;
+    widget : MeasurementWidget;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[widget(value := ref.average.celsius.value, actualStatus := ref.actualStatus, healthStatus := ref.statuses.healthStatus);]]></ST>
+      </Implementation>
+    </Method>
+  </POU>
+</TcPlcObject>

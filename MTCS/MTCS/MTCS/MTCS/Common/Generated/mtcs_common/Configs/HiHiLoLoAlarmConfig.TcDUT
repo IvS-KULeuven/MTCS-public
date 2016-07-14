@@ -1,0 +1,20 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="HiHiLoLoAlarmConfig" Id="{64240898-4d09-4839-a714-240205aec5c0}">
+    <Declaration><![CDATA[TYPE HiHiLoLoAlarmConfig :
+STRUCT
+	///Is the alarm enabled?
+	enabled: BOOL;
+	///LowLow alarm limit (produces ERROR)
+	loLo: LREAL;
+	///Low alarm limit (produces WARNING)
+	lo: LREAL;
+	///High alarm limit (produces WARNING)
+	hi: LREAL;
+	///HighHigh alarm limit (produces ERROR)
+	hiHi: LREAL;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

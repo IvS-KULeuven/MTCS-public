@@ -1,0 +1,120 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="SM_FaulhaberDrive" Id="{3b1c1c99-afaa-4c40-87d0-bc0439fb4dc8}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK SM_FaulhaberDrive
+VAR_INPUT
+	///Faulhaber drive config
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	config: FaulhaberDriveConfig;
+	///Is control enabled?
+	{attribute 'OPC.UA.DA' := '0'}
+	isEnabled: BOOL;
+	///Current in milliamps, linked to PDO
+	{attribute 'OPC.UA.DA' := '0'}
+	newMilliampsValue AT %I*: INT;
+END_VAR
+VAR_OUTPUT
+	///Current status description
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	actualStatus: STRING;
+	///Actual current
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	actualCurrent: Current;
+	///Average current
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	averageCurrent: AverageCurrent;
+	///Statuses of the state machine
+	statuses: FaulhaberDriveStatuses;
+	///Processes of the state machine
+	processes: FaulhaberDriveProcesses;
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[actualCurrent( newAmpsValue := newMilliampsValue / 1000.0 );
+averageCurrent( newAmpsValue := newMilliampsValue / 1000.0 );
+statuses.busyStatus( isBusy := processes.write.statuses.busyStatus.busy OR (processes.read.statuses.busyStatus.busy OR processes.initialize.statuses.busyStatus.busy) );
+statuses.healthStatus( isGood := processes.write.statuses.healthStatus.good AND (processes.read.statuses.healthStatus.good AND processes.initialize.statuses.healthStatus.good) );
+processes.write( isEnabled := isEnabled AND statuses.busyStatus.idle );
+processes.read( isEnabled := isEnabled AND statuses.busyStatus.idle );
+processes.initialize();
+]]></ST>
+    </Implementation>
+    <Method Name="initialize" Id="{066f2694-dafd-4f8d-8afc-b1114963c4e7}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD initialize : RequestResults
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[initialize := THIS^.processes.initialize.request();
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="write" Id="{a05f12a2-2f8b-4a7a-a000-d5f8e1066a5d}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD write : RequestResults
+VAR_INPUT
+	index: UINT;
+	subindex: USINT;
+	noOfBytes: UDINT;
+	value1Byte: USINT;
+	value2Bytes: UINT;
+	value4Bytes: UDINT;
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[write := THIS^.processes.write.request(
+    index := index,
+    subindex := subindex,
+    noOfBytes := noOfBytes,
+    value1Byte := value1Byte,
+    value2Bytes := value2Bytes,
+    value4Bytes := value4Bytes);
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="read" Id="{e24052be-b5a9-4833-a21e-f056aca3f2d8}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD read : RequestResults
+VAR_INPUT
+	index: UINT;
+	subindex: USINT;
+	noOfBytes: UDINT;
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[read := THIS^.processes.read.request(
+    index := index,
+    subindex := subindex,
+    noOfBytes := noOfBytes);
+]]></ST>
+      </Implementation>
+    </Method>
+  </POU>
+</TcPlcObject>

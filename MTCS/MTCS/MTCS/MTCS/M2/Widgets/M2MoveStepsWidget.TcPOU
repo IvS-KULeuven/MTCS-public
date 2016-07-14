@@ -1,0 +1,24 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.5">
+  <POU Name="M2MoveStepsWidget" Id="{245517ce-332a-42e3-98d7-861da1c820b8}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK M2MoveStepsWidget
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+	ref_process   : M2MoveStepsProcess;
+	ref_procedure : M2MoveStepsProcedure;
+END_VAR
+VAR
+	actualStatus  : StatusWidget;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[
+actualStatus(text  := ref_procedure.actualStatus, 
+             color := HealthBusyToColor(healthStatus := ref_procedure.statuses.healthStatus,
+                                        busyStatus   := ref_procedure.statuses.busyStatus));]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

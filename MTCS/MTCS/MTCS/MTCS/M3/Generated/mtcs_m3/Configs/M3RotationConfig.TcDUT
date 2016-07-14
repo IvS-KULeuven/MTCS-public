@@ -1,0 +1,44 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="M3RotationConfig" Id="{76780ad5-7e40-43d8-b8ca-7fedf2005f1b}">
+    <Declaration><![CDATA[TYPE M3RotationConfig :
+STRUCT
+	///The tolerance for which the axis appears to be standing still, in degrees/sec
+	standstillTolerance: LREAL;
+	///The motor-to-mirror transmission ratio
+	motorToMirrorRatio: LREAL;
+	///The encoder-to-mirror transmission ratio
+	encoderToMirrorRatio: LREAL;
+	///The config of the positioning faulhaber drive
+	positioningDrive: FaulhaberDriveConfig;
+	///The config of the anti-backlash faulhaber drive
+	antiBacklashDrive: FaulhaberDriveConfig;
+	///Negative soft limit, in degrees
+	negativeSoftLimit: LREAL;
+	///Negative soft limit, in degrees
+	positiveSoftLimit: LREAL;
+	///Maximum position error, in degrees
+	maxPositionError: LREAL;
+	///Maximum position error, in degrees
+	maxOffsetError: LREAL;
+	///Velocity to move from/to the offset position, in degrees/sec on the MOTOR reduction exit shaft reference system
+	gotoOffsetVelocity: LREAL;
+	///Velocity to move to the target, in degrees/sec on the MIRROR reference system
+	gotoTargetVelocity: LREAL;
+	///Time while the Goto procedure may improve the position, in seconds
+	gotoImprovingPositionTime: LREAL;
+	///Mirror position (in degrees) to start the calibration from
+	calibrateStartPosition: LREAL;
+	///Velocity to move to the zero-torque position, in degrees/sec on the MIRROR reference system
+	calibrateMoveToZeroTorqueVelocity: LREAL;
+	///Velocity during which the current is being measured, in degrees/sec on the MIRROR reference system
+	calibrateVelocity: LREAL;
+	///Position range where the current is being measured, in degrees on the MOTOR reference system
+	calibrateRange: LREAL;
+	///Degrees between zero-torque position and minimum-torque position, on the MOTOR reference system
+	calibrateOffset: LREAL;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

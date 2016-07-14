@@ -1,0 +1,53 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="SM_SimpleRelay" Id="{bf78a7b2-14c4-46c5-9697-f9ea96ce040b}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK SM_SimpleRelay
+VAR_INPUT
+	///Is control enabled?
+	{attribute 'OPC.UA.DA' := '0'}
+	isEnabled: BOOL;
+END_VAR
+VAR_OUTPUT
+	///Current status description
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	actualStatus: STRING;
+	///Boolean, to bind to digital output
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	digitalOutput AT %Q*: BOOL;
+	///Statuses of the state machine
+	statuses: SimpleRelayStatuses;
+	///Processes of the state machine
+	processes: SimpleRelayProcesses;
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[statuses.busyStatus( isBusy := processes.setEnabled.statuses.busyStatus.busy );
+processes.setEnabled( isEnabled := isEnabled AND processes.setEnabled.statuses.busyStatus.idle );
+]]></ST>
+    </Implementation>
+    <Method Name="setEnabled" Id="{cb9d921d-a2a7-4b00-85d6-d83590debaf9}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD setEnabled : RequestResults
+VAR_INPUT
+	enabled: BOOL;
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[setEnabled := THIS^.processes.setEnabled.request( enabled := enabled );
+]]></ST>
+      </Implementation>
+    </Method>
+  </POU>
+</TcPlcObject>

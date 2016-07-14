@@ -1,0 +1,17 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.2">
+  <POU Name="LinearVelocity" Id="{333d75b2-8370-4400-9313-e40e808ba083}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK LinearVelocity EXTENDS SM_LinearVelocity
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR
+    testVar : INT;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[SUPER^();]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

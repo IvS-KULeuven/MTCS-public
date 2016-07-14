@@ -1,0 +1,52 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.5">
+  <POU Name="ActivityButtonWidget" Id="{30d2ce8e-59fe-4675-b5ca-bfd325d9f753}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK ActivityButtonWidget
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+    text : STRING;
+    deactivate : BOOL;
+END_VAR
+VAR_IN_OUT
+    status : ActivityStatus;
+	goToSleep : Process;
+	wakeUp : Process;
+END_VAR
+VAR
+    do_request : BOOL := FALSE;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[IF status.sleeping THEN
+    text := 'Wake up';
+    deactivate := wakeUp.statuses.enabledStatus.disabled;
+    
+    IF do_request THEN
+        wakeUp.request();
+        do_request := FALSE;
+    END_IF
+
+ELSIF status.awake THEN
+    text := 'Go to sleep';
+    deactivate := goToSleep.statuses.enabledStatus.disabled;
+    
+    IF do_request THEN
+        goToSleep.request();
+        do_request := FALSE;
+    END_IF
+ELSIF status.moving THEN
+    text := 'Go to sleep';
+    deactivate := TRUE;
+    do_request := FALSE;
+ELSE
+    // we presume the TCS is not initialized yet
+    text := 'Wake up';
+    deactivate := TRUE;
+    do_request := FALSE;
+END_IF
+
+]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

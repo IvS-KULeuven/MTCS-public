@@ -1,0 +1,53 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.2">
+  <POU Name="BaseMcProcess" Id="{75b64bf7-7e34-4b9e-ad4c-5d15b8cf093d}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK BaseMcProcess EXTENDS SM_BaseMcProcess
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR
+	testVar3 : BOOL;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[SUPER^();
+                                  
+IF statuses.healthStatus.good THEN
+
+	IF statuses.busyStatus.idle THEN
+		actualStatus := 'Idle';
+	ELSIF statuses.busyStatus.busy THEN
+		actualStatus := 'Busy';
+	ELSE
+		actualStatus := '';
+	END_IF;
+
+ELSIF statuses.healthStatus.bad THEN
+	
+	IF statuses.busyStatus.idle THEN
+		IF errorId = 0 THEN
+			actualStatus := 'Error';
+		ELSE
+			actualStatus := CONCAT(CONCAT('Error (', UDINT_TO_STRING(errorId)), ')');
+		END_IF
+	ELSIF statuses.busyStatus.busy THEN
+		IF errorId = 0 THEN
+			actualStatus := 'Busy and error';
+		ELSE
+			actualStatus := CONCAT(CONCAT('Busy and error (', UDINT_TO_STRING(errorId)), ')');
+		END_IF
+	ELSE
+		IF errorId = 0 THEN
+			actualStatus := 'Error';
+		ELSE
+			actualStatus := CONCAT(CONCAT('Error (', UDINT_TO_STRING(errorId)), ')');
+		END_IF
+	END_IF;
+
+ELSE
+	actualStatus := '';
+END_IF;]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

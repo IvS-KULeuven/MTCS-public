@@ -1,0 +1,22 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="M3PositionConfig" Id="{8d8dc430-f6be-46a9-915d-d13e29bc4fab}">
+    <Declaration><![CDATA[TYPE M3PositionConfig :
+STRUCT
+	///The name of the M3 position
+	name: STRING;
+	///The position of the rotation stage in degrees
+	rotationPosition: LREAL;
+	///The offset between the positions of the two motors of the rotation stage in degrees
+	rotationOffset: LREAL;
+	///The position of the translation stage in millimeters
+	translationPosition: LREAL;
+	///Do a rotation for this position (TRUE) or not (FALSE)
+	doRotation: BOOL;
+	///Do a translation for this position (TRUE) or not (FALSE)
+	doTranslation: BOOL;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

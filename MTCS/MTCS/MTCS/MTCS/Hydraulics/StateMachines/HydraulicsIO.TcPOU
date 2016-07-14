@@ -1,0 +1,16 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.5">
+  <POU Name="HydraulicsIO" Id="{7d55bf3f-8cf9-4e3b-9df0-f3835bfa90dc}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK HydraulicsIO EXTENDS SM_HydraulicsIO
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[SUPER^(safetyIO := safetyIO);]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

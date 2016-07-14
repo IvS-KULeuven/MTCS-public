@@ -1,0 +1,73 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.5">
+  <POU Name="SafetyAlerter" Id="{b673a5e5-8c0a-4c0b-ae29-a5222d0808b3}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK SafetyAlerter
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+    output : BOOL;
+END_VAR
+VAR
+    playing : SafetyDomeAccessAlertConfig;
+    startTime : LREAL; // number of milliseconds since 1970-01-01-00:00
+    
+    timePlayedSoFar : LREAL; // number of milliseconds played so far
+    timeOfOnePattern : UINT; // number of milliseconds of one bit sequence
+    activeBit : DINT; // currently active bit of the pattern
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[
+// calculate the number of milliseconds played so far
+timePlayedSoFar := GLOBAL.config.TIME_NOW_MS - startTime;
+
+// check if we're still playing
+IF timePlayedSoFar < playing.totalTime OR playing.totalTime = 0 THEN
+    
+    // calculate the number of milliseconds of one bit sequence
+    timeOfOnePattern := playing.bitLength * playing.patternLength;
+    
+    // find out which bit is currently active
+    IF playing.bitLength = 0 THEN
+        activeBit := TRUNC( ( LREAL_TO_UINT(timePlayedSoFar) MOD timeOfOnePattern) );  // avoid division by zero!
+    ELSE
+        activeBit := TRUNC( ( LREAL_TO_UINT(timePlayedSoFar) MOD timeOfOnePattern) / playing.bitLength );
+	END_IF
+
+    // set the output according to the active bit
+    output := GETBIT32( UDINT_TO_DWORD(playing.pattern), DINT_TO_SINT(activeBit) );
+    
+ELSE
+    
+    output := FALSE;
+    
+END_IF]]></ST>
+    </Implementation>
+    <Method Name="play" Id="{6a184ae4-4892-40fa-a9c1-35a843b90c85}">
+      <Declaration><![CDATA[METHOD play
+VAR_INPUT
+    config : SafetyDomeAccessAlertConfig;
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// update _startTime
+startTime := GLOBAL.config.TIME_NOW_MS;
+playing   := config;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="stop" Id="{be6a577d-7b29-407c-82c7-11d119f1211a}">
+      <Declaration><![CDATA[METHOD stop
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[playing.pattern := 0;
+playing.patternLength := 1;
+playing.totalTime := 0;
+playing.bitLength := 100;]]></ST>
+      </Implementation>
+    </Method>
+  </POU>
+</TcPlcObject>

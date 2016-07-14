@@ -1,0 +1,15 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.5">
+  <POU Name="CELSIUS_TO_KELVIN" Id="{d26afcbc-1881-4acd-898c-728619f3a1f3}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION CELSIUS_TO_KELVIN : REAL
+VAR_INPUT
+    celsius : REAL;
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[CELSIUS_TO_KELVIN := celsius + 273.15;]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

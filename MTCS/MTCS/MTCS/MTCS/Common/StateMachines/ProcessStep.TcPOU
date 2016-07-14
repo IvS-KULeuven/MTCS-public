@@ -1,0 +1,53 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.5">
+  <POU Name="ProcessStep" Id="{7c51619e-83d4-46a7-a398-0a62ddb01b00}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK ProcessStep EXTENDS SM_ProcessStep
+VAR_INPUT
+    description : STRING;
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[SUPER^(process := process);]]></ST>
+    </Implementation>
+    <Method Name="isGood" Id="{3544d4be-a81a-40e4-b766-2f6f4ab94c30}">
+      <Declaration><![CDATA[METHOD isGood : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[isGood := process.isGood(); ]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="isWarning" Id="{4dee5d8d-a7e5-4b7a-bffa-fb3edf3a20bb}">
+      <Declaration><![CDATA[METHOD isWarning : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[isWarning := process.statuses.healthStatus.warning;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="isBusy" Id="{50ed5c86-eef4-47fb-8be0-ca8763849513}">
+      <Declaration><![CDATA[METHOD isBusy : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[isBusy := process.isBusy();]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="isBad" Id="{df13a064-fda5-4465-9f5e-fb9e93b506a6}">
+      <Declaration><![CDATA[METHOD PUBLIC isBad : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[isBad := process.statuses.healthStatus.bad;]]></ST>
+      </Implementation>
+    </Method>
+  </POU>
+</TcPlcObject>

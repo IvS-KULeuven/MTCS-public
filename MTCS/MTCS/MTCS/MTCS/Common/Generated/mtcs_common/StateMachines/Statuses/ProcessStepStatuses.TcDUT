@@ -1,0 +1,12 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="ProcessStepStatuses" Id="{a3db1e6d-e2e4-4a1d-83a4-bf7e08aac9a9}">
+    <Declaration><![CDATA[TYPE ProcessStepStatuses :
+STRUCT
+	///Is the process step enabled or not?
+	enabledStatus: EnabledStatus;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

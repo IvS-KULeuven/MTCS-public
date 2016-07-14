@@ -1,0 +1,134 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="AxesMoveAbsoluteCalculator" Id="{ef89da00-395e-476a-9229-8ca2815f7299}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK AxesMoveAbsoluteCalculator
+VAR_INPUT
+    targetPos : LREAL;
+    trackingVelo : LREAL; // only needed when the position with most travel must be found
+    minPos : LREAL;
+    maxPos : LREAL;
+    actPos : LREAL; // only needed when the closest position must be found
+    doMostTravel : BOOL; // TRUE: prefer the position with most travel. FALSE: prefer the closest position
+END_VAR
+VAR_OUTPUT
+    adjustedPos : LREAL;
+    outOfRange : BOOL;
+END_VAR
+VAR
+    mostNegativeTargetPos : LREAL;
+    moreNegativeTargetPos : LREAL;
+    morePositiveTargetPos : LREAL;
+    mostPositiveTargetPos : LREAL;
+    
+    targetWithinRange : BOOL;
+    mostNegativeTargetWithinRange : BOOL;
+    moreNegativeTargetWithinRange : BOOL;
+    morePositiveTargetWithinRange : BOOL;
+    mostPositiveTargetWithinRange : BOOL;
+    
+    travelTarget : LREAL;               // path 0
+    travelMoreNegativeTarget : LREAL;   // path 1
+    travelMostNegativeTarget : LREAL;   // path 2
+    travelMorePositiveTarget : LREAL;   // path 3
+    travelMostPositiveTarget : LREAL;   // path 4
+    shortestTravel : LREAL;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[
+mostNegativeTargetPos := targetPos - 720.0;
+moreNegativeTargetPos := targetPos - 360.0;
+morePositiveTargetPos := targetPos + 360.0;
+mostPositiveTargetPos := targetPos + 720.0;
+
+targetWithinRange := minPos < targetPos AND targetPos < maxPos;
+mostNegativeTargetWithinRange := minPos < mostNegativeTargetPos AND mostNegativeTargetPos < maxPos;
+moreNegativeTargetWithinRange := minPos < moreNegativeTargetPos AND moreNegativeTargetPos < maxPos;
+morePositiveTargetWithinRange := minPos < morePositiveTargetPos AND morePositiveTargetPos < maxPos;
+mostPositiveTargetWithinRange := minPos < mostPositiveTargetPos AND mostPositiveTargetPos < maxPos;
+
+
+IF doMostTravel THEN
+    IF trackingVelo > 0 THEN
+        // the target moves in positive direction, so we must start as much negative as we can
+        IF mostNegativeTargetWithinRange THEN
+            adjustedPos := mostNegativeTargetPos;
+            outOfRange := FALSE;
+        ELSIF moreNegativeTargetWithinRange THEN
+            adjustedPos := moreNegativeTargetPos;
+            outOfRange := FALSE;
+        ELSIF targetWithinRange THEN
+            adjustedPos := targetPos;
+            outOfRange := FALSE;
+        ELSIF morePositiveTargetWithinRange THEN
+            adjustedPos := morePositiveTargetPos;
+            outOfRange := FALSE;
+        ELSIF mostPositiveTargetWithinRange THEN
+            adjustedPos := mostPositiveTargetPos;
+            outOfRange := FALSE;
+        ELSE
+            outOfRange := TRUE;
+        END_IF
+    
+    ELSE
+        // the target moves in negative direction, so we must start as much positive as we can
+        IF mostPositiveTargetWithinRange THEN
+            adjustedPos := mostPositiveTargetPos;
+            outOfRange := FALSE;
+        ELSIF morePositiveTargetWithinRange THEN
+            adjustedPos := morePositiveTargetPos;
+            outOfRange := FALSE;
+        ELSIF targetWithinRange THEN
+            adjustedPos := targetPos;
+            outOfRange := FALSE;
+        ELSIF moreNegativeTargetWithinRange THEN
+            adjustedPos := moreNegativeTargetPos;
+            outOfRange := FALSE;
+        ELSIF mostNegativeTargetWithinRange THEN
+            adjustedPos := mostNegativeTargetPos;
+            outOfRange := FALSE;
+        ELSE
+            outOfRange := TRUE;
+        END_IF
+    END_IF
+ELSE
+    // don't prefer the direction with most travel, so we go in the fastest direction 
+    outOfRange := TRUE;
+    shortestTravel := 999999;
+    
+    travelTarget             := ABS(targetPos - actPos);
+    travelMoreNegativeTarget := ABS(moreNegativeTargetPos - actPos);
+    travelMostNegativeTarget := ABS(mostNegativeTargetPos - actPos);
+    travelMorePositiveTarget := ABS(morePositiveTargetPos - actPos);
+    travelMostPositiveTarget := ABS(mostPositiveTargetPos - actPos);
+    
+    IF travelTarget < shortestTravel AND targetWithinRange THEN
+        shortestTravel := travelTarget;
+        adjustedPos := targetPos;
+        outOfRange := FALSE;
+	END_IF
+    
+    IF travelMoreNegativeTarget < shortestTravel AND moreNegativeTargetWithinRange THEN
+        shortestTravel := travelMoreNegativeTarget;
+        adjustedPos := moreNegativeTargetPos;
+        outOfRange := FALSE;
+	END_IF
+    IF travelMostNegativeTarget < shortestTravel AND mostNegativeTargetWithinRange THEN
+        shortestTravel := travelMostNegativeTarget;
+        adjustedPos := mostNegativeTargetPos;
+        outOfRange := FALSE;
+	END_IF
+    IF travelMorePositiveTarget < shortestTravel AND morePositiveTargetWithinRange THEN
+        shortestTravel := travelMorePositiveTarget;
+        adjustedPos := morePositiveTargetPos;
+        outOfRange := FALSE;
+	END_IF
+    IF travelMostPositiveTarget < shortestTravel AND mostPositiveTargetWithinRange THEN
+        shortestTravel := travelMostPositiveTarget;
+        adjustedPos := mostPositiveTargetPos;
+        outOfRange := FALSE;
+	END_IF
+END_IF]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

@@ -1,0 +1,26 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.5">
+  <POU Name="SafetyIOWidget" Id="{880920fe-d759-447a-af28-bd4cfc94c93d}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK SafetyIOWidget
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR
+	actualStatus : StatusWidget;
+    domeAccess : SafetyDomeAccessIOWidget;
+    hydraulicsAndSafety : SafetyHydraulicsAndSafetyIOWidget;
+END_VAR
+VAR_IN_OUT
+	ref : SafetyIO;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[actualStatus(text  := ref.actualStatus,
+             color := HealthToColor(ref.statuses.healthStatus));
+
+domeAccess(ref := ref.parts.domeAccess);
+hydraulicsAndSafety(ref := ref.parts.hydraulicsAndSafety);]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

@@ -1,0 +1,20 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="SoEWriteProcessArgs" Id="{3910f7fd-f17c-4a04-83f3-ec3327d8fb50}">
+    <Declaration><![CDATA[TYPE SoEWriteProcessArgs :
+STRUCT
+	///SDO Index
+	index: UINT;
+	///Number of bytes to be written
+	noOfBytes: UDINT;
+	///Value to be written if noOfBytes is 1
+	value1Byte: USINT;
+	///Value to be written if noOfBytes is 2
+	value2Bytes: UINT;
+	///Value to be written if noOfBytes is 4
+	value4Bytes: UDINT;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

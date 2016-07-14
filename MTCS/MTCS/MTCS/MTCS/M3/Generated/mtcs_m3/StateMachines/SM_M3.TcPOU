@@ -1,0 +1,228 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="SM_M3" Id="{808fd6a7-a207-40c0-80b3-4ca0cd516d39}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK SM_M3
+VAR_INPUT
+	///Editable configuration of M3
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	editableConfig: M3Config;
+END_VAR
+VAR_OUTPUT
+	///Current status description
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	actualStatus: STRING;
+	///Active configuration of M3
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	config: M3Config;
+	///Name of the actual position according to config.knownPositions
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	actualKnownPositionName: STRING;
+	///ID of the actual position according to config.knownPositions
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	actualKnownPositionID: M3PositionIDs;
+	///Statuses of the state machine
+	statuses: M3Statuses;
+	///Parts of the state machine
+	parts: M3Parts;
+	///Processes of the state machine
+	processes: M3Processes;
+END_VAR
+VAR_IN_OUT
+	///Shared operator status
+	{attribute 'OPC.UA.DA' := '0'}
+	operatorStatus: OperatorStatus;
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[parts.rotation(
+    initializationStatus := statuses.initializationStatus,
+    operatorStatus := operatorStatus,
+    operatingStatus := statuses.operatingStatus,
+    config := config.rotation,
+    m3Config := config);
+parts.translation(
+    initializationStatus := statuses.initializationStatus,
+    operatorStatus := operatorStatus,
+    operatingStatus := statuses.operatingStatus,
+    config := config.translation,
+    m3Config := config);
+parts.io();
+parts.gotoProcedure(
+    rotation := parts.rotation,
+    translation := parts.translation,
+    m3Config := config);
+parts.configManager( isEnabled := operatorStatus.tech );
+statuses.initializationStatus();
+statuses.apertureStatus();
+statuses.healthStatus(
+    isGood := parts.rotation.statuses.healthStatus.isGood AND (parts.translation.statuses.healthStatus.isGood AND (parts.gotoProcedure.statuses.healthStatus.isGood AND parts.io.statuses.healthStatus.isGood)),
+    hasWarning := (parts.rotation.statuses.healthStatus.hasWarning OR (parts.translation.statuses.healthStatus.hasWarning OR (parts.gotoProcedure.statuses.healthStatus.hasWarning OR parts.io.statuses.healthStatus.hasWarning))) OR (statuses.busyStatus.idle AND (actualKnownPositionID = M3PositionIDs.UNKNOWN)));
+statuses.busyStatus( isBusy := parts.rotation.statuses.busyStatus.busy OR (parts.translation.statuses.busyStatus.busy OR parts.gotoProcedure.statuses.busyStatus.busy) );
+statuses.operatingStatus( superState := statuses.initializationStatus.initialized );
+processes.initialize( isEnabled := statuses.initializationStatus.shutdown OR (statuses.initializationStatus.initializingFailed OR statuses.initializationStatus.initialized) );
+processes.lock( isEnabled := operatorStatus.tech AND statuses.initializationStatus.initialized );
+processes.unlock( isEnabled := operatorStatus.tech AND statuses.initializationStatus.locked );
+processes.reset( isEnabled := statuses.healthStatus.bad );
+processes.changeOperatingState( isEnabled := statuses.busyStatus.idle AND statuses.initializationStatus.initialized );
+processes.gotoKnownPosition( isEnabled := parts.gotoProcedure.isGotoAllowed AND (statuses.initializationStatus.initialized AND statuses.operatingStatus.auto) );
+processes.gotoNewPosition( isEnabled := parts.gotoProcedure.isGotoAllowed AND (statuses.initializationStatus.initialized AND statuses.operatingStatus.auto) );
+processes.abort( isEnabled := parts.gotoProcedure.statuses.busyStatus.busy );
+]]></ST>
+    </Implementation>
+    <Method Name="unlock" Id="{26074b10-ac48-4a54-b981-20d4cf077033}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD unlock : RequestResults
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[unlock := THIS^.processes.unlock.request();
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="gotoNewPosition" Id="{500ba449-b5df-4c07-b4b6-2d5a2227149d}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD gotoNewPosition : RequestResults
+VAR_INPUT
+	rotationPosition: LREAL;
+	rotationOffset: LREAL;
+	translationPosition: LREAL;
+	doRotation: BOOL;
+	doTranslation: BOOL;
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[gotoNewPosition := THIS^.processes.gotoNewPosition.request(
+    rotationPosition := rotationPosition,
+    rotationOffset := rotationOffset,
+    translationPosition := translationPosition,
+    doRotation := doRotation,
+    doTranslation := doTranslation);
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="gotoKnownPosition" Id="{51f8d24f-716a-4380-b8f6-48af523a699d}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD gotoKnownPosition : RequestResults
+VAR_INPUT
+	name: STRING;
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[gotoKnownPosition := THIS^.processes.gotoKnownPosition.request( name := name );
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="abort" Id="{7652bedf-0095-4957-b3a3-45821dc365c4}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD abort : RequestResults
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[abort := THIS^.processes.abort.request();
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="changeOperatingState" Id="{7df37bea-4ff2-4963-a0cf-1f1c0a63cc48}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD changeOperatingState : RequestResults
+VAR_INPUT
+	state: OperatingStates;
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[changeOperatingState := THIS^.processes.changeOperatingState.request( state := state );
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="initialize" Id="{d41e2b83-8f18-4ef8-ac98-9f760ad3e056}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD initialize : RequestResults
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[initialize := THIS^.processes.initialize.request();
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="reset" Id="{ef6bf3a0-c520-44b9-8367-df51c9951d35}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD reset : RequestResults
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[reset := THIS^.processes.reset.request();
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="lock" Id="{fe677c4c-9b83-439d-b62a-402f02929410}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD lock : RequestResults
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[lock := THIS^.processes.lock.request();
+]]></ST>
+      </Implementation>
+    </Method>
+  </POU>
+</TcPlcObject>

@@ -1,0 +1,89 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="SM_SafetyMotionBlocking" Id="{1191de38-c71e-4eee-8bba-4c3de2975dc6}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK SM_SafetyMotionBlocking
+VAR_INPUT
+	///TwinSAFE group communication error
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	groupComError AT %I*: BOOL;
+	///TwinSAFE group function block error
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	groupFbError AT %I*: BOOL;
+	///TwinSAFE group output error
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	groupOutError AT %I*: BOOL;
+	///TRUE if the telescope azimuth axis is released
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	telescopeAzimuthReleaseOK AT %I*: BOOL;
+	///TRUE if the telescope elevation axis is released
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	telescopeElevationReleaseOK AT %I*: BOOL;
+	///TRUE if the telescope rotation axes are released
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	telescopeRotationReleaseOK AT %I*: BOOL;
+	///TRUE if motion is allowed
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	motionAllowed AT %I*: BOOL;
+END_VAR
+VAR_OUTPUT
+	///Current status description
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	actualStatus: STRING;
+	///Output to restart the TwinSAFE group
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	errorAcknowledge AT %Q*: BOOL;
+	///Statuses of the state machine
+	statuses: SafetyMotionBlockingStatuses;
+	///Processes of the state machine
+	processes: SafetyMotionBlockingProcesses;
+END_VAR
+VAR_IN_OUT
+	///Shared activity status
+	{attribute 'OPC.UA.DA' := '0'}
+	activityStatus: ActivityStatus;
+	{attribute 'OPC.UA.DA' := '0'}
+	hydraulics: SafetyHydraulics;
+	{attribute 'OPC.UA.DA' := '0'}
+	emergencyStops: SafetyEmergencyStops;
+	{attribute 'OPC.UA.DA' := '0'}
+	domeAccess: SafetyDomeAccess;
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[statuses.busyStatus( isBusy := processes.reset.statuses.busyStatus.busy );
+statuses.healthStatus(
+    isGood := NOT(groupComError OR (groupFbError OR groupOutError)),
+    hasWarning := (activityStatus.awake OR activityStatus.moving) AND (NOT(telescopeAzimuthReleaseOK AND (telescopeElevationReleaseOK AND telescopeRotationReleaseOK))));
+processes.reset( isEnabled := NOT(processes.reset.statuses.busyStatus.busy) );
+]]></ST>
+    </Implementation>
+    <Method Name="reset" Id="{07cda0dd-1b2c-4189-9465-c81cb105cf7f}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD reset : RequestResults
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[reset := THIS^.processes.reset.request();
+]]></ST>
+      </Implementation>
+    </Method>
+  </POU>
+</TcPlcObject>

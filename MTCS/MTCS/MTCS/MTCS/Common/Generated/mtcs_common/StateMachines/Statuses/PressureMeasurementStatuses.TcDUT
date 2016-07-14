@@ -1,0 +1,16 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="PressureMeasurementStatuses" Id="{4586ca2a-8fa0-43f9-98ae-cb2c5b5e74e7}">
+    <Declaration><![CDATA[TYPE PressureMeasurementStatuses :
+STRUCT
+	///Is the pressure being measured?
+	enabledStatus: EnabledStatus;
+	///Is the measurement OK?
+	healthStatus: HealthStatus;
+	///Alarm status
+	alarmStatus: HiHiLoLoAlarmStatus;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

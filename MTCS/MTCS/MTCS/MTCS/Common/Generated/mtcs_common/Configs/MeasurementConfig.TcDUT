@@ -1,0 +1,16 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="MeasurementConfig" Id="{35667af7-a410-4d51-b349-1c5d8309cbde}">
+    <Declaration><![CDATA[TYPE MeasurementConfig :
+STRUCT
+	///Is the quantity being measured? (Can be false e.g. if the sensor is deliberately not connected (yet).)
+	enabled: BOOL;
+	///Offset to be added to the measured value (default: 0 = no offset)
+	offset: LREAL;
+	///Config
+	alarms: HiHiLoLoAlarmConfig;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

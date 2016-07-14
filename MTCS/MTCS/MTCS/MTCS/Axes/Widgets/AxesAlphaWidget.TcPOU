@@ -1,0 +1,46 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="AxesAlphaWidget" Id="{e73c00d6-b95a-4518-b41f-50be38fb440a}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK AxesAlphaWidget
+VAR_INPUT
+    radians : LREAL;
+END_VAR
+VAR_OUTPUT
+    hms : HoursMinutesSeconds;
+    hours : LREAL;
+    hmsString : STRING;
+    
+END_VAR
+VAR
+    _secondsTruncated : LREAL;
+    _hmsFormat : STRING := '%dh %.2dm %04.1fs';
+    _formatString : FB_FormatString;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[
+hours := RAD_TO_HOUR(radians);
+
+
+hms.positive:= radians > 0;
+hms.hours   := TRUNC(ABS(hours));
+hms.minutes := TRUNC( (ABS(hours) - hms.hours) * 60.0 );
+hms.seconds := ((ABS(hours) - hms.hours) * 60.0 - hms.minutes) * 60.0;
+
+
+_secondsTruncated := (LTRUNC(hms.seconds * 10.0) / 10.0 );
+
+_formatString(
+    sFormat := _hmsFormat,
+    arg1 := F_DINT(hms.hours),
+    arg2 := F_DINT(hms.minutes),
+    arg3 := F_LREAL( _secondsTruncated ),
+    sOut => hmsString);
+    
+IF NOT hms.positive THEN
+    hmsString := CONCAT('-', hmsString);
+END_IF
+    ]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

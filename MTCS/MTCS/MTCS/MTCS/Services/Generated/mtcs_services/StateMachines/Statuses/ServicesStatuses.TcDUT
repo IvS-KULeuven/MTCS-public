@@ -1,0 +1,14 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="ServicesStatuses" Id="{e574acf7-8a6e-4a96-b2dc-de20129681ea}">
+    <Declaration><![CDATA[TYPE ServicesStatuses :
+STRUCT
+	initializationStatus: InitializationStatus;
+	healthStatus: HealthStatus;
+	busyStatus: BusyStatus;
+	operatingStatus: OperatingStatus;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

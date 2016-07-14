@@ -1,0 +1,24 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="CoverConfig" Id="{5f5e8c45-e37f-4434-a3ae-104c41f680ac}">
+    <Declaration><![CDATA[TYPE CoverConfig :
+STRUCT
+	///The config of the top panel set
+	top: CoverPanelSetConfig;
+	///The config of the bottom panel set
+	bottom: CoverPanelSetConfig;
+	///The opening velocity of the panels in degrees per second (always positive!)
+	openingVelocity: LREAL := 20.0;
+	///The closing velocity of the panels in degrees per second (always positive!)
+	closingVelocity: LREAL := 20.0;
+	///How many seconds should be waited after disabling a magnet, before a panel may move?
+	magnetRemanentTime: LREAL := 3.0;
+	///The minimum distance in degrees between both panelsets
+	targetDistanceBetweenPanelSets: LREAL;
+	///The minimum distance in degrees between both panelsets
+	minDistanceBetweenPanelSets: LREAL;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

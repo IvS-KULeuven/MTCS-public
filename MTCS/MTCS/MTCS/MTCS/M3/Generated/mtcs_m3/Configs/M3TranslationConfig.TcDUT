@@ -1,0 +1,36 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="M3TranslationConfig" Id="{92a93721-be0b-445f-80a7-ee787d2d35d2}">
+    <Declaration><![CDATA[TYPE M3TranslationConfig :
+STRUCT
+	///The continuous current limit for the translation stage motor in milliAmps, during homing
+	homingContinuousCurrentLimit: UINT;
+	///The peak current limit for the translation stage motor in milliAmps, during homing
+	homingPeakCurrentLimit: UINT;
+	///The velocity of the motor shaft during homing, in mm/sec
+	homingSearchLimitSwitchVelocity: LREAL;
+	///The velocity of the motor shaft during homing, in mm/sec
+	homingToHardwareStopVelocity: LREAL;
+	///The tolerance for which the axis appears to be standing still, in mm/sec
+	standstillTolerance: LREAL;
+	///The config of the faulhaber drive
+	motorDrive: FaulhaberDriveConfig;
+	///Negative soft limit, in millimeters
+	negativeSoftLimit: LREAL;
+	///Negative soft limit, in millimeters
+	positiveSoftLimit: LREAL;
+	///Maximum position error, in millimeters
+	maxPositionError: LREAL;
+	///Below this limit (in millimeters) the mirror will be drawn flipped away
+	drawCassegrainLimit: LREAL;
+	///Above this limit (in millimeters) the mirror will be drawn frontal
+	drawNasmythLimit: LREAL;
+	///Time while the Goto procedure may improve the position, in seconds
+	gotoImprovingPositionTime: LREAL;
+	///Velocity to go to a new position, in degrees/second
+	gotoVelocity: LREAL;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

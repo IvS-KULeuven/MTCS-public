@@ -1,0 +1,14 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="ChangeOperatorStateProcessArgs" Id="{012093fe-b7c7-4e1e-b639-722a619546ec}">
+    <Declaration><![CDATA[TYPE ChangeOperatorStateProcessArgs :
+STRUCT
+	///New operator state (e.g. OBSERVER, TECH, ...)
+	state: OperatorStates;
+	///Password (only sometimes required, e.g. to go from OBSERVER to TECH)
+	password: STRING;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

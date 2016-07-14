@@ -1,0 +1,18 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="M3RotationProcesses" Id="{47c3b199-4f3c-43be-8968-fa2186e6b07c}">
+    <Declaration><![CDATA[TYPE M3RotationProcesses :
+STRUCT
+	///Start moving the rotation stage to the given position
+	goto: M3RotationGoto;
+	///Abort any running procedures
+	abort: Process;
+	///Reset any errors
+	reset: Process;
+	///Start calibrating the rotation stage
+	calibrate: Process;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

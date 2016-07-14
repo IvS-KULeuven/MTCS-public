@@ -1,0 +1,12 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="M3GotoKnownPositionArgs" Id="{842bcfb0-7a5d-4ca7-9745-9b82542030d0}">
+    <Declaration><![CDATA[TYPE M3GotoKnownPositionArgs :
+STRUCT
+	///Name of the position (must be configured in M3Config.knownPositions!)
+	name: STRING;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

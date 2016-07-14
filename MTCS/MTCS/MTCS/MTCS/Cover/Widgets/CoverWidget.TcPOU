@@ -1,0 +1,62 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.2">
+  <POU Name="CoverWidget" Id="{9d0847d1-0b5d-4382-a075-5d7c5e1a91b0}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK CoverWidget
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+	top : CoverPanelSetWidget;
+	bottom : CoverPanelSetWidget;
+	io : CoverIOWidget;
+    configManager : ConfigManagerWidget;
+	initializationStatus : InitializationStatusWidget;
+	actualStatus : StatusWidget;
+	apertureProcedureStatus : StatusWidget;
+END_VAR
+VAR_IN_OUT
+	ref : Cover;
+END_VAR
+VAR
+    activeTab : CoverTabs := CoverTabs.OVERVIEW;
+    button_overview   : SubSystemButtonWidget('Overview', CoverTabs.OVERVIEW);
+    button_top        : SubSystemButtonWidget('Top'     , CoverTabs.TOP);
+    button_bottom     : SubSystemButtonWidget('Bottom'  , CoverTabs.BOTTOM);
+    button_io         : SubSystemButtonWidget('I/O'     , CoverTabs.IO);
+    button_config     : SubSystemButtonWidget('Config'  , CoverTabs.CONFIG);
+    
+    button_initialize : InitializeButtonWidget;
+    button_operating  : OperatingButtonWidget;
+    button_locking    : LockingButtonWidget;
+    
+    
+    activeConfigTab : CoverConfigTabs := CoverConfigTabs.GENERAL;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[top(panelSet := ref.parts.top, panelSetConfig := ref.config.top);
+bottom(panelSet := ref.parts.bottom, panelSetConfig := ref.config.bottom);
+io(io := ref.parts.io);
+initializationStatus(status := ref.statuses.initializationStatus);
+actualStatus(text  := ref.actualStatus,
+             color := SystemToColor(healthStatus := ref.statuses.healthStatus,
+                                    busyStatus   := ref.statuses.busyStatus,
+                                    initializationStatus := ref.statuses.initializationStatus,
+                                    operatingStatus := ref.statuses.operatingStatus));
+configManager(mgr := ref.parts.configManager);
+apertureProcedureStatus(text := ref.parts.apertureProcedure.actualStatus,
+                        color := HealthBusyToColor(healthStatus := ref.parts.apertureProcedure.statuses.healthStatus,
+                                                   busyStatus   := ref.parts.apertureProcedure.statuses.busyStatus));
+
+button_overview(    color := actualStatus.color                 , activeTab := activeTab);
+button_top(         color := top.actualStatus.color             , activeTab := activeTab);
+button_bottom(      color := bottom.actualStatus.color          , activeTab := activeTab);
+button_io(          color := io.actualStatus.color              , activeTab := activeTab);
+button_config(      color := configManager.actualStatus.color   , activeTab := activeTab);
+
+button_initialize(status := ref.statuses.initializationStatus, process := ref.processes.initialize);
+button_operating(status := ref.statuses.operatingStatus, process := ref.processes.changeOperatingState);
+button_locking(status := ref.statuses.initializationStatus, lock := ref.processes.lock, unlock := ref.processes.unlock);
+]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

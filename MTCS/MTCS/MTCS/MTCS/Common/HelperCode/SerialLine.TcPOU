@@ -1,0 +1,36 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.2">
+  <POU Name="SerialLine" Id="{0ab387bc-4498-48d5-9473-482c0a44385e}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK SerialLine
+VAR_INPUT
+    stIn_EL6001  AT %I* : EL6inData22B;
+    stOut_EL6001 AT %Q* : EL6outData22B;
+END_VAR
+VAR_OUTPUT
+    Error   : BOOL;
+    ErrorID : INT;
+    ErrorDescription : STRING;
+END_VAR
+VAR_IN_OUT
+   TxBuffer : ComBuffer;
+   RxBuffer : ComBuffer;
+END_VAR
+VAR
+    control : SerialLineControl;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[control(
+    Mode      := ComSerialLineMode_t.SERIALLINEMODE_EL6_22B,
+    pComIn    := ADR(stIn_EL6001),
+    pComOut   := ADR(stOut_EL6001),
+    SizeComIn := SIZEOF(stIn_EL6001),
+    TxBuffer  := TxBuffer,
+    RxBuffer  := RxBuffer,
+    Error     => Error,
+    ErrorID   => ErrorID);
+
+ErrorDescription := ComErrorToString(control.ErrorID);]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

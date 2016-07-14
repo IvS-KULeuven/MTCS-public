@@ -1,0 +1,55 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.2">
+  <POU Name="FaulhaberDriveWidget" Id="{0d519eb8-dda1-4ce1-91ac-4faa3bd3677a}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK FaulhaberDriveWidget
+VAR_INPUT
+    readNoOfBytesRadioButtonItem : INT := 0;
+    readNoOfBytes : UDINT;
+    writeNoOfBytesRadioButtonItem : INT := 0;
+    writeNoOfBytes : UDINT;
+END_VAR
+VAR_OUTPUT
+    readResultValue : UDINT;
+END_VAR
+VAR_IN_OUT
+    ref : FaulhaberDrive;
+END_VAR
+VAR
+	actualStatus : StatusWidget;
+	sdoReadStatus : StatusWidget;
+	sdoWriteStatus : StatusWidget;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[actualStatus(text := ref.actualStatus, 
+             color := HealthBusyToColor(healthStatus := ref.statuses.healthStatus, 
+                                        busyStatus := ref.statuses.busyStatus));
+                                        
+sdoReadStatus(text := ref.processes.read.actualStatus,
+              color := HealthBusyToColor(healthStatus := ref.processes.read.statuses.healthStatus, 
+                                         busyStatus := ref.processes.read.statuses.busyStatus));
+sdoWriteStatus(text := ref.processes.write.actualStatus,
+               color := HealthBusyToColor(healthStatus := ref.processes.write.statuses.healthStatus, 
+                                         busyStatus := ref.processes.write.statuses.busyStatus));
+
+IF readNoOfBytesRadioButtonItem = 0 THEN // first item of the radiobutton is selected
+    readNoOfBytes := 1;
+    readResultValue := ref.processes.read.value1Byte;
+ELSIF readNoOfBytesRadioButtonItem = 1 THEN // second item of the radiobutton is selected
+    readNoOfBytes := 2;
+    readResultValue := ref.processes.read.value2Bytes;
+ELSIF readNoOfBytesRadioButtonItem = 2 THEN // third item of the radiobutton is selected
+    readNoOfBytes := 4;
+    readResultValue := ref.processes.read.value4Bytes;
+END_IF
+
+IF writeNoOfBytesRadioButtonItem = 0 THEN // first item of the radiobutton is selected
+    writeNoOfBytes := 1;
+ELSIF writeNoOfBytesRadioButtonItem = 1 THEN // second item of the radiobutton is selected
+    writeNoOfBytes := 2;
+ELSIF writeNoOfBytesRadioButtonItem = 2 THEN // third item of the radiobutton is selected
+    writeNoOfBytes := 4;
+END_IF]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

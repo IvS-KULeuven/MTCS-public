@@ -1,0 +1,12 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="OperatingStates" Id="{af05d6e7-3182-4f77-9ead-dc70aee74a20}">
+    <Declaration><![CDATA[TYPE OperatingStates :
+(
+	AUTO := 0,
+	MANUAL := 1
+);
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

@@ -1,0 +1,29 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.5">
+  <POU Name="M2AxisToGeneralConfig" Id="{28ee8b23-b7d5-4459-9bf0-6265b1447411}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION M2AxisToGeneralConfig : M2AxisGeneralConfig
+VAR_INPUT
+    axis : M2Axes;
+END_VAR
+VAR_IN_OUT
+    config : M2Config;
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[CASE axis OF
+    M2Axes.X:
+        M2AxisToGeneralConfig := config.x.general;
+    M2Axes.Y:
+        M2AxisToGeneralConfig := config.y.general;
+    M2Axes.Z:
+        M2AxisToGeneralConfig := config.z.general;
+    M2Axes.TILTX:
+        M2AxisToGeneralConfig := config.tiltX.general;
+    M2Axes.TILTY:
+        M2AxisToGeneralConfig := config.tiltY.general;
+END_CASE]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

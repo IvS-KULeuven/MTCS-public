@@ -1,0 +1,234 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="SM_AX52XXDriveChannel" Id="{53dce70f-5402-4b64-b526-1e1194370fdd}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK SM_AX52XXDriveChannel
+VAR_INPUT
+	///Class 1 Diagnostic (C1D
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	errorC1D AT %I*: INT;
+	///Is control enabled?
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	isEnabled: BOOL;
+	///Torque feedback, cyclically updated by the drive channel
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	torqueFeedbackValue AT %I*: INT;
+	///Torque command (only in case of torque control!)
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	torqueCommandValue AT %Q*: INT;
+	///Digital inputs (e.g. bit 0 = 1 if input 0 = high), cyclically updated by the drive channel
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	digitalInputs AT %I*: INT;
+	///Digital outputs (e.g. bit 0 = 1 if input 0 = high), cyclically updated by the drive channel
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	digitalOutputs AT %Q*: INT;
+	///Safety option state (P-0-2002)
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	safetyOptionState AT %I*: INT;
+	///Diagnostic number
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	diagnosticNumber AT %I*: UDINT;
+    
+END_VAR
+VAR_OUTPUT
+	///Current status description
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	actualStatus: STRING;
+	///True if the drive is in safe state
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	isInSafetate: BOOL;
+	///The actual torque feedback value (updated constantly!)
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	actualTorqueFeedback: Torque;
+	///The configured channel peak current
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	channelPeakCurrent: Current;
+	///The configured channel peak current
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	channelRatedCurrent: Current;
+	///The motor continuous stall torque
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	continuousStallTorque: Torque;
+	///The motor continuous stall current
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	continuousStallCurrent: Current;
+	///The motor torque constant, in Nm/A
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	torqueConstant: LREAL;
+	///The drive bipolar torque limit
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	bipolarTorqueLimit: TorqueLimit;
+	///The drive positive torque limit
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	positiveTorqueLimit: TorqueLimit;
+	///The drive negative torque limit
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	negativeTorqueLimit: TorqueLimit;
+	///The drive operating mode, as an ENUM value
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	operatingMode: DriveOperatingModes;
+	///The drive operating mode, as a descriptive text
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	operatingModeDescription: STRING;
+	///The drive brake state, as an ENUM value
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	brakeState: DriveBrakeStates;
+	///The drive brake state, as a descriptive text
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	brakeStateDescription: STRING;
+	///The torque command (only in case of torque control!)
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	torqueCommand: TorqueLimit;
+	///Statuses of the state machine
+	statuses: AX52XXDriveChannelStatuses;
+	///Processes of the state machine
+	processes: AX52XXDriveChannelProcesses;
+    safetyErrorAck AT %Q* : BOOL;
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[actualTorqueFeedback( newNewtonmeterValue := ((torqueFeedbackValue / 1000.0) * channelPeakCurrent.amps.value) * torqueConstant );
+torqueCommand(
+    newFractionValue := torqueCommandValue / 1000.0,
+    maxNewtonmeter := channelPeakCurrent.amps.value * torqueConstant);
+statuses.busyStatus( isBusy := processes.write.statuses.busyStatus.busy OR (processes.read.statuses.busyStatus.busy OR (processes.update.statuses.busyStatus.busy OR processes.reset.statuses.busyStatus.busy)) );
+statuses.healthStatus(
+    isGood := processes.write.statuses.healthStatus.isGood AND (processes.read.statuses.healthStatus.isGood AND (processes.update.statuses.healthStatus.isGood AND processes.reset.statuses.healthStatus.isGood)),
+    hasWarning := processes.write.statuses.healthStatus.hasWarning OR (processes.read.statuses.healthStatus.hasWarning OR (processes.update.statuses.healthStatus.hasWarning OR processes.reset.statuses.healthStatus.hasWarning)));
+processes.read( isEnabled := isEnabled AND statuses.busyStatus.idle );
+processes.write( isEnabled := isEnabled AND statuses.busyStatus.idle );
+processes.update( isEnabled := statuses.busyStatus.idle );
+processes.acknowledgeSafetyError( isEnabled := isEnabled AND processes.acknowledgeSafetyError.statuses.busyStatus.idle );
+processes.reset( isEnabled := statuses.busyStatus.idle );
+processes.setBrake( isEnabled := isEnabled AND statuses.busyStatus.idle );
+]]></ST>
+    </Implementation>
+    <Method Name="reset" Id="{2401b3fe-ce9f-4f80-81ca-1ba736d30cd2}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD reset : RequestResults
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[reset := THIS^.processes.reset.request();
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="write" Id="{40146f48-9fe1-44a0-b6bb-1b345d7780fc}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD write : RequestResults
+VAR_INPUT
+	index: UINT;
+	noOfBytes: UDINT;
+	value1Byte: USINT;
+	value2Bytes: UINT;
+	value4Bytes: UDINT;
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[write := THIS^.processes.write.request(
+    index := index,
+    noOfBytes := noOfBytes,
+    value1Byte := value1Byte,
+    value2Bytes := value2Bytes,
+    value4Bytes := value4Bytes);
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="read" Id="{99afd4d0-f7a2-4f22-8cb2-512706a7f791}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD read : RequestResults
+VAR_INPUT
+	index: UINT;
+	noOfBytes: UDINT;
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[read := THIS^.processes.read.request(
+    index := index,
+    noOfBytes := noOfBytes);
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="update" Id="{b7597e9c-d98b-4934-beb8-99440096736f}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD update : RequestResults
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[update := THIS^.processes.update.request();
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="setBrake" Id="{d9cec951-ac87-4123-8b9a-9dc6859f676c}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD setBrake : RequestResults
+VAR_INPUT
+	newState: DriveBrakeStates;
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[setBrake := THIS^.processes.setBrake.request( newState := newState );
+]]></ST>
+      </Implementation>
+    </Method>
+  </POU>
+</TcPlcObject>

@@ -1,0 +1,14 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="HydraulicsSideProcesses" Id="{90078954-5e0e-4096-a546-1eb2320b7576}">
+    <Declaration><![CDATA[TYPE HydraulicsSideProcesses :
+STRUCT
+	///Reset the drive
+	resetDrive: Process;
+	///Change the frequency setpoint, in Hertz
+	changeFrequencySetpoint: ChangeSetpointProcess;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

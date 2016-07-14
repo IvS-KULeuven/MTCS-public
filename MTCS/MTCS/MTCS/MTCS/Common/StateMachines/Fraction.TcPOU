@@ -1,0 +1,17 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.2">
+  <POU Name="Fraction" Id="{7f7a3b46-710e-4911-8fea-f5c9d1ea3e27}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK Fraction EXTENDS SM_Fraction
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR
+    _testVar_Fraction : BOOL;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[SUPER^();]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

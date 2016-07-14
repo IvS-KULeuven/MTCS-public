@@ -1,0 +1,50 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="AxesKnownPositionsConfig" Id="{c6905d8c-74a1-471b-bcd0-8bf032ecdd96}">
+    <Declaration><![CDATA[TYPE AxesKnownPositionsConfig :
+STRUCT
+	///Known position 0
+	position0: AxesKnownPositionConfig;
+	///Known position 1
+	position1: AxesKnownPositionConfig;
+	///Known position 2
+	position2: AxesKnownPositionConfig;
+	///Known position 3
+	position3: AxesKnownPositionConfig;
+	///Known position 4
+	position4: AxesKnownPositionConfig;
+	///Known position 5
+	position5: AxesKnownPositionConfig;
+	///Known position 6
+	position6: AxesKnownPositionConfig;
+	///Known position 7
+	position7: AxesKnownPositionConfig;
+	///Known position 8
+	position8: AxesKnownPositionConfig;
+	///Known position 9
+	position9: AxesKnownPositionConfig;
+	///Known position 10
+	position10: AxesKnownPositionConfig;
+	///Known position 11
+	position11: AxesKnownPositionConfig;
+	///Known position 12
+	position12: AxesKnownPositionConfig;
+	///Known position 13
+	position13: AxesKnownPositionConfig;
+	///Known position 14
+	position14: AxesKnownPositionConfig;
+	///Known position 15
+	position15: AxesKnownPositionConfig;
+	///Known position 16
+	position16: AxesKnownPositionConfig;
+	///Known position 17
+	position17: AxesKnownPositionConfig;
+	///Known position 18
+	position18: AxesKnownPositionConfig;
+	///Known position 19
+	position19: AxesKnownPositionConfig;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

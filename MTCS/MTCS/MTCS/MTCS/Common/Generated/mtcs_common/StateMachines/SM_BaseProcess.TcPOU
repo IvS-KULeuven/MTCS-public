@@ -1,0 +1,37 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="SM_BaseProcess" Id="{ee868976-bfc8-44db-b11d-f128e2734413}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK SM_BaseProcess
+VAR_INPUT
+	///Should the trigger be enabled?
+	{attribute 'OPC.UA.DA' := '0'}
+	isEnabled: BOOL;
+END_VAR
+VAR_OUTPUT
+	///Current status description
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	actualStatus: STRING;
+	///Statuses of the state machine
+	statuses: BaseProcessStatuses;
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+	///Write TRUE to request the start of the process
+	{attribute 'OPC.UA.DA' := '1'}
+	do_request: BOOL;
+	///Result of the request
+	{attribute 'OPC.UA.DA' := '1'}
+	do_request_result: RequestResults;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[statuses.enabledStatus( isEnabled := isEnabled );
+statuses.busyStatus();
+statuses.healthStatus();
+statuses.startedStatus();
+]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

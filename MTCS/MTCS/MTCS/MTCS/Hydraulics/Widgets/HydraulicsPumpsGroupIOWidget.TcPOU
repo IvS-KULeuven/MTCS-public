@@ -1,0 +1,35 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.5">
+  <POU Name="HydraulicsPumpsGroupIOWidget" Id="{ff3d260e-886f-4f6d-8251-8a4420bacae1}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK HydraulicsPumpsGroupIOWidget
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR
+	actualStatus : StatusWidget;
+    
+	COU : EtherCatDeviceWidget;
+	DI1 : EtherCatDeviceWidget;
+	SI1 : EtherCatDeviceWidget;
+	SI2 : EtherCatDeviceWidget;
+	SI3 : EtherCatDeviceWidget;
+	DI2 : EtherCatDeviceWidget;
+END_VAR
+VAR_IN_OUT
+	ref : HydraulicsPumpsGroupIO;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[actualStatus(text  := ref.actualStatus,
+             color := HealthToColor(ref.statuses.healthStatus));
+
+COU(device := ref.parts.COU);
+DI1(device := ref.parts.DI1);
+SI1(device := ref.parts.SI1);
+SI2(device := ref.parts.SI2);
+SI3(device := ref.parts.SI3);
+DI2(device := ref.parts.DI2);]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

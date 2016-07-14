@@ -1,0 +1,51 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="SM_M3RotationTarget" Id="{99853be8-9cfd-4442-8479-4244b8eef5f3}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK SM_M3RotationTarget
+VAR_INPUT
+	///TRUE if a target is given
+	{attribute 'OPC.UA.DA' := '0'}
+	isTargetGiven: BOOL;
+	///New target position in degrees
+	{attribute 'OPC.UA.DA' := '0'}
+	newPositionDegrees: LREAL;
+	///New target offset in degrees
+	{attribute 'OPC.UA.DA' := '0'}
+	newOffsetDegrees: LREAL;
+END_VAR
+VAR_OUTPUT
+	///Current status description
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	actualStatus: STRING;
+	///Name of the target (only in case the position and offset match an entry in the config!)
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	name: STRING;
+	///Target position for M3 rotation (only in case statuses.targetStatus.noTargetGiven is FALSE)
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	position: AngularPosition;
+	///Target offset for M3 rotation (only in case statuses.targetStatus.noTargetGiven is FALSE)
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	offset: AngularPosition;
+	///Statuses of the state machine
+	statuses: M3RotationTargetStatuses;
+END_VAR
+VAR_IN_OUT
+	///The known positions
+	{attribute 'OPC.UA.DA' := '0'}
+	knownPositions: M3KnownPositionsConfig;
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[position( newDegreesValue := newPositionDegrees );
+offset( newDegreesValue := newOffsetDegrees );
+statuses.targetStatus();
+]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

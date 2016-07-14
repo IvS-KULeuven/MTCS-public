@@ -1,0 +1,102 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<safetyApplicationLanguageDiagram Crc="1210923807" dslVersion="1.1.0.0" Id="ac840132-ced0-4404-8d14-68a344a51023" absoluteBounds="0, 0, 11, 8.5" name="TwinSAFE">
+  <safetyApplicationMoniker name="/" />
+  <nestedChildShapes>
+    <networkSwimLane Id="a06748aa-5bd0-4c68-b108-122345acc6e0" absoluteBounds="0, 0, 7.2675626230239869, 4.42270832836628" expandBound="0, 0, 0, 0">
+      <networkMoniker name="//Network1" />
+      <nestedChildShapes>
+        <fBDecoupleShape Id="50c42857-1549-49bd-b81a-ce49946a48fd" absoluteBounds="2.25, 0.625, 2.75, 3.25">
+          <fBDecoupleMoniker name="//Network1/FBDecouple1" />
+          <relativeChildShapes>
+            <inPortShape Id="00d2d6ba-e826-4d50-97b9-17826b410e5a" absoluteBounds="2.18, 1.6400000000000001, 0.15, 0.15">
+              <inPortMoniker name="//Network1/FBDecouple1/DecIn1" />
+              <relativeChildShapes />
+            </inPortShape>
+            <inPortShape Id="efd3878e-b5a1-44a3-871e-3f5f77bfbe5e" absoluteBounds="2.18, 1.9100000000000001, 0.15, 0.15">
+              <inPortMoniker name="//Network1/FBDecouple1/DecIn2" />
+              <relativeChildShapes />
+            </inPortShape>
+            <inPortShape Id="a7ec07cc-60ca-4715-b2ac-fbc390b8f0de" absoluteBounds="2.18, 2.18, 0.15, 0.15">
+              <inPortMoniker name="//Network1/FBDecouple1/DecIn3" />
+              <relativeChildShapes />
+            </inPortShape>
+            <inPortShape Id="a12aa33d-79dc-4e95-be5b-dcee6b040777" absoluteBounds="2.18, 2.45, 0.15, 0.15">
+              <inPortMoniker name="//Network1/FBDecouple1/DecIn4" />
+              <relativeChildShapes />
+            </inPortShape>
+            <inPortShape Id="49620fa6-9262-41c7-ba80-be857a2f7a1b" absoluteBounds="2.18, 2.72, 0.15, 0.15">
+              <inPortMoniker name="//Network1/FBDecouple1/DecIn5" />
+              <relativeChildShapes />
+            </inPortShape>
+            <inPortShape Id="366529cb-79e1-46c0-8604-161eea7d3e4d" absoluteBounds="2.18, 2.99, 0.15, 0.15">
+              <inPortMoniker name="//Network1/FBDecouple1/DecIn6" />
+              <relativeChildShapes />
+            </inPortShape>
+            <inPortShape Id="31d97156-753f-47e3-bf46-571c21178ada" absoluteBounds="2.18, 3.2600000000000002, 0.15, 0.15">
+              <inPortMoniker name="//Network1/FBDecouple1/DecIn7" />
+              <relativeChildShapes />
+            </inPortShape>
+            <inPortShape Id="a7846492-37f1-40ea-9b9a-f94b741491c4" absoluteBounds="2.18, 3.5300000000000002, 0.15, 0.15">
+              <inPortMoniker name="//Network1/FBDecouple1/DecIn8" />
+              <relativeChildShapes />
+            </inPortShape>
+            <outPortShape Id="acd4f142-9a39-44c9-a793-3a495f66a5b2" absoluteBounds="4.91, 1.6400000000000001, 0.15, 0.15">
+              <outPortMoniker name="//Network1/FBDecouple1/DecOut1" />
+              <relativeChildShapes />
+            </outPortShape>
+            <outPortShape Id="57fd030f-3c6d-4a18-b812-14eedac90bb5" absoluteBounds="4.91, 1.9100000000000001, 0.15, 0.15">
+              <outPortMoniker name="//Network1/FBDecouple1/DecOut2" />
+              <relativeChildShapes />
+            </outPortShape>
+            <outPortShape Id="4f1abee8-9378-4750-911a-4443f1e2f9db" absoluteBounds="4.91, 2.18, 0.15, 0.15">
+              <outPortMoniker name="//Network1/FBDecouple1/DecOut3" />
+              <relativeChildShapes />
+            </outPortShape>
+            <outPortShape Id="3ac184ea-3ce8-4a20-84f9-789c28ef5367" absoluteBounds="4.91, 2.45, 0.15, 0.15">
+              <outPortMoniker name="//Network1/FBDecouple1/DecOut4" />
+              <relativeChildShapes />
+            </outPortShape>
+            <outPortShape Id="dd9af99f-67bd-42bb-98fb-606d28dd4f0e" absoluteBounds="4.91, 2.72, 0.15, 0.15">
+              <outPortMoniker name="//Network1/FBDecouple1/DecOut5" />
+              <relativeChildShapes />
+            </outPortShape>
+            <outPortShape Id="16c72ff8-ee2e-46b5-8611-436ea61801d2" absoluteBounds="4.91, 2.99, 0.15, 0.15">
+              <outPortMoniker name="//Network1/FBDecouple1/DecOut6" />
+              <relativeChildShapes />
+            </outPortShape>
+            <outPortShape Id="3098b297-f2ce-4bdf-8f17-a1b48c6ee6e5" absoluteBounds="4.91, 3.2600000000000002, 0.15, 0.15">
+              <outPortMoniker name="//Network1/FBDecouple1/DecOut7" />
+              <relativeChildShapes />
+            </outPortShape>
+            <outPortShape Id="cbb98f9e-8644-4c4e-a106-cce8a5289f26" absoluteBounds="4.91, 3.5300000000000002, 0.15, 0.15">
+              <outPortMoniker name="//Network1/FBDecouple1/DecOut8" />
+              <relativeChildShapes />
+            </outPortShape>
+          </relativeChildShapes>
+        </fBDecoupleShape>
+      </nestedChildShapes>
+    </networkSwimLane>
+    <networkSwimLane Id="64b489e7-aa3b-4b68-9c0d-fecadd05001c" absoluteBounds="0, 4.42270832836628, 6.9775, 3.4308333432674418" expandBound="0, 0, 0, 0">
+      <networkMoniker name="//Network2" />
+      <nestedChildShapes>
+        <fBTofShape Id="607d8725-d13f-406c-ad4e-e80748f4b1e1" absoluteBounds="2.25, 5.04770832836628, 3.35, 2.25">
+          <fBTofMoniker name="//Network2/FBTof1" />
+          <relativeChildShapes>
+            <inPortShape Id="11500e5d-428d-4aa9-bc51-3460486fe859" absoluteBounds="2.18, 5.79270832836628, 0.15, 0.15">
+              <inPortMoniker name="//Network2/FBTof1/TofIn" />
+              <relativeChildShapes />
+            </inPortShape>
+            <outPortShape Id="41c8db3b-dba7-4322-8886-8c563b2b16ec" absoluteBounds="5.48, 6.33270832836628, 0.15, 0.15">
+              <outPortMoniker name="//Network2/FBTof1/TofOut" />
+              <relativeChildShapes />
+            </outPortShape>
+            <paramPortShape Id="31d5c628-9135-41d8-836a-79f6e8dbf8d9" absoluteBounds="3.83, 6.7227083283662807, 0.7, 0.2">
+              <parameterPortMoniker name="//Network2/FBTof1/Delay Time (s)" />
+              <relativeChildShapes />
+            </paramPortShape>
+          </relativeChildShapes>
+        </fBTofShape>
+      </nestedChildShapes>
+    </networkSwimLane>
+  </nestedChildShapes>
+</safetyApplicationLanguageDiagram>

@@ -1,0 +1,28 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.2">
+  <POU Name="CANopenBus" Id="{cc711051-3f43-4578-8885-e438d74720de}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK CANopenBus EXTENDS SM_CANopenBus
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR
+    testVar : INT;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[//IF GLOBAL.CONFIG.SIMULATION_ACTIVE THEN
+//    SUPER^.infoData := 8;
+//    SUPER^.wcState := FALSE;
+//END_IF
+
+SUPER^();
+
+IF error = 0 THEN
+    actualStatus := 'No errors';
+ELSE
+    actualStatus := CONCAT(USINT_TO_STRING(error), ' boxes have errors');
+END_IF]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

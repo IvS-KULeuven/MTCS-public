@@ -1,0 +1,17 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.5">
+  <DUT Name="SafetyTabs" Id="{9a89bf08-b722-4887-9a72-da47ddd74648}">
+    <Declaration><![CDATA[TYPE SafetyTabs :
+(
+	OVERVIEW := 0,
+    EMERGENCY_STOPS := 1,
+    HYDRAULICS := 2,
+    DOME_ACCESS := 3,
+    MOTION_BLOCKING := 4,
+    IO := 5,
+    CONFIG := 6
+);
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

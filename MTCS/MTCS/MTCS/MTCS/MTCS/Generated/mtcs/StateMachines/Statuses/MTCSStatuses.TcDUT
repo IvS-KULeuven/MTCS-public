@@ -1,0 +1,16 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="MTCSStatuses" Id="{149b713f-ea22-4f50-ae54-fc32d584a8b3}">
+    <Declaration><![CDATA[TYPE MTCSStatuses :
+STRUCT
+	initializationStatus: InitializationStatus;
+	healthStatus: HealthStatus;
+	busyStatus: BusyStatus;
+	operatorStatus: OperatorStatus;
+	passwordHealthStatus: HealthStatus;
+	activityStatus: ActivityStatus;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

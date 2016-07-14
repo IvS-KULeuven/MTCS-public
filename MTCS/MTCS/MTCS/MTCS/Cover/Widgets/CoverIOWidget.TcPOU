@@ -1,0 +1,50 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.2">
+  <POU Name="CoverIOWidget" Id="{6730ce80-094c-485c-9bc0-7507f3ce4d42}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK CoverIOWidget
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR
+	actualStatus : StatusWidget;
+	coupler : EtherCatDeviceWidget;
+	slot1 : EtherCatDeviceWidget;
+	slot2 : EtherCatDeviceWidget;
+	slot3 : EtherCatDeviceWidget;
+	slot4 : EtherCatDeviceWidget;
+	slot5 : EtherCatDeviceWidget;
+	slot6 : EtherCatDeviceWidget;
+	slot7 : EtherCatDeviceWidget;
+	slot8 : EtherCatDeviceWidget;
+	slot9 : EtherCatDeviceWidget;
+	slot10 : EtherCatDeviceWidget;
+	slot11 : EtherCatDeviceWidget;
+	slot12 : EtherCatDeviceWidget;
+	slot13 : EtherCatDeviceWidget;
+END_VAR
+VAR_IN_OUT
+	io : CoverIO;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[actualStatus(text  := io.actualStatus,
+             color := HealthToColor(io.statuses.healthStatus));
+
+coupler(device := io.parts.coupler);
+slot1(device := io.parts.slot1);
+slot2(device := io.parts.slot2);
+slot3(device := io.parts.slot3);
+slot4(device := io.parts.slot4);
+slot5(device := io.parts.slot5);
+slot6(device := io.parts.slot6);
+slot7(device := io.parts.slot7);
+slot8(device := io.parts.slot8);
+slot9(device := io.parts.slot9);
+slot10(device := io.parts.slot10);
+slot11(device := io.parts.slot11);
+slot12(device := io.parts.slot12);
+slot13(device := io.parts.slot13);]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

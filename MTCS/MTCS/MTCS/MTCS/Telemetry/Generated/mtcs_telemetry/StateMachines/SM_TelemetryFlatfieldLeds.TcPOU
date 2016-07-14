@@ -1,0 +1,38 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="SM_TelemetryFlatfieldLeds" Id="{083218a2-2598-4f2b-8371-8e7ae052558d}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK SM_TelemetryFlatfieldLeds
+VAR_INPUT
+	///Is control enabled?
+	{attribute 'OPC.UA.DA' := '0'}
+	isEnabled: BOOL;
+END_VAR
+VAR_OUTPUT
+	///Current status description
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	actualStatus: STRING;
+	///Statuses of the state machine
+	statuses: TelemetryFlatfieldLedsStatuses;
+	///Parts of the state machine
+	parts: TelemetryFlatfieldLedsParts;
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[parts.output1( isEnabled := isEnabled );
+parts.output2( isEnabled := isEnabled );
+parts.output3( isEnabled := isEnabled );
+parts.output4( isEnabled := isEnabled );
+parts.output5( isEnabled := isEnabled );
+parts.output6( isEnabled := isEnabled );
+parts.output7( isEnabled := isEnabled );
+parts.output8( isEnabled := isEnabled );
+statuses.busyStatus( isBusy := parts.output1.statuses.busyStatus.busy OR (parts.output2.statuses.busyStatus.busy OR (parts.output3.statuses.busyStatus.busy OR (parts.output4.statuses.busyStatus.busy OR (parts.output5.statuses.busyStatus.busy OR (parts.output6.statuses.busyStatus.busy OR (parts.output7.statuses.busyStatus.busy OR parts.output8.statuses.busyStatus.busy)))))) );
+]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

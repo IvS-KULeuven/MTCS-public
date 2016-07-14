@@ -1,0 +1,18 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="SafetyProcesses" Id="{4b344445-d694-4cd9-8685-f344c5496f97}">
+    <Declaration><![CDATA[TYPE SafetyProcesses :
+STRUCT
+	///Start initializing
+	initialize: Process;
+	///Lock the system
+	lock: Process;
+	///Unlock the system
+	unlock: Process;
+	///Change the operating state (e.g. AUTO, MANUAL, ...)
+	changeOperatingState: ChangeOperatingStateProcess;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

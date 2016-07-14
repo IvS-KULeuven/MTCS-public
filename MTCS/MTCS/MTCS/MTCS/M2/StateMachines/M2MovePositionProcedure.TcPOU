@@ -1,0 +1,663 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="M2MovePositionProcedure" Id="{507b112e-f3d0-4277-8b4d-25a20ef74e93}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK M2MovePositionProcedure EXTENDS SM_M2MovePositionProcedure
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR
+    substate : INT;
+    _axis : M2Axes;
+    _position : LREAL;
+	_cause : STRING;
+    _axisConfig : M2AxisGeneralConfig;
+    _gearReduction : LREAL;
+    _feedbackResolution : LREAL;
+    _screwPitch : LREAL;
+    _minPosition : LREAL;
+    _maxPosition : LREAL;
+    
+    // temporary vars
+    _steps : UDINT;
+    _cw : BOOL;
+    _delta : LREAL;
+    
+    // move to anti-backlash position
+    _stepsA : UDINT;
+    _cwA : BOOL;
+    _fastA : BOOL;
+    _deltaA : LREAL;
+    
+    // sometimes a second movement is necessary
+    _deltaA_tooCloseToFinal : LREAL;
+    _stepsA_tooCloseToFinal : UDINT;
+    _cwA_tooCloseToFinal : BOOL;
+    _deltaA_tooFarOff : LREAL;
+    _stepsA_tooFarOff : UDINT;
+    _cwA_tooFarOff : BOOL;
+    
+    // Move to close position
+    _stepsC : UDINT;
+    _cwC : BOOL;
+    _deltaC : LREAL;
+    
+    // Move to final position
+    _stepsF : UDINT;
+    _cwF : BOOL;
+    _deltaF : LREAL;
+    
+    _backlashLifted : BOOL;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[(*
+E.g. IF the FINAL sense is clockwise (finalSenseCW = TRUE):
+
+                    finalPos  closePos           ablPos
+-----------------------F-------C--------------------A----//-------------> + (CCW)
+             |              |             |                   |
+             |              |             |                   |
+ actualPos:  caseA          caseB         caseC               caseD
+
+ 
+Moves to make if the anti-backlash is already lifted:
+         
+           To ablPos     To closePos    To finalPos
+ caseA:    actual->A     A->C           C->F
+ caseB:                                 actual->F
+ caseC:                  actual->C      C->F
+ caseD:    actual->A     A->C           C->F
+
+If the anti-backlash is not lifted yet, then:
+
+           To ablPos     To closePos    To finalPos
+           actual->A     A->C           C->F 
+ 
+                           caseA  caseB  caseC
+finalSense                  <--    <--    <--
+_cw                         -->    <--    <--
+_steps ? oneButFinalMove     >      <      >
+*)
+
+_update();
+
+// run the procedure
+CASE state OF
+    M2MoveProcedureStates.IDLE: 
+        _idle();
+    M2MoveProcedureStates.ABORTED: 
+        _aborted();
+    M2MoveProcedureStates.PREPARE_PROCESS: 
+        _prepareProcess();
+    M2MoveProcedureStates.MOVING_TO_ANTI_BACKLASH_POSITION: 
+        _movingToAntiBacklashPosition();
+    M2MoveProcedureStates.MOVING_CLOSE_TO_FINAL_POSITION: 
+        _movingToClosePosition();
+    M2MoveProcedureStates.MOVING_TO_FINAL_POSITION: 
+        _movingToFinalPosition();
+    M2MoveProcedureStates.ERROR: 
+        _error();
+    M2MoveProcedureStates.ABORTING: 
+        _aborting();
+END_CASE
+
+
+IF state = M2MoveProcedureStates.ERROR THEN
+    actualStatus := _cause;
+ELSE
+    actualStatus := _stateToString(state);
+END_IF
+
+_update();]]></ST>
+    </Implementation>
+    <Method Name="_movingToFinalPosition" Id="{0051b70c-5e96-4b28-8f24-e7a0136b20dd}">
+      <Declaration><![CDATA[METHOD _movingToFinalPosition
+VAR_INPUT
+END_VAR]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[
+CASE substate OF
+    
+    0:
+        // calculate the steps to move to the final position (F)
+        M2ComputeAbsoluteMove(
+            initialPosition    := _getActualPosition(),
+            finalPosition      := _position,
+            gearReduction      := _gearReduction,
+            feedbackResolution := _feedbackResolution,
+            screwPitch         := _screwPitch,
+            deltaPosition      => _delta,
+            steps              => _steps,
+            cw                 => _cw);
+        
+        // verify that the steps and sense are what we expect at this point
+        // only try to move we need to:
+        IF _steps < _axisConfig.stoppingSteps THEN
+            substate := 1000; // strange, but not really an error
+        ELSIF _cw <> _axisConfig.finalSenseCW THEN
+            substate := 999;
+            _cause := 'Moved closer, but to wrong side';
+        ELSE
+            // OK we can move to the final position (F)
+            _stepsF := _steps;
+            _cwF := _cw;
+            _deltaF := _delta;
+            substate := 1;
+		END_IF
+    1:
+        moveStepsProcedure.start(
+            axis := _axis,
+            steps := _stepsF,
+            cw := _cwF,
+            fast := FALSE);
+        substate := 2;
+    2:
+        IF moveStepsProcedure.statuses.busyStatus.idle THEN
+            IF moveStepsProcedure.statuses.healthStatus.good THEN
+                substate := 1000;
+            ELSE
+                _cause := CONCAT('Move final: ', moveStepsProcedure.actualStatus);
+                substate := 999;
+			END_IF
+		END_IF
+    999:
+        state := M2MoveProcedureStates.ERROR;
+        substate := 0;
+    1000:
+        // OK all done
+        state := M2MoveProcedureStates.IDLE;
+        substate := 0;
+END_CASE]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="start" Id="{08af5861-8d60-4c8c-92ba-333c006b9131}">
+      <Declaration><![CDATA[METHOD start
+VAR_INPUT
+    axis : M2Axes;
+    position : LREAL; // in Micrometer
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF state = M2MoveProcedureStates.IDLE OR state = M2MoveProcedureStates.ERROR OR state = M2MoveProcedureStates.ABORTED THEN
+    _axis        := axis;
+    _position    := position;
+    _axisConfig  := M2AxisToGeneralConfig(_axis, config);
+    
+    state       := M2MoveProcedureStates.PREPARE_PROCESS;
+    substate    := 0;
+    
+END_IF
+
+_update();]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_update" Id="{0d416aeb-9d9a-4466-ad01-b3910b847374}">
+      <Declaration><![CDATA[METHOD _update
+VAR_INPUT
+END_VAR
+
+VAR
+END_VAR]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[SUPER^(
+    powerOn := powerOn, 
+    x := x, 
+    y := y, 
+    z := z, 
+    tiltX := tiltX, 
+    tiltY := tiltY, 
+    multiplexer := multiplexer, 
+    moveStepsProcedure := moveStepsProcedure,
+    config := config);
+
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_getActualPosition" Id="{0fd7a1d3-3c9a-4753-94ae-3fbfdd5f796f}">
+      <Declaration><![CDATA[METHOD _getActualPosition : LREAL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[CASE _axis OF
+    M2Axes.X:
+        _getActualPosition := x.position.average.micrometers.value;
+    M2Axes.Y:
+        _getActualPosition := y.position.average.micrometers.value;
+    M2Axes.Z:
+        _getActualPosition := z.position.average.micrometers.value;
+    M2Axes.TILTX:
+        _getActualPosition := tiltX.position.average.micrometers.value;
+    M2Axes.TILTY:
+        _getActualPosition := tiltY.position.average.micrometers.value;
+END_CASE]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_stateToString" Id="{11400f43-540a-4df7-ab50-69c33ccc61c9}">
+      <Declaration><![CDATA[METHOD _stateToString : STRING
+VAR_INPUT
+    x : M2MoveProcedureStates;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[CASE x OF
+    M2MoveProcedureStates.IDLE: 
+        _stateToString := 'Idle';
+    M2MoveProcedureStates.ABORTED: 
+        _stateToString := 'Aborted';
+    M2MoveProcedureStates.PREPARE_PROCESS: 
+        _stateToString := 'Preparing process';
+    M2MoveProcedureStates.MOVING: 
+        _stateToString := 'Moving';
+    M2MoveProcedureStates.MOVING_TO_ANTI_BACKLASH_POSITION: 
+        _stateToString := 'Moving to anti-backlash position';
+    M2MoveProcedureStates.MOVING_CLOSE_TO_FINAL_POSITION: 
+        _stateToString := 'Moving close to final position';
+    M2MoveProcedureStates.MOVING_TO_FINAL_POSITION: 
+        _stateToString := 'Moving to final position';
+    M2MoveProcedureStates.ERROR: 
+        _stateToString := 'Error';
+    M2MoveProcedureStates.ABORTING: 
+        _stateToString := 'Aborting';
+END_CASE]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_movingToAntiBacklashPosition" Id="{1695b4d0-b9e7-4978-b041-da98c06f8a8f}">
+      <Declaration><![CDATA[METHOD _movingToAntiBacklashPosition
+VAR_INPUT
+END_VAR]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[
+CASE substate OF
+    0:
+        moveStepsProcedure.start(
+            axis  := _axis,
+            steps := _stepsA,
+            cw    := _cwA,
+            fast  := _fastA);
+        substate := 1;
+    1:
+        IF moveStepsProcedure.statuses.busyStatus.idle THEN
+            IF moveStepsProcedure.statuses.healthStatus.good THEN
+                substate := 2;
+            ELSE
+                _cause := CONCAT('Move to ABL: ', moveStepsProcedure.actualStatus);
+                substate := 999;
+			END_IF
+		END_IF
+    2:
+        // since the previous movement could be a very long one,
+        // and since potentiometers are not 100% linear, it can be that we arrived 
+        // pretty far off the anti-backlash position. If necessary, we
+        // do a refinement movement
+            
+        // calculate the steps to move to the final position
+        M2ComputeAbsoluteMove(
+            initialPosition    := _getActualPosition(),
+            finalPosition      := _position,
+            gearReduction      := _gearReduction,
+            feedbackResolution := _feedbackResolution,
+            screwPitch         := _screwPitch,
+            deltaPosition      => _delta,
+            steps              => _steps,
+            cw                 => _cw);
+        
+        IF (_cw <> _axisConfig.finalSenseCW) THEN
+            // we arrived on the wrong side of the final position!
+            // this is probably not normal, it means that we have travelled a lot less than we should have
+            // The potentiometer measurements are not extremely linear, but probably not so bad that they
+            // would cause this behavior.
+            // anyway we still try to correct it, persistent as we are!
+            _deltaA_tooFarOff := _delta;
+            _stepsA_tooFarOff := _steps + _axisConfig.antiBacklashPosition;
+            _cwA_tooFarOff    := _cw; // same direction
+            // start the 2nd movement
+            moveStepsProcedure.start(
+                axis  := _axis,
+                steps := _stepsA_tooFarOff,
+                cw    := _cwA_tooFarOff,
+                fast  := FALSE);
+            substate := 3;
+            
+        ELSIF (_steps < (_axisConfig.antiBacklashPosition - _axisConfig.closePosition)) THEN
+            // we arrived too close to the final position!
+            // too close, because we still need to lift the backlash 
+            // (this is done between the antiBacklashPosition and closePosition!)
+            _deltaA_tooCloseToFinal := _delta;
+            _stepsA_tooCloseToFinal := _axisConfig.antiBacklashPosition - _steps;
+            _cwA_tooCloseToFinal    := NOT _cw;
+            // start the 2nd movement
+            moveStepsProcedure.start(
+                axis  := _axis,
+                steps := _stepsA_tooCloseToFinal,
+                cw    := _cwA_tooCloseToFinal,
+                fast  := FALSE);
+            substate := 3;
+            
+        ELSIF (_steps > (_axisConfig.antiBacklashPosition + _axisConfig.closePosition)) THEN
+            // we're not very close to the antiBacklashPosition it seems!
+            _deltaA_tooFarOff := _delta;
+            _stepsA_tooFarOff := _steps - _axisConfig.antiBacklashPosition;
+            _cwA_tooFarOff    := _cw;
+            // start the 2nd movement
+            moveStepsProcedure.start(
+                axis  := _axis,
+                steps := _stepsA_tooFarOff,
+                cw    := _cwA_tooFarOff,
+                fast  := FALSE);
+            substate := 3;
+        ELSE
+            substate := 1000;
+		END_IF
+    3:
+        IF moveStepsProcedure.statuses.busyStatus.idle THEN
+            IF moveStepsProcedure.statuses.healthStatus.good THEN
+                substate := 1000;
+            ELSE
+                _cause := CONCAT('Move to ABL (2): ', moveStepsProcedure.actualStatus);
+                substate := 999;
+			END_IF
+		END_IF
+    999:
+        state := M2MoveProcedureStates.ERROR;
+        substate := 0;
+    1000:
+        state := M2MoveProcedureStates.MOVING_CLOSE_TO_FINAL_POSITION;
+        substate := 0;
+END_CASE]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_error" Id="{47c5e660-86b5-4150-adfe-7e336f377ce6}">
+      <Declaration><![CDATA[METHOD _error
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// nothing to do, just waiting for the reset...
+;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_aborted" Id="{4d9851d1-1a2e-4df1-a046-ace7834117af}">
+      <Declaration><![CDATA[METHOD _aborted
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// not doing anything, just being aborted... :-)
+;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_idle" Id="{992a8171-502d-4e1f-af91-b41ddb5d5aad}">
+      <Declaration><![CDATA[METHOD _idle
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// not doing anything, just being idle... :-)
+;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_aborting" Id="{cb6ae995-b1f6-40d9-8fc5-f4d88c37a4fc}">
+      <Declaration><![CDATA[METHOD _aborting
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[CASE substate OF
+    0: 
+		moveStepsProcedure.abort();
+        substate := 1;
+    1:
+        IF moveStepsProcedure.statuses.busyStatus.idle THEN
+            state := M2MoveProcedureStates.ABORTED;
+            substate := 0;
+		END_IF
+END_CASE]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="abort" Id="{e718152b-bfa7-4f7c-9ee3-952cc056f28c}">
+      <Declaration><![CDATA[METHOD abort
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF statuses.busyStatus.busy THEN
+    // go to the aborting state
+    state    := M2MoveProcedureStates.ABORTING;
+    substate := 0;
+    _cause   := '';
+    _update();
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_movingToClosePosition" Id="{ea9cc6d1-9c46-4cce-b7da-155831dfe68b}">
+      <Declaration><![CDATA[METHOD _movingToClosePosition
+VAR_INPUT
+END_VAR]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[
+CASE substate OF
+    
+    0:
+        // calculate the steps to move to the close position (C)
+        M2ComputeAbsoluteMove(
+            initialPosition    := _getActualPosition(),
+            finalPosition      := _position,
+            gearReduction      := _gearReduction,
+            feedbackResolution := _feedbackResolution,
+            screwPitch         := _screwPitch,
+            deltaPosition      => _delta,
+            steps              => _steps,
+            cw                 => _cw);
+        
+        // verify that the steps and sense are what we expect at this point
+        // only try to move we need to:
+        IF _steps < _axisConfig.stoppingSteps THEN
+            substate := 999;
+            _cause := 'Moved closer, but already on target';
+        ELSIF _cw <> _axisConfig.finalSenseCW THEN
+            substate := 999;
+            _cause := 'Moved closer, but to wrong side';
+        ELSE
+            // OK we can move to the Close position (C)
+            _stepsC := _steps - _axisConfig.closePosition;
+            _cwC := _cw;
+            _deltaC := _delta;
+            substate := 1;
+		END_IF
+    1:
+        moveStepsProcedure.start(
+            axis := _axis,
+            steps := _stepsC,
+            cw := _cwC,
+            fast := FALSE);
+        substate := 2;
+    2:
+        IF moveStepsProcedure.statuses.busyStatus.idle THEN
+            IF moveStepsProcedure.statuses.healthStatus.good THEN
+                substate := 1000;
+            ELSE
+                _cause := CONCAT('Move final: ', moveStepsProcedure.actualStatus);
+                substate := 999;
+			END_IF
+		END_IF
+    999:
+        state := M2MoveProcedureStates.ERROR;
+        substate := 0;
+    1000:
+        // OK now go to the final position
+        state := M2MoveProcedureStates.MOVING_TO_FINAL_POSITION;
+        substate := 0;
+END_CASE]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_prepareProcess" Id="{fab3d5b7-4357-4c08-9a6b-037650f7888d}">
+      <Declaration><![CDATA[METHOD _prepareProcess
+VAR_INPUT
+END_VAR
+VAR
+	finalSenseCW: INT;
+END_VAR]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[
+CASE substate OF
+    0:
+        // reset the internal variables
+        _steps := 0;
+        _cw := FALSE;
+        _delta := 0;
+        _stepsA := 0;
+        _cwA := FALSE;
+        _fastA := FALSE;
+        _deltaA := 0;
+        _deltaA_tooCloseToFinal := 0;
+        _stepsA_tooCloseToFinal := 0;
+        _cwA_tooCloseToFinal := FALSE;
+        _deltaA_tooFarOff := 0;
+        _stepsA_tooFarOff := 0;
+        _cwA_tooFarOff := FALSE;
+        _stepsC := 0;
+        _cwC := FALSE;
+        _deltaC := 0;
+        _stepsF := 0;
+        _cwF := FALSE;
+        _deltaF := 0;
+        
+        CASE _axis OF
+            M2Axes.X:
+                _gearReduction      := x.constants.MOT_TO_RED_RATIO * x.constants.RED_TO_SCREW_RATIO;
+                _feedbackResolution := x.constants.FEEDBACK_RESOLUTION;
+                _screwPitch         := x.constants.SCREW_PITCH;
+                _minPosition        := x.constants.MIN_POSITION;
+                _maxPosition        := x.constants.MAX_POSITION;
+                _backlashLifted     := x.backlashLifted;
+            M2Axes.Y:
+                _gearReduction      := y.constants.MOT_TO_RED_RATIO * y.constants.RED_TO_SCREW_RATIO;
+                _feedbackResolution := y.constants.FEEDBACK_RESOLUTION;
+                _screwPitch         := y.constants.SCREW_PITCH;
+                _minPosition        := y.constants.MIN_POSITION;
+                _maxPosition        := y.constants.MAX_POSITION;
+                _backlashLifted     := y.backlashLifted;
+            M2Axes.Z:
+                _gearReduction      := z.constants.MOT_TO_RED_RATIO * z.constants.RED_TO_SCREW_RATIO;
+                _feedbackResolution := z.constants.FEEDBACK_RESOLUTION;
+                _screwPitch         := z.constants.SCREW_PITCH;
+                _minPosition        := z.constants.MIN_POSITION;
+                _maxPosition        := z.constants.MAX_POSITION;
+                _backlashLifted     := z.backlashLifted;
+            M2Axes.TILTX:
+                _gearReduction      := tiltX.constants.MOT_TO_RED_RATIO * tiltX.constants.RED_TO_SCREW_RATIO;
+                _feedbackResolution := tiltX.constants.FEEDBACK_RESOLUTION;
+                _screwPitch         := tiltX.constants.SCREW_PITCH;
+                _minPosition        := tiltX.constants.MIN_POSITION;
+                _maxPosition        := tiltX.constants.MAX_POSITION;
+                _backlashLifted     := tiltX.backlashLifted;
+            M2Axes.TILTY:
+                _gearReduction      := tiltY.constants.MOT_TO_RED_RATIO * tiltY.constants.RED_TO_SCREW_RATIO;
+                _feedbackResolution := tiltY.constants.FEEDBACK_RESOLUTION;
+                _screwPitch         := tiltY.constants.SCREW_PITCH;
+                _minPosition        := tiltY.constants.MIN_POSITION;
+                _maxPosition        := tiltY.constants.MAX_POSITION;
+                _backlashLifted     := tiltY.backlashLifted;
+        END_CASE
+        
+        // check the limits
+        IF _position < _maxPosition AND _position > _minPosition THEN
+            substate := 1;
+        ELSE
+            substate := 999;
+            _cause := 'Position setpoint outside limits';
+		END_IF
+    1:
+        // calculate the steps to move to the final position
+        M2ComputeAbsoluteMove(
+            initialPosition    := _getActualPosition(),
+            finalPosition      := _position,
+            gearReduction      := _gearReduction,
+            feedbackResolution := _feedbackResolution,
+            screwPitch         := _screwPitch,
+            deltaPosition      => _delta,
+            steps              => _steps,
+            cw                 => _cw);
+        
+        // only try to move if it makes sense:
+        IF _steps > _axisConfig.stoppingSteps THEN
+            
+            IF _backlashLifted THEN
+                
+                IF _cw <> _axisConfig.finalSenseCW THEN
+                    // caseA: actual->A
+                    _deltaA := _delta;
+                    _stepsA := _steps + _axisConfig.antiBacklashPosition;
+                    _cwA    := _cw;
+                    state := M2MoveProcedureStates.MOVING_TO_ANTI_BACKLASH_POSITION;
+                ELSE
+                    IF _steps > _axisConfig.antiBacklashPosition THEN
+                        // caseD: actual->A
+                        _deltaA := _delta;
+                        _stepsA := _steps - _axisConfig.antiBacklashPosition;
+                        _cwA    := _cw;
+                        state := M2MoveProcedureStates.MOVING_TO_ANTI_BACKLASH_POSITION;
+                    ELSIF _steps > _axisConfig.closePosition THEN
+                        // caseC: actual->C
+                        _deltaC := _delta;
+                        _stepsC := _axisConfig.closePosition - _steps;
+                        _cwC    := _cw;
+                        state := M2MoveProcedureStates.MOVING_CLOSE_TO_FINAL_POSITION;
+                    ELSE
+                        // caseB: actual->F
+                        _deltaF := _delta;
+                        _stepsF := _steps;
+                        _cwF    := _cw;
+                        state := M2MoveProcedureStates.MOVING_TO_FINAL_POSITION;
+                    END_IF
+                END_IF
+                    
+            ELSE
+                // backlash is not lifted! So sometimes we may have to go first to the ablPos (A) even if we would go in the right direction
+                
+                IF _cw <> _axisConfig.finalSenseCW THEN
+                    // caseA: actual->A
+                    _deltaA := _delta;
+                    _stepsA := _steps + _axisConfig.antiBacklashPosition;
+                    _cwA    := _cw;
+                    state := M2MoveProcedureStates.MOVING_TO_ANTI_BACKLASH_POSITION;
+                ELSE
+                    IF _steps > _axisConfig.antiBacklashPosition THEN
+                        // caseD: actual->A
+                        _deltaA := _delta;
+                        _stepsA := _steps - _axisConfig.antiBacklashPosition;
+                        _cwA    := _cw;
+                        state := M2MoveProcedureStates.MOVING_TO_ANTI_BACKLASH_POSITION;
+                    ELSE
+                        // case B or caseC: but now actual->A because we must lift anti-backlash first
+                        _deltaA := _delta;
+                        _stepsA := _axisConfig.antiBacklashPosition - _steps;
+                        _cwA    := NOT _cw;
+                        state := M2MoveProcedureStates.MOVING_TO_ANTI_BACKLASH_POSITION;
+                    END_IF
+                END_IF
+                
+            END_IF
+            
+            substate := 0;
+            
+            // we only move fast in the following case
+            _fastA :=     state = M2MoveProcedureStates.MOVING_TO_ANTI_BACKLASH_POSITION 
+                      AND _axis = M2Axes.Z 
+                      AND _stepsA > (_axisConfig.antiBacklashPosition + config.z.highSpeedStoppingSteps);
+            
+        ELSE
+            // not possible nor needed to move, we can just finish
+            state := M2MoveProcedureStates.IDLE;
+            substate := 0;
+		END_IF
+    999:
+        state := M2MoveProcedureStates.ERROR;
+        substate := 0;
+END_CASE]]></ST>
+      </Implementation>
+    </Method>
+  </POU>
+</TcPlcObject>

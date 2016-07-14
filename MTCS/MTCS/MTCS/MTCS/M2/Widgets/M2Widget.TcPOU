@@ -1,0 +1,177 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.5">
+  <POU Name="M2Widget" Id="{9cbad00a-69fe-4e89-b794-e19ab7ece4f2}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK M2Widget
+VAR_INPUT
+    activeTab : M2Tabs := M2Tabs.OVERVIEW;
+END_VAR
+VAR_OUTPUT
+    name : STRING := 'M2';
+END_VAR
+VAR_IN_OUT
+	ref : M2;
+	ref_io : M1M2IO;
+    ref_knownPositionsConfig : M3KnownPositionsConfig;
+    ref_actualFocalStation : M3PositionIds;
+    ref_tech : BOOL;
+END_VAR
+VAR
+	actualStatus            : StatusWidget;
+	initializationStatus    : InitializationStatusWidget;
+	
+    button_initialize 	: InitializeButtonWidget;
+    button_operating  	: OperatingButtonWidget;
+    button_locking    	: LockingButtonWidget;
+    
+    button_overview     : SubSystemButtonWidget('Overview'      , M2Tabs.OVERVIEW);
+    button_axes         : SubSystemButtonWidget('Axes'     		, M2Tabs.AXES);
+    button_technical    : SubSystemButtonWidget('Technical'     , M2Tabs.TECHNICAL);
+    button_io           : SubSystemButtonWidget('I/O'           , M2Tabs.IO);
+    button_config       : SubSystemButtonWidget('Config'        , M2Tabs.CONFIG);
+    
+    io 					: M1M2IOWidget;
+    configManager       : ConfigManagerWidget;
+    
+    figure              : M2FigureWidget;
+    
+    activeConfigTab : INT;
+	activeConfigFocalStation : INT;
+    
+    powerRelay   		: SimpleRelayWidget;
+    heater        		: SimpleRelayWidget;
+	multiplexer         : M2MultiplexerWidget;
+    moveSteps           : M2MoveStepsWidget;
+    movePosition        : M2MovePositionWidget;
+    
+    x                   : M2AxisWidget;
+    y                   : M2AxisWidget;
+    z                   : M2AxisWidget;
+    tiltX               : M2AxisWidget;
+    tiltY               : M2AxisWidget;
+    
+    zHighSpeed : SimpleRelayWidget;
+    
+    actualFocalStationName : STRING;
+    actualFocalStationThermalFocus : STRING;
+    cassegrainName : STRING;
+    nasmythAName : STRING;
+    nasmythBName : STRING;
+    nasmythCName : STRING;
+    nasmythDName : STRING;
+    _formatString : FB_FormatString;
+    
+    
+    positionsTitle : STRING;
+    poweredColor : DWORD;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[initializationStatus(status := ref.statuses.initializationStatus);
+
+
+button_initialize(status := ref.statuses.initializationStatus, process := ref.processes.initialize);
+button_operating(status := ref.statuses.operatingStatus, process := ref.processes.changeOperatingState);
+button_locking(status := ref.statuses.initializationStatus, lock := ref.processes.lock, unlock := ref.processes.unlock);
+
+button_overview(    color := actualStatus.color                 , activeTab := activeTab);
+button_axes(   		color := actualStatus.color   				, activeTab := activeTab);
+button_technical(   color := actualStatus.color   				, activeTab := activeTab);
+button_io(          color := io.actualStatus.color              , activeTab := activeTab);
+button_config(      color := configManager.actualStatus.color   , activeTab := activeTab);
+
+io(ref := ref_io);
+configManager(mgr := ref.parts.configManager);
+
+figure(ref := ref);
+
+actualStatus(text  := ref.actualStatus,
+             color := SystemToColor(healthStatus := ref.statuses.healthStatus,
+                                    busyStatus   := ref.statuses.busyStatus,
+                                    initializationStatus := ref.statuses.initializationStatus,
+                                    operatingStatus := ref.statuses.operatingStatus));
+
+powerRelay(ref := ref.parts.powerRelay);
+heater(ref := ref.parts.heater);
+multiplexer(ref := ref.parts.multiplexer);
+moveSteps(ref_process := ref.processes.moveSteps, ref_procedure := ref.parts.moveStepsProcedure);
+movePosition(ref_procedure := ref.parts.movePositionProcedure);
+
+x(
+    axis            := M2Axes.X, 
+    linearPosition  := ref.parts.x.position.average, 
+    moveAbsolute    := ref.processes.moveAbsolute, 
+    moveRelative    := ref.processes.moveRelative, 
+    backlashLifted  := ref.parts.x.backlashLifted, 
+    powered         := ref.statuses.poweredStatus.enabled, 
+    tech            := ref_tech,
+    finalSenseCW    := ref.config.x.general.finalSenseCW);
+y(
+    axis            := M2Axes.Y, 
+    linearPosition  := ref.parts.y.position.average, 
+    moveAbsolute    := ref.processes.moveAbsolute, 
+    moveRelative    := ref.processes.moveRelative, 
+    backlashLifted  := ref.parts.y.backlashLifted, 
+    powered         := ref.statuses.poweredStatus.enabled, 
+    tech            := ref_tech,
+    finalSenseCW    := ref.config.y.general.finalSenseCW);
+z(
+    axis            := M2Axes.Z, 
+    linearPosition  := ref.parts.z.position.average, 
+    moveAbsolute    := ref.processes.moveAbsolute, 
+    moveRelative    := ref.processes.moveRelative, 
+    backlashLifted  := ref.parts.z.backlashLifted, 
+    powered         := ref.statuses.poweredStatus.enabled, 
+    tech            := ref_tech,
+    finalSenseCW    := ref.config.z.general.finalSenseCW);
+tiltX(
+    axis            := M2Axes.TILTX, 
+    linearPosition  := ref.parts.tiltX.position.average, 
+    moveAbsolute    := ref.processes.moveAbsolute, 
+    moveRelative    := ref.processes.moveRelative, 
+    backlashLifted  := ref.parts.tiltX.backlashLifted, 
+    powered         := ref.statuses.poweredStatus.enabled, 
+    tech            := ref_tech,
+    finalSenseCW    := ref.config.tiltX.general.finalSenseCW);
+tiltY(
+    axis            := M2Axes.TILTY, 
+    linearPosition  := ref.parts.tiltY.position.average, 
+    moveAbsolute    := ref.processes.moveAbsolute, 
+    moveRelative    := ref.processes.moveRelative, 
+    backlashLifted  := ref.parts.tiltY.backlashLifted, 
+    powered         := ref.statuses.poweredStatus.enabled, 
+    tech            := ref_tech,
+    finalSenseCW    := ref.config.tiltY.general.finalSenseCW);
+
+
+zHighSpeed(ref := ref.parts.z.parts.highSpeed);
+
+actualFocalStationName := M3PositionIDToName(id := ref_actualFocalStation, config := ref_knownPositionsConfig);
+cassegrainName := M3PositionIDToName(id := M3PositionIDs.CASSEGRAIN, config := ref_knownPositionsConfig);
+nasmythAName := M3PositionIDToName(id := M3PositionIDs.NASMYTH_A, config := ref_knownPositionsConfig);
+nasmythBName := M3PositionIDToName(id := M3PositionIDs.NASMYTH_B, config := ref_knownPositionsConfig);
+nasmythCName := M3PositionIDToName(id := M3PositionIDs.NASMYTH_C, config := ref_knownPositionsConfig);
+nasmythDName := M3PositionIDToName(id := M3PositionIDs.NASMYTH_D, config := ref_knownPositionsConfig);
+IF ref_actualFocalStation = M3PositionIDs.UNKNOWN THEN
+    actualFocalStationThermalFocus := 'N/A';
+ELSIF actualFocalStationName = '' THEN
+    actualFocalStationThermalFocus := 'N/A';
+ELSE
+    _formatString(sFormat := '%.3f mm', 
+                  arg1    := F_LREAL(ref.thermalFocusActualFocalStation.millimeters.value),
+                  sOut    => actualFocalStationThermalFocus);
+END_IF
+
+IF ref.statuses.poweredStatus.enabled THEN
+    // power is ON
+    positionsTitle := 'Actual positions';
+    poweredColor := Colors.BLACK;
+ELSE
+    // power is OFF
+    positionsTitle := 'Last known positions';
+    poweredColor := Colors.DARK_GRAY;
+END_IF
+
+]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

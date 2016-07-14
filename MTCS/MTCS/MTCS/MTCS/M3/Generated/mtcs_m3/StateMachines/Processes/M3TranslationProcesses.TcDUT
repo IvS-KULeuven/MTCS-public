@@ -1,0 +1,18 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="M3TranslationProcesses" Id="{c2670e6d-4e55-4613-8450-e84f6f0b1f6c}">
+    <Declaration><![CDATA[TYPE M3TranslationProcesses :
+STRUCT
+	///Start moving the translation stage to the given position
+	goto: M3TranslationGoto;
+	///Reset any errors
+	reset: Process;
+	///Abort any running procedures
+	abort: Process;
+	///Start the homing procedure
+	startHoming: Process;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

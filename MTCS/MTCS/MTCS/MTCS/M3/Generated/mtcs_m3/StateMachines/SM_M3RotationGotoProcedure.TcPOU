@@ -1,0 +1,62 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="SM_M3RotationGotoProcedure" Id="{04358ed3-7499-4322-9141-4853a70406b9}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK SM_M3RotationGotoProcedure
+VAR_INPUT
+	///New state, to be set by the manual implementation
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	state: M3RotateProcedureStates;
+END_VAR
+VAR_OUTPUT
+	///Current status description
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	actualStatus: STRING;
+	///TRUE if a goto command is allowed
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	isGotoAllowed: BOOL;
+	///Statuses of the state machine
+	statuses: M3RotationGotoProcedureStatuses;
+END_VAR
+VAR_IN_OUT
+	{attribute 'OPC.UA.DA' := '0'}
+	config: M3RotationConfig;
+	{attribute 'OPC.UA.DA' := '0'}
+	positioningAxis: AngularAxis;
+	{attribute 'OPC.UA.DA' := '0'}
+	antiBacklashAxis: AngularAxis;
+	{attribute 'OPC.UA.DA' := '0'}
+	positioningDrive: FaulhaberDrive;
+	{attribute 'OPC.UA.DA' := '0'}
+	antiBacklashDrive: FaulhaberDrive;
+	{attribute 'OPC.UA.DA' := '0'}
+	positioningHallAxis: AngularAxis;
+	{attribute 'OPC.UA.DA' := '0'}
+	target: M3RotationTarget;
+	{attribute 'OPC.UA.DA' := '0'}
+	positiveLimitSwitchActive: BOOL;
+	{attribute 'OPC.UA.DA' := '0'}
+	negativeLimitSwitchActive: BOOL;
+	{attribute 'OPC.UA.DA' := '0'}
+	actualPosition: AngularPosition;
+	{attribute 'OPC.UA.DA' := '0'}
+	actualPositionError: AngularPosition;
+	{attribute 'OPC.UA.DA' := '0'}
+	actualOffset: AngularPosition;
+	{attribute 'OPC.UA.DA' := '0'}
+	actualOffsetError: AngularPosition;
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[statuses.busyStatus( isBusy := NOT((state = M3RotateProcedureStates.IDLE) OR ((state = M3RotateProcedureStates.ABORTED) OR (state = M3RotateProcedureStates.ERROR))) );
+statuses.healthStatus(
+    isGood := NOT(state = M3RotateProcedureStates.ERROR),
+    hasWarning := state = M3RotateProcedureStates.ABORTED);
+]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

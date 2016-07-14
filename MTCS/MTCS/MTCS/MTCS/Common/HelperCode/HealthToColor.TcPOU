@@ -1,0 +1,30 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.2">
+  <POU Name="HealthToColor" Id="{905f314f-3951-4f69-82fa-9a45de09878c}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION HealthToColor : StatusColor
+VAR_IN_OUT
+    healthStatus : HealthStatus;
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR
+END_VAR
+
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[IF healthStatus.good THEN
+    HealthToColor.fg := Colors.BLACK;
+    HealthToColor.bg := Colors.GREEN;
+ELSIF healthStatus.bad THEN
+	HealthToColor.fg := Colors.WHITE;
+	HealthToColor.bg := Colors.RED;
+ELSIF healthStatus.warning THEN
+	HealthToColor.fg := Colors.WHITE;
+	HealthToColor.bg := Colors.ORANGE;
+ELSE
+	HealthToColor.fg := Colors.BLACK;
+	HealthToColor.bg := Colors.GRAY;
+END_IF]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

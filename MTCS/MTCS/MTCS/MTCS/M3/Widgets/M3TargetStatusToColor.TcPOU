@@ -1,0 +1,24 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.2">
+  <POU Name="M3TargetStatusToColor" Id="{8ea5971f-fd1e-4b8f-9c66-46d178816961}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION M3TargetStatusToColor : StatusColor
+VAR_INPUT
+    targetStatus : M3TargetStatus;
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[IF targetStatus.noTargetGiven THEN
+    M3TargetStatusToColor.fg := Colors.BLACK;
+    M3TargetStatusToColor.bg := Colors.GRAY;
+ELSIF targetStatus.knownPosition THEN
+    M3TargetStatusToColor.fg := Colors.BLACK;
+    M3TargetStatusToColor.bg := Colors.GREEN;
+ELSIF targetStatus.newPosition THEN
+    M3TargetStatusToColor.fg := Colors.WHITE;
+    M3TargetStatusToColor.bg := Colors.ORANGE;
+END_IF]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

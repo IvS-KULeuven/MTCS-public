@@ -1,0 +1,74 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.2">
+  <POU Name="CoverPanelSet" Id="{18edd085-cdae-42ea-8321-4224e9ceb189}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK CoverPanelSet EXTENDS SM_CoverPanelSet
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR
+	_minRelativePosition : LREAL;	
+	_maxRelativePosition : LREAL;	
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[SUPER^(
+	initializationStatus := initializationStatus, 
+	operatingStatus      := operatingStatus, 
+	operatorStatus       := operatorStatus, 
+	config               := config, 
+	coverConfig          := coverConfig);
+
+_resetting();
+
+
+_minRelativePosition := MIN(parts.p1._relativePosition, 
+							MIN(parts.p2._relativePosition, 
+								MIN(parts.p3._relativePosition, 
+									parts.p4._relativePosition)));
+_maxRelativePosition := MAX(parts.p1._relativePosition, 
+							MAX(parts.p2._relativePosition, 
+								MAX(parts.p3._relativePosition, 
+									parts.p4._relativePosition)));
+									
+SUPER^(
+	initializationStatus := initializationStatus, 
+	operatingStatus      := operatingStatus, 
+	operatorStatus       := operatorStatus, 
+	config               := config, 
+	coverConfig          := coverConfig);]]></ST>
+    </Implementation>
+    <Method Name="_resetting" Id="{f204551e-640d-42e7-9c1b-e62623460d35}">
+      <Declaration><![CDATA[METHOD _resetting
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF processes.reset.statuses.busyStatus.busy THEN
+	
+	IF processes.reset.statuses.startedStatus.notStarted THEN
+		parts.p1.parts.axis.processes.reset.start();
+		parts.p2.parts.axis.processes.reset.start();
+		parts.p3.parts.axis.processes.reset.start();
+		parts.p4.parts.axis.processes.reset.start();
+		processes.reset.setStarted();
+	END_IF
+	
+	processes.reset.statuses.healthStatus(
+        isGood :=       parts.p1.parts.axis.processes.reset.statuses.healthStatus.good
+                    AND parts.p2.parts.axis.processes.reset.statuses.healthStatus.good
+                    AND parts.p3.parts.axis.processes.reset.statuses.healthStatus.good
+                    AND parts.p4.parts.axis.processes.reset.statuses.healthStatus.good);
+	
+	processes.reset.statuses.busyStatus(
+		isBusy :=       parts.p1.parts.axis.processes.reset.statuses.busyStatus.busy
+                    OR  parts.p2.parts.axis.processes.reset.statuses.busyStatus.busy
+                    OR  parts.p3.parts.axis.processes.reset.statuses.busyStatus.busy
+                    OR  parts.p4.parts.axis.processes.reset.statuses.busyStatus.busy);
+ELSE
+	processes.reset.setFinished();
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+  </POU>
+</TcPlcObject>

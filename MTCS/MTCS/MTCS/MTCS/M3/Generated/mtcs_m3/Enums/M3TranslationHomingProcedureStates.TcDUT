@@ -1,0 +1,25 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="M3TranslationHomingProcedureStates" Id="{d06d200e-49ee-4211-9ade-c33f71cb39b0}">
+    <Declaration><![CDATA[TYPE M3TranslationHomingProcedureStates :
+(
+	IDLE := 0,
+	ABORTED := 1,
+	PREPARE_PROCESS := 2,
+	ENABLING_AXIS := 3,
+	MOVE_TO_LIMIT_SWITCH := 4,
+	WAIT_FOR_LIMIT_SWITCH := 5,
+	STOP := 6,
+	APPLY_HOMING_SETTINGS := 7,
+	MOVE_TO_MECH_STOP := 8,
+	WAIT_FOR_MECH_STOP := 9,
+	SET_ZERO_POSITION := 10,
+	DISABLE_AXIS := 11,
+	RESETTING := 12,
+	ERROR := 13,
+	ABORTING := 14
+);
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

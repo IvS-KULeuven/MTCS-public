@@ -1,0 +1,74 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.2">
+  <POU Name="MTCSBlankScreenWidget" Id="{6f3869d6-c2f5-4449-b059-3ec74a514790}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK MTCSBlankScreenWidget
+VAR_INPUT
+    do_anywhere : BOOL;
+    do_1 : BOOL;
+    do_2 : BOOL;
+    do_3 : BOOL;
+    do_4 : BOOL;
+END_VAR
+VAR_OUTPUT
+    totallyBlank : BOOL;
+    deactivate_4 : BOOL;
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+    tof_anywhere : TOF;
+    
+    getSystemTime : GETSYSTEMTIME;
+    timeNow : LREAL; // number of milliseconds since 1970-01-01-00:00
+    
+    time_anywhere : LREAL; 
+    time_1 : LREAL; 
+    time_2 : LREAL; 
+    time_3 : LREAL;
+    
+    active_4 : BOOL;
+END_VAR]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[
+// everytime the touch screen is touched anywhwere, 
+// the tof_anywhere counter is reset and starts counting again
+tof_anywhere(IN := do_anywhere OR do_1 OR do_2 OR do_3, PT := T#10S);
+
+// the screen should be totally blank when tof_anywhere has timed out:
+totallyBlank := NOT tof_anywhere.Q;
+//secondsUntilBlank := 30 - TIME_TO_INT(tof_anywhere.ET);
+
+
+// update the filetimeNow and timeNow
+getSystemTime();
+timeNow := (UDINT_TO_LREAL(getSystemTime.timeHiDW)*429496.7296) + (UDINT_TO_LREAL(getSystemTime.timeLoDW)/10000);
+
+IF do_anywhere THEN
+    time_anywhere := timeNow;
+    do_anywhere := FALSE;
+END_IF
+IF do_1 THEN
+    time_1 := timeNow;
+    do_1 := FALSE;
+END_IF
+IF do_2 THEN
+    time_2 := timeNow;
+    do_2 := FALSE;
+END_IF
+IF do_3 THEN
+    time_3 := timeNow;
+    do_3 := FALSE;
+END_IF
+
+active_4 := ABS(timeNow - time_3) <= 2000.0
+            AND ABS(time_3 - time_2) <= 2000.0
+            AND ABS(time_2 - time_1) <= 2000.0
+            AND timeNow > time_3
+            AND time_3 > time_2
+            AND time_2 > time_1
+            AND time_1 > time_anywhere;
+
+deactivate_4 := NOT active_4;]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

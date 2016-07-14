@@ -1,0 +1,17 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.2">
+  <POU Name="BaseXmlDataSrvProcess" Id="{512d9e18-f729-4408-b671-547062c42270}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK BaseXmlDataSrvProcess EXTENDS SM_BaseMcProcess
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR
+	testVar3 : BOOL;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[SUPER^();]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

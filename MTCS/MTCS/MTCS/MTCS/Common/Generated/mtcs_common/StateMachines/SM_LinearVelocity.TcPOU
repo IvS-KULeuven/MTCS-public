@@ -1,0 +1,32 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="SM_LinearVelocity" Id="{4e2eafa7-c416-428c-910b-7a62529221d8}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK SM_LinearVelocity
+VAR_INPUT
+	///New velocity value in millimeters per second
+	{attribute 'OPC.UA.DA' := '0'}
+	newMillimetersPerSecondValue: LREAL;
+END_VAR
+VAR_OUTPUT
+	///Current status description
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	actualStatus: STRING;
+	///Angular velocity in radians per second
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	millimetersPerSecond: QuantityValue;
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[millimetersPerSecond(
+    value := newMillimetersPerSecondValue,
+    unit := Units.MILLIMETERS_PER_SECOND);
+]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

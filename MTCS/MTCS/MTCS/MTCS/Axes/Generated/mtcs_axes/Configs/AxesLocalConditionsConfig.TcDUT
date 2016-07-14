@@ -1,0 +1,24 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="AxesLocalConditionsConfig" Id="{921e850e-f741-41ff-ac58-de7498c1b4ba}">
+    <Declaration><![CDATA[TYPE AxesLocalConditionsConfig :
+STRUCT
+	///True if the temperature from the sensors should be used, false to use the temperature from the config
+	useTemperatureFromSensors: BOOL;
+	///Local temperature in degrees, fixed by config
+	configuredTemperature: REAL;
+	///Local temperature in hectoPascal = millibar, fixed by config
+	configuredPressure: REAL;
+	///True if the temperature from the sensors should be used, false to use the temperature from the config
+	useRelativeHumidityFromSensors: BOOL;
+	///Local relative humidity as a fraction (0...1), fixed by config
+	configuredRelativeHumidity: REAL;
+	///Observing wavelength in microns, fixed by config
+	configuredObservingWavelength: REAL;
+	///Tropospheric lapse rate in K/m
+	troposphericLapseRate: REAL;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

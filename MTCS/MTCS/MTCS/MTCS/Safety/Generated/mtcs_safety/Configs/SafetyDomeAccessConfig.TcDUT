@@ -1,0 +1,28 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="SafetyDomeAccessConfig" Id="{27cdf143-8ec5-47c3-ad2e-c4bd97a1e161}">
+    <Declaration><![CDATA[TYPE SafetyDomeAccessConfig :
+STRUCT
+	///True if the dome access control system should be disabled permanently.
+	disabled: BOOL;
+	///Time until during which the doors sensors are being bypassed after entering the password, in seconds
+	bypassTimeAfterPassword: LREAL;
+	///Sound to play when the doors sensors are being bypassed
+	bypassingSound: SafetyDomeAccessAlertConfig;
+	///LED pattern to play when the doors sensors are now bypassed permanently
+	bypassedPermanentlyVisual: SafetyDomeAccessAlertConfig;
+	///Sound to play when a door is being opened for the first time (i.e. when a person is entering)
+	doorsOpenedWhenEnteringSound: SafetyDomeAccessAlertConfig;
+	///Sound to play when a door is being opened for the 2nd or 3rd or ... time (i.e. when a person is leaving)
+	doorsOpenedWhenLeavingSound: SafetyDomeAccessAlertConfig;
+	///Sound to play when the personHasLeftButton is pressed when the doors are closed
+	leavingWhenDoorsClosedSound: SafetyDomeAccessAlertConfig;
+	///Sound to play when the personHasLeftButton is pressed when the doors are still open
+	leavingWhenDoosOpenedSound: SafetyDomeAccessAlertConfig;
+	///LED pattern to play when the doors were opened without bypass (i.e. without password)
+	doorsOpenedVisual: SafetyDomeAccessAlertConfig;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

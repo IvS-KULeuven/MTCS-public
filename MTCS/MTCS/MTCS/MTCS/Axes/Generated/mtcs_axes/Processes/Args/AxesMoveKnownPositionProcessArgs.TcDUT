@@ -1,0 +1,12 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="AxesMoveKnownPositionProcessArgs" Id="{905c532f-9707-4b6f-bcc7-a6d262d2cda5}">
+    <Declaration><![CDATA[TYPE AxesMoveKnownPositionProcessArgs :
+STRUCT
+	///Name of the position to move to
+	name: STRING;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

@@ -1,0 +1,12 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="TelemetryAccelerometersConfig" Id="{a743b112-e73e-40aa-bd7e-e858380f3557}">
+    <Declaration><![CDATA[TYPE TelemetryAccelerometersConfig :
+STRUCT
+	///Accelerometer box at the tube
+	tube: TelemetryAccelerometerConfig;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

@@ -1,0 +1,21 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.5">
+  <POU Name="SafetyIO" Id="{d3ad2252-5181-4da1-86d8-740af3d7a27c}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK SafetyIO EXTENDS SM_SafetyIO
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR
+    _testVar : INT;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[SUPER^();
+
+// do stuff
+
+//SUPER^();]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

@@ -1,0 +1,19 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.5">
+  <DUT Name="MTCSTabs" Id="{7adc3b75-44ef-4de2-80f7-d84cf166b3da}">
+    <Declaration><![CDATA[TYPE MTCSTabs :
+(
+	HOME := 0,
+	SERVICES := 1,
+	COVER := 2,
+	M1 := 3,
+	M2 := 4,
+	M3 := 5,
+	TELEMETRY := 6,
+	HYDRAULICS := 7,
+	SAFETY := 8,
+	AXES := 9
+);
+END_TYPE]]></Declaration>
+  </DUT>
+</TcPlcObject>

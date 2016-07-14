@@ -1,0 +1,20 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="SafetyDomeAccessProcesses" Id="{af252d39-77ae-48f4-bbce-a538a1af669e}">
+    <Declaration><![CDATA[TYPE SafetyDomeAccessProcesses :
+STRUCT
+	///Reset the errors (including the programmed ones and the TwinSAFE group ones)
+	reset: Process;
+	///Unblock the telescope (if possible, i.e. if no E-Stops are active etc.)
+	personHasLeft: Process;
+	///Bypass the doors sensors for the number of seconds defined in the config
+	bypass: Process;
+	///Bypass the doors sensors permanently (until re-initialization)
+	bypassPermanently: Process;
+	///Stop bypassing the doors sensors
+	stopBypassing: Process;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

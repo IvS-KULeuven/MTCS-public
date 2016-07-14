@@ -1,0 +1,181 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.5">
+  <POU Name="ServicesTimingSerialInfo" Id="{f2747b5d-8b50-412f-b415-cf0fa36be92a}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK ServicesTimingSerialInfo EXTENDS SM_ServicesTimingSerialInfo
+VAR_INPUT
+    TxBuffer : ComBuffer;
+    RxBuffer : ComBuffer;
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR
+    remainingString : STRING;
+    nextComma : INT;
+    tempString : STRING;
+    tempInt : INT;
+    tempBytePointer : POINTER TO BYTE;
+    tempByte : BYTE;
+    
+    receiveString : ReceiveString;
+    receivedString : STRING;
+    
+    timeoutTimer : TOF;
+    
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[(* 
+Format of the NMEA 0183 String (GGA)
+====================================
+
+The NMEA (GGA) String is a sequence of characters starting with the `$GPRMC' character and ending with the
+characters CR (carriage return) and LF (line-feed). The format is:
+
+   $GPGGA,hhmmss,bbbb.bbbbb,n,lllll.ll,e,A,vv,hhh.h,aaa.a,M,ggg.g,M,,*cs<CR><LF> 
+
+The groups of characters as defined below:
+$               Start character, ASCII Code 24h, sending with one bit accuracy at change of second
+hhmmss          the current time: (00..23) hours, (00..59) minutes, (00..59, or 60 while leap second) seconds
+bbbb.bbbbb      latitude of receiver position in degrees, leading signs are replaced by a space character (20h)
+n               latitude, the following characters are possible: `N' (north of equator), 'S' (south of equator)
+lllll.lllll     longitude of receiver position in degrees, leading signs are replaced by a space character (20h)
+e               longitude, the following characters are possible: 'E' (east of Greenwich), 'W' (west of Greenwich)
+A               Position fix (1 = yes, 0 = no)
+vv              Satellites used (0..12)
+hhh.h           HDOP (Horizontal Dilution of Precision)
+aaa.h           Mean Sea Level altitude (MSL = altitude of WGS84 - Geoid Separation)
+M               Units, meters (Fixed value)
+ggg.g           Geoid Separation (altitude of WGS84 - MSL)
+M               Units, meters (Fixed value)
+cs              checksum (EXOR over all characters except `$' and `*')
+<CR>            Carriage Return, ASCII Code 0Dh
+<LF>            Line Feed, ASCII Code 0Ah
+*)
+
+
+receiveString(
+    Prefix          := '$24',     // <$>
+    Suffix          := '$0D$0A',  // <CR><LF>
+    Timeout         := T#2S,
+    ReceivedString  := receivedString,
+    RxBuffer        := RxBuffer);
+
+// each time a string is received, the timer is reset and starts to count again.
+timeoutTimer(
+    IN := receiveString.StringReceived,
+    PT := T#2S);
+    
+serialTimeout := NOT timeoutTimer.Q;
+comError := receiveString.Error <> ComError_T.COMERROR_NOERROR;
+comErrorId := receiveString.Error;
+comErrorDescription := ComErrorToString(receiveString.Error);
+
+
+IF comError OR serialTimeout THEN
+    time_h := 0;
+    time_m := 0;
+    time_s := 0;
+    latitude_deg := 0;
+    latitude_min := 0.0;
+    longitude_deg := 0;
+    longitude_min := 0.0;
+    positionFix := FALSE;
+    satellitesUsed := 0;
+    horizontalDilutionOfPosition := 0.0;
+    meanSeaLevelAltitude := 0.0;
+    geoidSeparation := 0.0;
+    checksum := 0;
+    calculatedChecksum := 16#FF;
+ELSE
+    remainingString := receivedString;                                  // $$GPGGA,hhmmss,bbbb.bbbbb,n,lllll.ll,e,A,vv,hhh.h,aaa.a,M,ggg.g,M,,*cs$R$N
+    nextComma       := FIND(remainingString, ',');
+    
+    // hhmmss
+    remainingString := DELETE(remainingString, nextComma + 1, 0);       // hhmmss,bbbb.bbbbb,n,lllll.ll,e,A,vv,hhh.h,aaa.a,M,ggg.g,M,,*cs$R$N
+    nextComma       := FIND(remainingString, ',');
+    time_h          := STRING_TO_USINT(MID(remainingString, 2, 1));     // chars 1-2
+    time_m          := STRING_TO_USINT(MID(remainingString, 2, 3));     // chars 3-4
+    time_s          := STRING_TO_USINT(MID(remainingString, 2, 5));     // chars 5-6
+    
+    // bbbb.bbbbb
+    remainingString := DELETE(remainingString, nextComma + 1, 0);       // bbbb.bbbbb,n,lllll.ll,e,A,vv,hhh.h,aaa.a,M,ggg.g,M,,*cs$R$N
+    nextComma       := FIND(remainingString, ',');
+    latitude_deg    := STRING_TO_USINT(MID(remainingString, 2, 1));     // chars 1-2
+    tempString      := MID(remainingString, nextComma-2-1, 3);          // chars 3-(nextcomma-2chars-1)
+    latitude_min    := STRING_TO_REAL(tempString);                             
+    
+    // n
+    remainingString := DELETE(remainingString, nextComma + 1, 0);       // n,lllll.ll,e,A,vv,hhh.h,aaa.a,M,ggg.g,M,,*cs$R$N
+    nextComma       := FIND(remainingString, ',');
+    latitude_sign   := MID(remainingString, 1, 1);                      // char 1
+    
+    // lllll.lllll
+    remainingString := DELETE(remainingString, nextComma + 1, 0);       // llllll.ll,e,A,vv,hhh.h,aaa.a,M,ggg.g,M,,*cs$R$N
+    nextComma       := FIND(remainingString, ',');
+    longitude_deg   := STRING_TO_USINT(MID(remainingString, 3, 1));     // chars 1-3
+    tempString      := MID(remainingString, nextComma-3-1, 4);          // chars 4-(nextcomma-3chars-1)
+    longitude_min   := STRING_TO_REAL(tempString); 
+    
+    // e
+    remainingString := DELETE(remainingString, nextComma + 1, 0);       // e,A,vv,hhh.h,aaa.a,M,ggg.g,M,,*cs$R$N
+    nextComma       := FIND(remainingString, ',');
+    longitude_sign  := MID(remainingString, 1, 1);                      // char 1                             
+    
+    // A
+    remainingString := DELETE(remainingString, nextComma + 1, 0);       // A,vv,hhh.h,aaa.a,M,ggg.g,M,,*cs$R$N
+    nextComma       := FIND(remainingString, ',');
+    positionFix     := MID(remainingString, 1, 1) <> '0';               // char 1 <> '0'
+    
+    // vv
+    remainingString := DELETE(remainingString, nextComma + 1, 0);       // vv,hhh.h,aaa.a,M,ggg.g,M,,*cs$R$N
+    nextComma       := FIND(remainingString, ',');
+    satellitesUsed  := STRING_TO_USINT(MID(remainingString, 2, 1));     // chars 1-3
+    
+    // hhh.h
+    remainingString := DELETE(remainingString, nextComma + 1, 0);       // hhh.h,aaa.a,M,ggg.g,M,,*cs$R$N
+    nextComma       := FIND(remainingString, ',');
+    tempString      := MID(remainingString, nextComma-1, 1);            // chars 0-(nextcomma-1)
+    horizontalDilutionOfPosition := STRING_TO_REAL(tempString); 
+    
+    // aaa.a
+    remainingString := DELETE(remainingString, nextComma + 1, 0);       // hhh.h,aaa.a,M,ggg.g,M,,*cs$R$N
+    nextComma       := FIND(remainingString, ',');
+    tempString      := MID(remainingString, nextComma-1, 1);            // chars 0-(nextcomma-1)
+    meanSeaLevelAltitude := STRING_TO_REAL(tempString); 
+    
+    // M
+    remainingString := DELETE(remainingString, nextComma + 1, 0);       // hhh.h,aaa.a,M,ggg.g,M,,*cs$R$N
+    nextComma       := FIND(remainingString, ',');
+    // don't use this character, as it's a fixed value 'M'
+    
+    // ggg.g
+    remainingString := DELETE(remainingString, nextComma + 1, 0);       // hhh.h,aaa.a,M,ggg.g,M,,*cs$R$N
+    nextComma       := FIND(remainingString, ',');
+    tempString      := MID(remainingString, nextComma-1, 1);            // chars 0-(nextcomma-1)
+    geoidSeparation := STRING_TO_REAL(tempString); 
+    
+    // checksum
+    tempString      := LEFT(RIGHT(remainingString, 4), 2);             // *cs$R$N
+    HEXSTR_TO_DATA(
+        sHex := tempString,
+        pData := ADR(checksum),
+        cbData := SIZEOF(checksum));
+    
+    // calculate checksum
+    tempString := MID(receivedString, LEN(receivedString)-6, 2);
+    tempByte   := 0;
+    FOR tempInt := 1 TO LEN(tempString) DO
+        tempBytePointer := ADR(receivedString) + INT_TO_UINT(tempInt)*SIZEOF(tempBytePointer^);
+        tempByte := tempByte XOR (tempBytePointer^);
+	END_FOR
+    calculatedChecksum := tempByte;
+    
+END_IF
+
+SUPER^();
+
+
+]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

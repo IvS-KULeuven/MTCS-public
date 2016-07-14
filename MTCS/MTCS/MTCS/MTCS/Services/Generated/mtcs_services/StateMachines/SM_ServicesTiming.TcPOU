@@ -1,0 +1,70 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="SM_ServicesTiming" Id="{30375adf-72e9-48aa-b32d-166b7f38636c}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK SM_ServicesTiming
+VAR_INPUT
+	///Data from the EL6688
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	fromEL6688 AT %I*: TmcFromIoEL6688;
+	///Data from the EtherCAT master
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	fromEcatMaster AT %I*: TmcFromIoEcatMaster;
+	///Data from the C++ task
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	fromCppTiming AT %I*: TmcToPlcTiming;
+END_VAR
+VAR_OUTPUT
+	///Current status description
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	actualStatus: STRING;
+	///Data to the C++ task
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	toCppTiming AT %Q*: TmcFromPlcTiming;
+	///UTC date as a string of format YYYY-MM-DD
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	utcDateString: STRING;
+	///UTC time as a string of format HH-MM-SS.SSS
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	utcTimeString: STRING;
+	///String representation of the internal timestamp
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	internalTimestampString: STRING;
+	///String representation of the external timestamp (note: this is TAI, not UTC!)
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	externalTimestampString: STRING;
+	///Statuses of the state machine
+	statuses: ServicesTimingStatuses;
+	///Parts of the state machine
+	parts: ServicesTimingParts;
+	///Processes of the state machine
+	processes: ServicesTimingProcesses;
+END_VAR
+VAR_IN_OUT
+	///Shared operator status
+	{attribute 'OPC.UA.DA' := '0'}
+	operatorStatus: OperatorStatus;
+	///The config
+	{attribute 'OPC.UA.DA' := '0'}
+	config: ServicesTimingConfig;
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[parts.io();
+parts.serialInfo();
+statuses.healthStatus( isGood := parts.io.statuses.healthStatus.good AND (config.ignoreSerialError OR parts.serialInfo.statuses.healthStatus.good) );
+statuses.busyStatus( isBusy := FALSE );
+]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

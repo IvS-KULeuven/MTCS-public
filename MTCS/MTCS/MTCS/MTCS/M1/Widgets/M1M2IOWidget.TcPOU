@@ -1,0 +1,56 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.5">
+  <POU Name="M1M2IOWidget" Id="{46f66291-8340-43aa-8cfe-85d6807d8ffd}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK M1M2IOWidget
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR
+	actualStatus : StatusWidget;
+    COU  : EtherCatDeviceWidget;
+    AI1  : EtherCatDeviceWidget;
+    AI2  : EtherCatDeviceWidget;
+    AI3  : EtherCatDeviceWidget;
+    AO1  : EtherCatDeviceWidget;
+    DO1  : EtherCatDeviceWidget;
+    RES1   : EtherCatDeviceWidget;
+    RES2   : EtherCatDeviceWidget;
+    RES3   : EtherCatDeviceWidget;
+    PWR1   : EtherCatDeviceWidget;
+    SSI1   : EtherCatDeviceWidget;
+    AI4  : EtherCatDeviceWidget;
+    INC1   : EtherCatDeviceWidget;
+    P5V1   : EtherCatDeviceWidget;
+    DO2  : EtherCatDeviceWidget;
+    DO3    : EtherCatDeviceWidget;
+    RE1    : EtherCatDeviceWidget;
+END_VAR
+VAR_IN_OUT
+	ref : M1M2IO;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[actualStatus(text  := ref.actualStatus,
+             color := HealthToColor(ref.statuses.healthStatus));
+
+COU(device := ref.parts.COU);
+AI1(device := ref.parts.AI1);
+AI2(device := ref.parts.AI2);
+AI3(device := ref.parts.AI3);
+AO1(device := ref.parts.AO1);
+DO1(device := ref.parts.DO1);
+RES1(device := ref.parts.RES1);
+RES2(device := ref.parts.RES2);
+RES3(device := ref.parts.RES3);
+PWR1(device := ref.parts.PWR1);
+SSI1(device := ref.parts.SSI1);
+AI4(device := ref.parts.AI4);
+INC1(device := ref.parts.INC1);
+P5V1(device := ref.parts.P5V1);
+DO2(device := ref.parts.DO2);
+DO3(device := ref.parts.DO3);
+RE1(device := ref.parts.RE1);]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

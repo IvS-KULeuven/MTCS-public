@@ -1,0 +1,21 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="AX52XXDriveChannelProcesses" Id="{fc735a8d-32bd-475e-bd1d-ae406b094776}">
+    <Declaration><![CDATA[TYPE AX52XXDriveChannelProcesses :
+STRUCT
+	///Read a number of bytes from the drive
+	read: SoEReadProcess;
+	///Write a number of bytes to the drive
+	write: SoEWriteProcess;
+	///Update the actual values
+	update: Process;
+	acknowledgeSafetyError: Process;
+	///Reset the drive channel
+	reset: SoEResetProcess;
+	///Update the actual values
+	setBrake: SetBrakeProcess;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

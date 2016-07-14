@@ -1,0 +1,78 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="SM_M1M2IO" Id="{4b274a5e-a8f7-41dd-b91e-1f33d7f374e9}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK SM_M1M2IO
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+	///Current status description
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	actualStatus: STRING;
+	///Statuses of the state machine
+	statuses: M1M2IOStatuses;
+	///Parts of the state machine
+	parts: M1M2IOParts;
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[parts.COU(
+    id := 'M1M2:COU',
+    typeId := 'EK1101');
+parts.AI1(
+    id := 'M1M2:AI1',
+    typeId := 'EL3102');
+parts.AI2(
+    id := 'M1M2:AI2',
+    typeId := 'EL3204');
+parts.AI3(
+    id := 'M1M2:AI3',
+    typeId := 'EL3204');
+parts.AO1(
+    id := 'M1M2:AO1',
+    typeId := 'EL4022');
+parts.DO1(
+    id := 'M1M2:DO1',
+    typeId := 'EL2024');
+parts.RES1(
+    id := 'M1M2:RES1',
+    typeId := 'EL3351');
+parts.RES2(
+    id := 'M1M2:RES2',
+    typeId := 'EL3351');
+parts.RES3(
+    id := 'M1M2:RES3',
+    typeId := 'EL3351');
+parts.PWR1(
+    id := 'M1M2:PWR1',
+    typeId := 'EL9410');
+parts.SSI1(
+    id := 'M1M2:SSI1',
+    typeId := 'EL5001');
+parts.AI4(
+    id := 'M1M2:AI4',
+    typeId := 'EL3164');
+parts.INC1(
+    id := 'M1M2:INC1',
+    typeId := 'ES5101');
+parts.P5V1(
+    id := 'M1M2:P5V1',
+    typeId := 'EL9505');
+parts.DO2(
+    id := 'M1M2:DO2',
+    typeId := 'EL2124');
+parts.DO3(
+    id := 'M1M2:DO3',
+    typeId := 'EL2124');
+parts.RE1(
+    id := 'M1M2:RE1',
+    typeId := 'EL2622');
+statuses.healthStatus( isGood := parts.COU.statuses.healthStatus.isGood AND (parts.AI1.statuses.healthStatus.isGood AND (parts.AI2.statuses.healthStatus.isGood AND (parts.AI3.statuses.healthStatus.isGood AND (parts.AO1.statuses.healthStatus.isGood AND (parts.DO1.statuses.healthStatus.isGood AND (parts.RES1.statuses.healthStatus.isGood AND (parts.RES2.statuses.healthStatus.isGood AND (parts.RES3.statuses.healthStatus.isGood AND (parts.PWR1.statuses.healthStatus.isGood AND (parts.SSI1.statuses.healthStatus.isGood AND (parts.AI4.statuses.healthStatus.isGood AND (parts.INC1.statuses.healthStatus.isGood AND (parts.P5V1.statuses.healthStatus.isGood AND (parts.DO2.statuses.healthStatus.isGood AND (parts.DO3.statuses.healthStatus.isGood AND parts.RE1.statuses.healthStatus.isGood))))))))))))))) );
+]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

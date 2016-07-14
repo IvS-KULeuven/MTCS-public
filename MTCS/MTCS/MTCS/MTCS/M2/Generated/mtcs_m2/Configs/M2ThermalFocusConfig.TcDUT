@@ -1,0 +1,30 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="M2ThermalFocusConfig" Id="{4de725cd-6990-41cd-8716-ba8d20f5356e}">
+    <Declaration><![CDATA[TYPE M2ThermalFocusConfig :
+STRUCT
+	///Cassegrain thermal focus config
+	cassegrain: M2ThermalFocusStationConfig;
+	///Nasmyth A thermal focus config
+	nasmythA: M2ThermalFocusStationConfig;
+	///Nasmyth B thermal focus config
+	nasmythB: M2ThermalFocusStationConfig;
+	///Nasmyth C thermal focus config
+	nasmythC: M2ThermalFocusStationConfig;
+	///Nasmyth D thermal focus config
+	nasmythD: M2ThermalFocusStationConfig;
+	///Other 0 thermal focus config
+	other0: M2ThermalFocusStationConfig;
+	///Other 1 thermal focus config
+	other1: M2ThermalFocusStationConfig;
+	///Other 2 thermal focus config
+	other2: M2ThermalFocusStationConfig;
+	///Other 3 thermal focus config
+	other3: M2ThermalFocusStationConfig;
+	///Other 4 thermal focus config
+	other4: M2ThermalFocusStationConfig;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

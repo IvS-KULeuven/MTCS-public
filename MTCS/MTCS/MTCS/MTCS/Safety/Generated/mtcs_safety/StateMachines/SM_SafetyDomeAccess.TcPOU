@@ -1,0 +1,242 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="SM_SafetyDomeAccess" Id="{f8f84bd7-3458-40ff-a1c8-20d00f9bb8e9}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK SM_SafetyDomeAccess
+VAR_INPUT
+	///TwinSAFE group communication error
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	groupComError AT %I*: BOOL;
+	///TwinSAFE group function block error
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	groupFbError AT %I*: BOOL;
+	///TwinSAFE group output error
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	groupOutError AT %I*: BOOL;
+	///TRUE if keypad key 1 is being pressed
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	keypadKey1 AT %I*: BOOL;
+	///TRUE if keypad key 2 is being pressed
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	keypadKey2 AT %I*: BOOL;
+	///TRUE if keypad key 3 is being pressed
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	keypadKey3 AT %I*: BOOL;
+	///TRUE if keypad key 4 is being pressed
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	keypadKey4 AT %I*: BOOL;
+	///TRUE if keypad key 5 is being pressed
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	keypadKey5 AT %I*: BOOL;
+	///TRUE if keypad key 6 is being pressed
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	keypadKey6 AT %I*: BOOL;
+	///TRUE if keypad key 7 is being pressed
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	keypadKey7 AT %I*: BOOL;
+	///TRUE if keypad key 8 is being pressed
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	keypadKey8 AT %I*: BOOL;
+	///TRUE if keypad key 9 is being pressed
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	keypadKey9 AT %I*: BOOL;
+	///TRUE if keypad key * is being pressed
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	keypadKeyStar AT %I*: BOOL;
+	///TRUE if door 1 is closed
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	door1Closed AT %I*: BOOL;
+	///TRUE if door 2 is closed
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	door2Closed AT %I*: BOOL;
+	///TRUE if the unblock button is being pressed
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	personHasLeftButtonPressed AT %I*: BOOL;
+	///TRUE if the return button is being pressed
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	returnButtonPressed AT %I*: BOOL;
+    
+    
+	safeAccess AT %I*: BOOL;
+END_VAR
+VAR_OUTPUT
+	///Current status description
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	actualStatus: STRING;
+	///Output to restart the TwinSAFE group
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	errorAcknowledge AT %Q*: BOOL;
+	///TRUE if the doors were opened without bypass/password
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	personHasEntered AT %Q*: BOOL;
+	///TRUE if the yellow led should be on
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	enteredLedOn AT %Q*: BOOL;
+	///TRUE if the red led should be on
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	movingLedOn AT %Q*: BOOL;
+	///TRUE if the yellow led should be on
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	awakeLedOn AT %Q*: BOOL;
+	///TRUE if the orange led should be on
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	sleepingLedOn AT %Q*: BOOL;
+	///TRUE if the green is being sounded
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	buzzerSounding AT %Q*: BOOL;
+	///TRUE if the sensors are currently being bypassed
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	sensorsBeingBypassed: BOOL;
+	///TRUE if the sensors are being bypassed permanently
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	sensorsBypassedPermanently: BOOL;
+	///Statuses of the state machine
+	statuses: SafetyDomeAccessStatuses;
+	///Parts of the state machine
+	parts: SafetyDomeAccessParts;
+	///Processes of the state machine
+	processes: SafetyDomeAccessProcesses;
+END_VAR
+VAR_IN_OUT
+	///Shared operator status
+	{attribute 'OPC.UA.DA' := '0'}
+	operatorStatus: OperatorStatus;
+	///Shared activity status
+	{attribute 'OPC.UA.DA' := '0'}
+	activityStatus: ActivityStatus;
+	///The dome access config
+	{attribute 'OPC.UA.DA' := '0'}
+	config: SafetyDomeAccessConfig;
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[parts.lampsRelay1( isEnabled := operatorStatus.tech );
+parts.lampsRelay2( isEnabled := operatorStatus.tech );
+parts.lampsRelay3( isEnabled := operatorStatus.tech );
+parts.lampsRelay4( isEnabled := operatorStatus.tech );
+statuses.healthStatus(
+    isGood := NOT(groupComError OR (groupFbError OR groupOutError)),
+    hasWarning := (activityStatus.awake OR activityStatus.moving) AND (personHasEntered OR sensorsBypassedPermanently));
+statuses.busyStatus( isBusy := processes.reset.statuses.busyStatus.busy OR (processes.personHasLeft.statuses.busyStatus.busy OR (processes.bypass.statuses.busyStatus.busy OR (processes.bypassPermanently.statuses.busyStatus.busy OR processes.stopBypassing.statuses.busyStatus.busy))) );
+processes.reset( isEnabled := statuses.busyStatus.idle );
+processes.personHasLeft( isEnabled := statuses.busyStatus.idle AND operatorStatus.tech );
+processes.bypass( isEnabled := statuses.busyStatus.idle AND (operatorStatus.tech AND (NOT(sensorsBeingBypassed))) );
+processes.bypassPermanently( isEnabled := statuses.busyStatus.idle AND (operatorStatus.tech AND (NOT(sensorsBypassedPermanently))) );
+processes.stopBypassing( isEnabled := statuses.busyStatus.idle AND (operatorStatus.tech AND (sensorsBeingBypassed OR sensorsBypassedPermanently)) );
+]]></ST>
+    </Implementation>
+    <Method Name="reset" Id="{5fff0450-0026-4a90-9bc2-69547a7d0c32}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD reset : RequestResults
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[reset := THIS^.processes.reset.request();
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="personHasLeft" Id="{9b4c7c30-6ab2-4190-a74a-2d53aa2c093e}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD personHasLeft : RequestResults
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[personHasLeft := THIS^.processes.personHasLeft.request();
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="bypassPermanently" Id="{bcc1192a-fa66-446f-9074-275d086b203e}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD bypassPermanently : RequestResults
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[bypassPermanently := THIS^.processes.bypassPermanently.request();
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="bypass" Id="{d1b7688d-ba6f-4070-957f-6fcb3da2c695}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD bypass : RequestResults
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[bypass := THIS^.processes.bypass.request();
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="stopBypassing" Id="{fc209e3b-11ce-4323-b65b-945a9a4578cc}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD stopBypassing : RequestResults
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[stopBypassing := THIS^.processes.stopBypassing.request();
+]]></ST>
+      </Implementation>
+    </Method>
+  </POU>
+</TcPlcObject>

@@ -1,0 +1,39 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="SM_Force" Id="{79c45855-3ed9-4e78-ba73-cf72fbca265c}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK SM_Force
+VAR_INPUT
+	///New force in Newton
+	{attribute 'OPC.UA.DA' := '0'}
+	newNewtonValue: LREAL;
+END_VAR
+VAR_OUTPUT
+	///Current status description
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	actualStatus: STRING;
+	///Force in Newton
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	newton: QuantityValue;
+	///Force in decaNewton
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	decaNewton: QuantityValue;
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[newton(
+    value := newNewtonValue,
+    unit := Units.NEWTON);
+decaNewton(
+    value := newNewtonValue / 10.0,
+    unit := Units.DECANEWTON);
+]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

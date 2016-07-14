@@ -1,0 +1,20 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="M3Parts" Id="{e8fc4d7e-1451-46d7-8ec3-402058d7a8aa}">
+    <Declaration><![CDATA[TYPE M3Parts :
+STRUCT
+	///Rotation mechanism
+	rotation: M3Rotation;
+	///Translation mechanism
+	translation: M3Translation;
+	///I/O modules
+	io: M3IO;
+	///The goto procedure
+	gotoProcedure: M3GotoProcedure;
+	///The config manager (to load/save/activate configuration data)
+	configManager: ConfigManager;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

@@ -1,0 +1,12 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="WriteXmlProcessArgs" Id="{63ab46cd-6cfd-4d39-b332-a74afa08e063}">
+    <Declaration><![CDATA[TYPE WriteXmlProcessArgs :
+STRUCT
+	///Full path of the filename to write
+	filePath: STRING;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

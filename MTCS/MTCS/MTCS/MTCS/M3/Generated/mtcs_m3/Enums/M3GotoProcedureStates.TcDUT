@@ -1,0 +1,18 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="M3GotoProcedureStates" Id="{c2178e9f-5aab-4930-be2c-8668989655b3}">
+    <Declaration><![CDATA[TYPE M3GotoProcedureStates :
+(
+	IDLE := 0,
+	ABORTED := 1,
+	PREPARE_PROCESS := 2,
+	GOING_TO_POSITION := 3,
+	IMPROVING_POSITION := 4,
+	ERROR := 5,
+	RESETTING := 6,
+	ABORTING := 7
+);
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

@@ -1,0 +1,26 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="AxesAzimuthAxisParts" Id="{2eb09e81-f209-4bad-a72e-7e1c4ead9f18}">
+    <Declaration><![CDATA[TYPE AxesAzimuthAxisParts :
+STRUCT
+	///The virtual AZI axis
+	virtualAxis: AngularAxis;
+	///The physical AZI axis
+	physicalAxis: AngularAxis;
+	///The (anti-backlash) ABL axis
+	ablAxis: AngularAxis;
+	///The external (LIDA) encoder no. 1
+	lida1: IncrementalEncoder;
+	///The external (LIDA) encoder no. 2
+	lida2: IncrementalEncoder;
+	///The external (LIDA) encoder no. 3
+	lida3: IncrementalEncoder;
+	///The external (LIDA) encoder no. 4
+	lida4: IncrementalEncoder;
+	///The external absolute encoder
+	absoluteEncoder: SSIEncoder;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

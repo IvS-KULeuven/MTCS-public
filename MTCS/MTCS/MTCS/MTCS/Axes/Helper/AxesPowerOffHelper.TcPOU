@@ -1,0 +1,151 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.5">
+  <POU Name="AxesPowerOffHelper" Id="{c9fa087a-b24f-4acf-923f-58890c154139}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK AxesPowerOffHelper
+VAR_INPUT
+    pAblAxis : POINTER TO AngularAxis := 0; (* NULL if no anti-backlash axis is available !!!*)
+    pAblDriveChannel : POINTER TO AX52XXDriveChannel := 0; (* NULL if no anti-backlash axis is available !!!*)
+    pAblSetpointGenerator : POINTER TO AxesTorqueSetpointGenerator := 0; (* NULL if no anti-backlash axis is available !!!*)
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+    setpointGenerator : AxesExternalSetpointGenerator;
+    powerOff : AxesPowerOffProcess;
+    stop     : AxesStopProcess;
+    virtual : AngularAxis;
+    physical : AngularAxis;
+END_VAR
+VAR
+    timeoutTon : TON;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[IF powerOff.isBusy() THEN
+    
+    IF NOT powerOff.isStarted() THEN
+        powerOff.state := 0;
+        powerOff.setStarted();
+	END_IF
+    
+    CASE powerOff.state OF
+        0:
+            // first make sure the axes are stopped
+            powerOff.setActualStatus('Stopping the axes');
+            stop.start();         
+            powerOff.state := 1;
+        1:
+            IF stop.isIdle() THEN
+                IF stop.isGood() THEN
+                    // ok, all axes are stopped
+                    powerOff.state := 2;
+                ELSE
+                    powerOff.setActualStatus('Could not stop the axes!');
+                    powerOff.state := 999;
+                END_IF
+            END_IF
+        2:
+            IF hasAblAxis() THEN
+                powerOff.setActualStatus('Removing anti-backlash torque');
+                pAblSetpointGenerator^.stop();
+                // start a timer
+                timeoutTon(IN := FALSE);
+                timeoutTon(IN := TRUE, PT := T#3S);
+                powerOff.state := 3;
+            ELSE
+                // skip the next step
+                powerOff.state := 4;
+			END_IF
+        3:
+            // wait for the anti-backlash torque to be ramped down
+            IF pAblDriveChannel^.torqueCommandValue = 0 THEN
+                powerOff.state := 4;
+            ELSIF timeoutTon.Q THEN
+                powerOff.setActualStatus('Timeout while removing anti-backlash torque');
+                powerOff.state := 999;
+			END_IF
+        4:
+            powerOff.setActualStatus('Disabling external setpoint generator');
+            IF physical.statuses.extSetGenStatus.enabled THEN
+                physical.processes.disableExtSetGen.start();
+                // wait at most 1 second for the external setpoint generators to become disabled
+                timeoutTon(IN := FALSE);
+                timeoutTon(IN := TRUE, PT := T#1S);
+                powerOff.state := 5;
+            ELSE
+                // skip the next step
+                powerOff.state := 6;
+            END_IF
+            
+        5:
+            timeoutTon(IN := TRUE);
+            IF physical.statuses.extSetGenStatus.disabled THEN
+                powerOff.state :=6;
+            ELSIF timeoutTon.Q THEN
+                powerOff.state := 999;
+                powerOff.setActualStatus('Could not disable AZI external setpoint generator');
+            END_IF
+        6:
+            IF hasAblAxis() THEN
+                powerOff.setActualStatus('Powering off the anti-backlash axis');
+                pAblAxis^.processes.power.start(enable := FALSE);
+                powerOff.state := 7;
+            ELSE
+                // skip the next step
+                powerOff.state := 8;
+			END_IF
+        7:
+            IF pAblAxis^.processes.power.isIdle() THEN
+                IF pAblAxis^.processes.power.isGood() THEN
+                    powerOff.state := 8;
+                ELSE
+                    powerOff.setActualStatus('Could not power off the anti-backlash axis!');
+                    powerOff.state := 999;
+                END_IF
+            END_IF
+        8:
+            // now power off the other axes
+            powerOff.setActualStatus('Powering off the axes');
+            virtual.processes.power.start(enable := FALSE);
+            physical.processes.power.start(enable := FALSE);
+            powerOff.state := 9;
+        9:
+            IF      virtual.processes.power.isIdle() 
+                AND physical.processes.power.isIdle() THEN
+                
+                IF      virtual.processes.power.isGood() 
+                   AND  physical.processes.power.isGood() THEN
+                    // ok, all axes are powered off
+                    powerOff.state := 1000;
+                ELSE
+                    powerOff.setActualStatus('Could not power off the axes!');
+                    powerOff.state := 999;
+                END_IF
+            END_IF
+        999:
+            // error!
+            powerOff.setBad();
+            powerOff.setFinished();
+            // stop all axes
+            stop.start();
+        1000:
+            powerOff.setActualStatus('Powered off');
+            // ok done
+            powerOff.setFinished();
+            powerOff.setGood();
+		
+    END_CASE
+    
+END_IF]]></ST>
+    </Implementation>
+    <Method Name="hasAblAxis" Id="{17aac2f5-cadb-424d-b942-ff92b3b20d97}">
+      <Declaration><![CDATA[METHOD hasAblAxis : BOOL
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[hasAblAxis := (pAblAxis <> 0) AND (pAblDriveChannel <> 0) AND (pAblSetpointGenerator <> 0);]]></ST>
+      </Implementation>
+    </Method>
+  </POU>
+</TcPlcObject>

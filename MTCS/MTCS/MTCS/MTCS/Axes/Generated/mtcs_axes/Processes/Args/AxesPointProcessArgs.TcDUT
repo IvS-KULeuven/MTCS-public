@@ -1,0 +1,46 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="AxesPointProcessArgs" Id="{d046225d-57a6-47da-b7cb-f5b7d40ed5d6}">
+    <Declaration><![CDATA[TYPE AxesPointProcessArgs :
+STRUCT
+	///The units in which alpha is given
+	alphaUnits: AxesAlphaUnits;
+	///Right ascention, in the units of the alphaUnits argument
+	alpha: LREAL;
+	///The units in which delta is given
+	deltaUnits: AxesDeltaUnits;
+	///Declination, in the units of the deltaUnits argument
+	delta: LREAL;
+	///The units in which muAlpha and muDelta are given
+	muUnits: AxesMuUnits;
+	///Right ascention proper motion, the units of muUmits (do not multiply by cos(delta)!)
+	muAlpha: LREAL;
+	///Declination proper motion, in radians/year
+	muDelta: LREAL;
+	///Object parallax, in arcseconds
+	parallax: LREAL;
+	///Object radial velocity, in km/s
+	radialVelocity: LREAL;
+	///Epoch, e.g. 2000.0
+	epoch: LREAL := 2000;
+	///True to start tracking the object, false to Only do a pointing
+	tracking: BOOL := TRUE;
+	///Units of the 'rot', 'roc' and 'ron' arguments (RADIANS, DEGREES, ARCSECONDS, ...)
+	rotUnits: AxesMoveUnits;
+	///Offset to move the currently active rotator (incompatible with 'roc' and 'ron' args)
+	rotOffset: LREAL;
+	///Offset to move the cassegrain rotation axis (incompatible with 'rot' arg)
+	rocOffset: LREAL;
+	///Offset to move the nasmyth rotation axis (incompatible with 'rot' arg)
+	ronOffset: LREAL;
+	///True to move the currently active rotator, false to leave it untouched
+	doRotOffset: BOOL;
+	///True to move the cassegrain rotation axis, false to leave it untouched
+	doRocOffset: BOOL;
+	///True to move the nasmyth rotation axis, false to leave it untouched
+	doRonOffset: BOOL;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

@@ -1,0 +1,12 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="M2MultiplexerProcesses" Id="{a64b9fa3-a29d-4f3e-a27a-d6892142ac08}">
+    <Declaration><![CDATA[TYPE M2MultiplexerProcesses :
+STRUCT
+	///Select an axis
+	selectAxis: M2SelectAxisProcess;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

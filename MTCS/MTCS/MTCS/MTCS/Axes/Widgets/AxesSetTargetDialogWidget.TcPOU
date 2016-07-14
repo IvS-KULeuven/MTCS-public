@@ -1,0 +1,101 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="AxesSetTargetDialogWidget" Id="{aa82d2df-419b-4ffd-be7e-0a9f2c41b8bc}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK AxesSetTargetDialogWidget
+VAR_INPUT
+    do_request : BOOL;
+    field_alpha_h       : LREAL;
+    field_alpha_m       : LREAL;
+    field_alpha_s       : LREAL;
+    field_alpha_decimal : LREAL;
+    units_alpha         : AxesDialogAlphaUnits;
+    field_delta_sign    : AxesDialogSign;
+    field_delta_d       : LREAL;
+    field_delta_m       : LREAL;
+    field_delta_s       : LREAL;
+    field_delta_decimal : LREAL;
+    units_delta         : AxesDialogDeltaUnits;
+    field_muAlpha       : LREAL;
+    field_muDelta       : LREAL;
+    units_mu            : AxesMuUnits;
+    field_parallax      : LREAL;
+    field_radialVelocity: LREAL;
+    field_epoch         : LREAL := 2000.0;
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+    process : AxesSetTargetProcess;
+END_VAR
+VAR
+    alpha : LREAL;
+    alphaUnits : AxesAlphaUnits;
+    delta : LREAL;
+    deltaUnits : AxesDeltaUnits;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[IF do_request THEN
+    do_request := FALSE;
+    
+    CASE units_alpha OF
+        AxesDialogAlphaUnits.DIALOG_HMS:
+            alphaUnits := AxesAlphaUnits.DEGREES;
+            alpha := HMS_TO_DEG(
+                positive := TRUE,
+                hours    := field_alpha_h,
+                minutes  := field_alpha_m,
+                seconds  := field_alpha_s);
+        AxesDialogAlphaUnits.DIALOG_HOURS:
+            alphaUnits := AxesAlphaUnits.HOURS;
+            alpha := field_alpha_decimal;
+        AxesDialogAlphaUnits.DIALOG_RADIANS:
+            alphaUnits := AxesAlphaUnits.RADIANS;
+            alpha := field_alpha_decimal;
+	END_CASE
+    
+    CASE units_delta OF
+        AxesDialogDeltaUnits.DIALOG_DMS:
+            deltaUnits := AxesDeltaUnits.DEGREES;
+            delta := DMS_TO_DEG(
+                positive := field_delta_sign = AxesDialogSign.DIALOG_PLUS,
+                degrees  := field_delta_d,
+                minutes  := field_delta_m,
+                seconds  := field_delta_s);
+        AxesDialogDeltaUnits.DIALOG_DEGREES:
+            deltaUnits := AxesDeltaUnits.DEGREES;
+            delta := field_delta_decimal;
+        AxesDialogDeltaUnits.DIALOG_RADIANS:
+            deltaUnits := AxesDeltaUnits.RADIANS;
+            delta := field_delta_decimal;
+	END_CASE
+    
+    CASE units_delta OF
+        AxesDialogDeltaUnits.DIALOG_DMS:
+            deltaUnits := AxesDeltaUnits.DEGREES;
+            delta := DMS_TO_DEG(
+                positive := field_delta_sign = AxesDialogSign.DIALOG_PLUS,
+                degrees  := field_delta_d,
+                minutes  := field_delta_m,
+                seconds  := field_delta_s);
+        AxesDialogDeltaUnits.DIALOG_RADIANS:
+            deltaUnits := AxesDeltaUnits.RADIANS;
+            delta := field_delta_decimal;
+	END_CASE
+    
+    process.request(
+        alpha           := alpha,
+        alphaUnits      := alphaUnits,
+        delta           := delta,
+        deltaUnits      := deltaUnits,
+        muUnits         := units_mu,
+        muAlpha         := field_muAlpha,
+        muDelta         := field_muDelta,
+        parallax        := field_parallax,
+        radialVelocity  := field_radialVelocity,
+        epoch           := field_epoch);
+
+END_IF]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

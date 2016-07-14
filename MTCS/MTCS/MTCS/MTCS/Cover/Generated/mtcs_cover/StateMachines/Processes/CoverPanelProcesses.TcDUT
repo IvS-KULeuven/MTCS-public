@@ -1,0 +1,14 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="CoverPanelProcesses" Id="{e0c26258-fc78-4203-8aac-352236bde119}">
+    <Declaration><![CDATA[TYPE CoverPanelProcesses :
+STRUCT
+	///Start opening the panel
+	startOpening: Process;
+	///Start closing the panel
+	startClosing: Process;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

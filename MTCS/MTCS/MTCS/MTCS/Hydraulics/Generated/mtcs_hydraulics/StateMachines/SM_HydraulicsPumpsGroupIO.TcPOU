@@ -1,0 +1,47 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="SM_HydraulicsPumpsGroupIO" Id="{e777572c-d6f6-4047-b93f-b1203d9beff8}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK SM_HydraulicsPumpsGroupIO
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+	///Current status description
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	actualStatus: STRING;
+	///Statuses of the state machine
+	statuses: HydraulicsPumpsGroupIOStatuses;
+	///Parts of the state machine
+	parts: HydraulicsPumpsGroupIOParts;
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[parts.COU(
+    id := 'PG:COU',
+    typeId := 'EK1101');
+parts.DI1(
+    id := 'PG:DI1',
+    typeId := 'EL1008');
+parts.SI1(
+    id := 'PG:SI1',
+    typeId := 'EL1904');
+parts.SI2(
+    id := 'PG:SI2',
+    typeId := 'EL1904');
+parts.SI3(
+    id := 'PG:SI3',
+    typeId := 'EL1904');
+parts.DI2(
+    id := 'PG:DI2',
+    typeId := 'EL1008');
+statuses.healthStatus(
+    isGood := parts.COU.statuses.healthStatus.isGood AND (parts.DI1.statuses.healthStatus.isGood AND (parts.SI1.statuses.healthStatus.isGood AND (parts.SI2.statuses.healthStatus.isGood AND (parts.SI3.statuses.healthStatus.isGood AND parts.DI2.statuses.healthStatus.isGood)))),
+    hasWarning := parts.COU.statuses.healthStatus.hasWarning OR (parts.DI1.statuses.healthStatus.hasWarning OR (parts.SI1.statuses.healthStatus.hasWarning OR (parts.SI2.statuses.healthStatus.hasWarning OR (parts.SI3.statuses.healthStatus.hasWarning OR parts.DI2.statuses.healthStatus.hasWarning)))));
+]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

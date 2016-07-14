@@ -1,0 +1,165 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="AxesPointDialogWidget" Id="{67ee26bb-d4e4-4c89-8fe1-7d3081621397}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK AxesPointDialogWidget
+VAR_INPUT
+    do_request : BOOL;
+    field_alpha_h       : LREAL;
+    field_alpha_m       : LREAL;
+    field_alpha_s       : LREAL;
+    field_alpha_decimal : LREAL;
+    units_alpha         : AxesDialogAlphaUnits;
+    field_delta_sign    : AxesDialogSign;
+    field_delta_d       : LREAL;
+    field_delta_m       : LREAL;
+    field_delta_s       : LREAL;
+    field_delta_decimal : LREAL;
+    units_delta         : AxesDialogDeltaUnits;
+    field_muAlpha       : LREAL;
+    field_muDelta       : LREAL;
+    units_mu            : AxesMuUnits;
+    field_parallax      : LREAL;
+    field_radialVelocity: LREAL;
+    field_epoch         : LREAL := 2000.0;
+    field_tracking      : BOOL := TRUE;
+    
+    
+    units_rot           : AxesMoveProcessWidgetUnits;
+    
+    
+    field_rot_decimal   : LREAL;
+    field_rot_sign      : AxesDialogSign;
+    field_rot_d         : LREAL;
+    field_rot_m         : LREAL;
+    field_rot_s         : LREAL;
+    
+    field_roc_decimal   : LREAL;
+    field_roc_sign      : AxesDialogSign;
+    field_roc_d         : LREAL;
+    field_roc_m         : LREAL;
+    field_roc_s         : LREAL;
+    
+    field_ron_decimal   : LREAL;
+    field_ron_sign      : AxesDialogSign;
+    field_ron_d         : LREAL;
+    field_ron_m         : LREAL;
+    field_ron_s         : LREAL;
+    
+    selected_rot : BOOL;
+    selected_ron : BOOL;
+    selected_roc : BOOL;
+    
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+    process : AxesPointProcess;
+END_VAR
+VAR
+    alpha : LREAL;
+    alphaUnits : AxesAlphaUnits;
+    delta : LREAL;
+    deltaUnits : AxesDeltaUnits;
+    rotDeg : LREAL;
+    ronDeg : LREAL;
+    rocDeg : LREAL;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[IF do_request THEN
+    do_request := FALSE;
+    
+    CASE units_alpha OF
+        AxesDialogAlphaUnits.DIALOG_HMS:
+            alphaUnits := AxesAlphaUnits.DEGREES;
+            alpha := HMS_TO_DEG(
+                positive := TRUE,
+                hours    := field_alpha_h,
+                minutes  := field_alpha_m,
+                seconds  := field_alpha_s);
+        AxesDialogAlphaUnits.DIALOG_HOURS:
+            alphaUnits := AxesAlphaUnits.HOURS;
+            alpha := field_alpha_decimal;
+        AxesDialogAlphaUnits.DIALOG_RADIANS:
+            alphaUnits := AxesAlphaUnits.RADIANS;
+            alpha := field_alpha_decimal;
+	END_CASE
+    
+    CASE units_delta OF
+        AxesDialogDeltaUnits.DIALOG_DMS:
+            deltaUnits := AxesDeltaUnits.DEGREES;
+            delta := DMS_TO_DEG(
+                positive := field_delta_sign = AxesDialogSign.DIALOG_PLUS,
+                degrees  := field_delta_d,
+                minutes  := field_delta_m,
+                seconds  := field_delta_s);
+        AxesDialogDeltaUnits.DIALOG_DEGREES:
+            deltaUnits := AxesDeltaUnits.DEGREES;
+            delta := field_delta_decimal;
+        AxesDialogDeltaUnits.DIALOG_RADIANS:
+            deltaUnits := AxesDeltaUnits.RADIANS;
+            delta := field_delta_decimal;
+	END_CASE
+    
+    CASE units_rot OF
+        AxesMoveProcessWidgetUnits.ARCMINUTES:
+            rotDeg := field_rot_decimal / 60.0;
+            rocDeg := field_roc_decimal / 60.0;
+            ronDeg := field_ron_decimal / 60.0;
+        AxesMoveProcessWidgetUnits.ARCSECCONDS:
+            rotDeg := field_rot_decimal / 3600.0;
+            rocDeg := field_roc_decimal / 3600.0;
+            ronDeg := field_ron_decimal / 3600.0;
+        AxesMoveProcessWidgetUnits.DEGMINSEC:
+            rotDeg := DMS_TO_DEG(
+                positive := field_rot_sign = AxesDialogSign.DIALOG_PLUS,
+                degrees  := field_rot_d,
+                minutes  := field_rot_m,
+                seconds  := field_rot_s);
+            rocDeg := DMS_TO_DEG(
+                positive := field_roc_sign = AxesDialogSign.DIALOG_PLUS,
+                degrees  := field_roc_d,
+                minutes  := field_roc_m,
+                seconds  := field_roc_s);
+            ronDeg := DMS_TO_DEG(
+                positive := field_ron_sign = AxesDialogSign.DIALOG_PLUS,
+                degrees  := field_ron_d,
+                minutes  := field_ron_m,
+                seconds  := field_ron_s);
+        AxesMoveProcessWidgetUnits.DEGREES:
+            rotDeg := field_rot_decimal;
+            rocDeg := field_roc_decimal;
+            ronDeg := field_ron_decimal;
+        AxesMoveProcessWidgetUnits.RADIANS:
+            rotDeg := RAD_TO_DEG(field_rot_decimal);
+            rocDeg := RAD_TO_DEG(field_roc_decimal);
+            ronDeg := RAD_TO_DEG(field_ron_decimal);
+    END_CASE
+
+    
+    
+    
+    
+    process.request(
+        alpha           := alpha,
+        alphaUnits      := alphaUnits,
+        delta           := delta,
+        deltaUnits      := deltaUnits,
+        muUnits         := units_mu,
+        muAlpha         := field_muAlpha,
+        muDelta         := field_muDelta,
+        parallax        := field_parallax,
+        radialVelocity  := field_radialVelocity,
+        epoch           := field_epoch,
+        tracking        := field_tracking,
+        rotUnits        := AxesMoveUnits.DEGREES,
+        rotOffset       := rotDeg,
+        rocOffset       := rocDeg,
+        ronOffset       := ronDeg,
+        doRotOffset     := selected_rot,
+        doRocOffset     := selected_roc,
+        doRonOffset     := selected_ron);
+END_IF]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

@@ -1,0 +1,12 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="AxesPointingModelSetupParts" Id="{9ea8878e-c58a-4714-88cb-a5e967905326}">
+    <Declaration><![CDATA[TYPE AxesPointingModelSetupParts :
+STRUCT
+	///The config manager (to load/save/activate configuration data)
+	configManager: ConfigManager;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

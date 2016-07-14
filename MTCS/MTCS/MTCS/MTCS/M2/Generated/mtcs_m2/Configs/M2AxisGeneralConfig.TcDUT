@@ -1,0 +1,24 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="M2AxisGeneralConfig" Id="{d52b388c-a746-48fe-914d-c62aad923291}">
+    <Declaration><![CDATA[TYPE M2AxisGeneralConfig :
+STRUCT
+	///Configure the position measurement
+	measurement: MeasurementConfig;
+	///The number of steps to be expected between the time at which the PLC realizes that the brake release signal must be set, and the time that the axis is fully stopped (for Z axis: at low speed)
+	stoppingSteps: UDINT;
+	///TRUE if the motor final sense must be ClockWise (- motion on the screw), FALSE if the motor final sense must be CounterClockWise (+ motion on the screw) (for Z axis: at low speed)
+	finalSenseCW: BOOL;
+	///The number of steps between the Close position (C) and final position (F)
+	closePosition: UDINT;
+	///The number of steps between the Anti-backlash position (A) and final position (F)
+	antiBacklashPosition: UDINT;
+	///Time (in seconds) to wait after the axis has been moved
+	waitAfterMove: LREAL;
+	///Timeout for a movement, in seconds (for Z-axis: at low speed)
+	timeout: LREAL;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

@@ -1,0 +1,58 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="AxesLidaValueToPosition" Id="{807a6304-c557-4d87-a9e4-09552469a7e9}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION AxesLidaValueToPosition : LREAL
+VAR_INPUT
+    id : AxesIds;
+    encoderValue : UDINT; 
+    invert : BOOL;
+END_VAR
+VAR
+    BITS_PER_TELESCOPE_REVOLUTION : LREAL;
+    ENCODER_DIRECTION_INVERSE : BOOL;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[
+
+IF GLOBAL.config.SIMULATION_ACTIVE THEN
+    
+    CASE id OF
+        AxesIds.AZI:
+            BITS_PER_TELESCOPE_REVOLUTION := 3000    // bits per simulation encoder revolution
+                                             * 4     // quadrature interpolation
+                                             * 1440; // reduction
+        AxesIds.ELE:
+            BITS_PER_TELESCOPE_REVOLUTION := 3000    // bits per simulation encoder revolution
+                                             * 4     // quadrature interpolation
+                                             * 1440; // reduction
+	END_CASE
+ELSE
+    
+    CASE id OF
+        AxesIds.AZI:
+            BITS_PER_TELESCOPE_REVOLUTION := 45000    // marks (lines, ticks) on the linear Heidenhain encoder
+                                             * 100    // Heidenhain EXE interpolation
+                                             * 4;     // quadrature interpolation
+        AxesIds.ELE:
+            BITS_PER_TELESCOPE_REVOLUTION := 45000    // marks (lines, ticks) on the linear Heidenhain encoder
+                                             * 100    // Heidenhain EXE interpolation
+                                             * 4;     // quadrature interpolation
+	END_CASE
+
+END_IF
+
+    
+// we go from unsigned raw value, to signed position in degrees:
+IF encoderValue.31 THEN
+    AxesLidaValueToPosition := (UDINT_TO_LREAL(encoderValue) - 4294967296) / BITS_PER_TELESCOPE_REVOLUTION * 360.0;  // (rawValue bits - 2**32 bits) / BITS_PER_TELESCOPE_REVOLUTION * 360.0 degrees
+ELSE
+    AxesLidaValueToPosition := UDINT_TO_LREAL(encoderValue) / BITS_PER_TELESCOPE_REVOLUTION * 360.0; // rawValue bits / BITS_PER_TELESCOPE_REVOLUTION * 360.0 degrees
+END_IF
+
+IF invert THEN
+    AxesLidaValueToPosition := -AxesLidaValueToPosition;
+END_IF]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

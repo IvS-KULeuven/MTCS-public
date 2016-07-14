@@ -1,0 +1,24 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="M2ConstantsZ" Id="{64d72166-743a-4a4e-918d-07e1bd28cbc4}">
+    <Declaration><![CDATA[TYPE M2ConstantsZ :
+STRUCT
+	///Motor reduction ratio
+	MOT_TO_RED_RATIO: LREAL := 134.0;
+	///Transmission ratio between the motor reduction and the screw
+	RED_TO_SCREW_RATIO: LREAL := 2.0;
+	///Transmission ratio between the encoder and the screw
+	SCREW_TO_ENC_RATIO: LREAL := 1.0;
+	///Minimum position of the axis, in micrometer
+	MIN_POSITION: LREAL := 0.0;
+	///Maximum position of the axis, in micrometer
+	MAX_POSITION: LREAL := 50000.0;
+	///Screw pitch, in micrometer
+	SCREW_PITCH: LREAL := 2000.0;
+	///Motor feedback resolution (pulses per revolution of the motor rotor)
+	FEEDBACK_RESOLUTION: LREAL := 32;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

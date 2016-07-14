@@ -1,0 +1,168 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.2">
+  <POU Name="MTCSChangeOperatorDialogWidget" Id="{0e0ba9c6-7714-4d2d-b908-55c09338eb12}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK MTCSChangeOperatorDialogWidget
+VAR_INPUT
+    
+    do_0 : BOOL;
+    do_1 : BOOL;
+    do_2 : BOOL;
+    do_3 : BOOL;
+    do_4 : BOOL;
+    do_5 : BOOL;
+    do_6 : BOOL;
+    do_7 : BOOL;
+    do_8 : BOOL;
+    do_9 : BOOL;
+    do_c : BOOL;
+    
+    do_observer : BOOL;
+    do_tech : BOOL;
+    do_cancel : BOOL;
+END_VAR
+VAR_OUTPUT
+    field : STRING;
+    _hiddenField : STRING;
+    _hiddenVerifiedField : STRING;
+    deactivate_tech : BOOL;
+    deactivate_observer : BOOL;
+    deactivate_keypad_checkbox : BOOL;
+    deactivate_keypad_keys : BOOL;
+END_VAR
+VAR_IN_OUT
+    changeOperator : ChangeOperatorStateProcess;
+    verifyPassword : ChangeOperatorStateProcess;
+    operatorStatus : OperatorStatus;
+    passwordHealthStatus : HealthStatus;
+END_VAR
+VAR
+    keypadCheckbox : BOOL;
+    passwordHealthStatusWidget : StatusWidget;
+END_VAR]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[IF passwordHealthStatus.good THEN
+    passwordHealthStatusWidget(
+        text  := 'Password OK', 
+        color := HealthToColor(passwordHealthStatus));
+ELSIF passwordHealthStatus.bad OR passwordHealthStatus.warning THEN
+    passwordHealthStatusWidget(
+        text  := CONCAT('Invalid password ', field), 
+        color := HealthToColor(passwordHealthStatus));
+ELSE
+    passwordHealthStatusWidget(
+        text  := '', 
+        color := HealthToColor(passwordHealthStatus));
+END_IF
+
+deactivate_tech := operatorStatus.tech OR passwordHealthStatus.bad;
+deactivate_keypad_checkbox := operatorStatus.tech OR passwordHealthStatus.good;
+deactivate_keypad_keys := operatorStatus.tech OR passwordHealthStatus.good OR (NOT keypadCheckbox);
+deactivate_observer := operatorStatus.observer;
+
+IF do_c THEN
+    _hiddenField := '';
+    _hiddenVerifiedField := '';
+    field := '';
+    do_c := FALSE;
+END_IF
+
+IF do_0 THEN
+    _hiddenField := CONCAT(_hiddenField, '0');
+    field := CONCAT(field, '*');
+    do_0 := FALSE;
+ELSIF do_1 THEN
+    _hiddenField := CONCAT(_hiddenField, '1');
+    field := CONCAT(field, '*');
+    do_1 := FALSE; 
+END_IF
+IF do_2 THEN
+    _hiddenField := CONCAT(_hiddenField, '2');
+    field := CONCAT(field, '*');
+    do_2 := FALSE;
+END_IF
+IF do_3 THEN
+    _hiddenField := CONCAT(_hiddenField, '3'); 
+    field := CONCAT(field, '*');
+    do_3 := FALSE;
+END_IF
+IF do_4 THEN
+    _hiddenField := CONCAT(_hiddenField, '4'); 
+    field := CONCAT(field, '*');
+    do_4 := FALSE;
+END_IF
+IF do_5 THEN
+    _hiddenField := CONCAT(_hiddenField, '5'); 
+    field := CONCAT(field, '*');
+    do_5 := FALSE;
+END_IF
+IF do_6 THEN
+    _hiddenField := CONCAT(_hiddenField, '6'); 
+    field := CONCAT(field, '*');
+    do_6 := FALSE;
+END_IF
+IF do_7 THEN
+    _hiddenField := CONCAT(_hiddenField, '7'); 
+    field := CONCAT(field, '*');
+    do_7 := FALSE;
+END_IF
+IF do_8 THEN
+    _hiddenField := CONCAT(_hiddenField, '8'); 
+    field := CONCAT(field, '*');
+    do_8 := FALSE;
+END_IF
+IF do_9 THEN
+    _hiddenField := CONCAT(_hiddenField, '9'); 
+    field := CONCAT(field, '*');
+    do_9 := FALSE;
+END_IF
+
+
+// if a password has been entered of the correct length, we try to use it:
+IF LEN(_hiddenField) = LEN(GLOBAL.config.PASSWORD_TECH) AND NOT operatorStatus.tech THEN
+    // try to change the operator state to TECH
+    verifyPassword.request(state := OperatorStates.TECH, password := _hiddenField);
+    _hiddenVerifiedField := _hiddenField;
+    _hiddenField := '';
+    field := '';
+END_IF
+
+
+IF do_cancel THEN
+    _hiddenField := '';
+    _hiddenVerifiedField := '';
+    field := '';
+    keypadCheckbox := FALSE;
+    IF passwordHealthStatus.good THEN
+        passwordHealthStatus(isGood := FALSE);
+	END_IF
+    do_cancel := FALSE;
+END_IF
+
+
+IF do_observer THEN
+    // current state is NOT observer, so we're trying to login as OBSERVER
+    changeOperator.request(state := OperatorStates.OBSERVER, 
+                           password := '');
+    _hiddenField := '';
+    _hiddenVerifiedField := '';
+    field := '';
+    keypadCheckbox := FALSE;
+    do_observer := FALSE;
+END_IF
+
+IF do_tech THEN
+    // current state is NOT observer, so we're trying to login as OBSERVER
+    changeOperator.request(state := OperatorStates.TECH, 
+                           password := _hiddenVerifiedField);
+    _hiddenField := '';
+    _hiddenVerifiedField := '';
+    keypadCheckbox := FALSE;
+    do_tech := FALSE;
+END_IF
+
+    
+
+]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

@@ -1,0 +1,17 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="SafetyStatuses" Id="{17126cfb-82c8-4e79-9809-e1bb43eb71ea}">
+    <Declaration><![CDATA[TYPE SafetyStatuses :
+STRUCT
+	initializationStatus: InitializationStatus;
+	healthStatus: HealthStatus;
+	busyStatus: BusyStatus;
+	operatingStatus: OperatingStatus;
+	communicationHealthStatus: HealthStatus;
+	functionBlockHealthStatus: HealthStatus;
+	outputHealthStatus: HealthStatus;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

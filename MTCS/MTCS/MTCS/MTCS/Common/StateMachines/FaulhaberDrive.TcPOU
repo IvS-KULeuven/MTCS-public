@@ -1,0 +1,341 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.5">
+  <POU Name="FaulhaberDrive" Id="{2faf214f-f926-4674-97e3-163beb91eb8f}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK FaulhaberDrive EXTENDS SM_FaulhaberDrive
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR
+    _sdoRead : ADSREAD;
+    _sdoWrite : ADSWRITE;
+    
+    noOfWrites : INT := 0;
+    
+    _currentInitializingState : INT;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[SUPER^(config := config);
+
+_initializing();
+_sdoReading();
+_sdoWriting();
+
+SUPER^(config := config);]]></ST>
+    </Implementation>
+    <Method Name="_initializing_write4Bytes" Id="{0023fdc7-d078-4b2c-81c9-c8ee6aa03087}">
+      <Declaration><![CDATA[METHOD _initializing_write4Bytes
+VAR_INPUT
+    index : UINT;
+    subIndex : USINT;
+    value : UDINT;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF processes.write.isIdle() THEN
+    
+    processes.write.start(
+        index := index, 
+        subindex := subIndex, 
+        noOfBytes := 4, 
+        value1Byte := 0, 
+        value2Bytes := 0, 
+        value4Bytes := value);
+           
+    _currentInitializingState := _currentInitializingState + 1;
+
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_initializing" Id="{1827142b-a895-4333-b97a-ca9140699c41}">
+      <Declaration><![CDATA[METHOD _initializing
+VAR_INPUT    
+
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF processes.initialize.statuses.busyStatus.busy THEN
+    
+    IF processes.initialize.statuses.startedStatus.notStarted THEN
+        IF config.sendAtInitialization THEN
+            _currentInitializingState := 0;
+        ELSE
+            _currentInitializingState := 1000;
+		END_IF
+        processes.initialize.setStarted();
+	END_IF
+
+    CASE _currentInitializingState OF
+        
+        0:
+            _initializing_write1Byte(index := 16#6060, subindex := 0, value := config.modesOfOperation);
+        1:
+            _initializing_waitForWrite();
+        2:
+            _initializing_write1Byte(index := 16#607E, subindex := 0, value := config.polarity);
+        3:
+            _initializing_waitForWrite();
+        4:
+            _initializing_write4Bytes(index := 16#607F, subindex := 0, value := config.maxProfileVelocity);
+        5:
+            _initializing_waitForWrite();
+        6:
+            _initializing_write1Byte(index := 16#2310, subindex := 1, value := config.negativeLimitSwitch);
+        7:
+            _initializing_waitForWrite();
+        8:
+            _initializing_write1Byte(index := 16#2310, subindex := 2, value := config.positiveLimitSwitch);
+        9:
+            _initializing_waitForWrite();
+        10:
+            _initializing_write1Byte(index := 16#2310, subindex := 3, value := config.homingSwitch);
+        11:
+            _initializing_waitForWrite();
+        12:
+            _initializing_write1Byte(index := 16#2310, subindex := 5, value := config.limitSwitchPolarity);
+        13:
+            _initializing_waitForWrite();
+        14:
+            _initializing_write2Bytes(index := 16#2333, subindex := 1, value := config.continuousCurrentLimit);
+        15:
+            _initializing_waitForWrite();
+        16:
+            _initializing_write2Bytes(index := 16#2333, subindex := 2, value := config.peakCurrentLimit);
+        17:
+            _initializing_waitForWrite();
+        18:
+            _initializing_write2Bytes(index := 16#2331, subindex := 1, value := config.velocityControlProportionalTerm);
+        19:
+            _initializing_waitForWrite();
+        20:
+            _initializing_write2Bytes(index := 16#2331, subindex := 2, value := config.velocityControlIntegralTerm);
+        21:
+            _initializing_waitForWrite();
+        22:
+            // just finish!
+            _currentInitializingState := 1000;
+        999:
+            // error!
+            processes.initialize.setBad();
+            processes.initialize.setFinished();
+        1000:
+            // all done!
+            processes.initialize.setGood();
+            processes.initialize.setFinished();
+	END_CASE
+
+END_IF
+    ]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="configure" Id="{2c6b96db-0ab6-4223-87c0-34bd9b5866c1}">
+      <Declaration><![CDATA[METHOD configure
+VAR_INPUT
+    noOfCurrentSamples : UINT;
+    ctrlTimeMultiplier : UINT;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[averageCurrent.ctrlTimeMultiplier := ctrlTimeMultiplier;
+averageCurrent.noOfSamples := noOfCurrentSamples;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_initializing_write1Byte" Id="{422b106e-5972-4340-a7ed-3668fec9465d}">
+      <Declaration><![CDATA[METHOD _initializing_write1Byte
+VAR_INPUT
+    index : UINT;
+    subIndex : USINT;
+    value : USINT;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF processes.write.isIdle() THEN
+    
+    processes.write.start(
+        index := index, 
+        subindex := subIndex, 
+        noOfBytes := 1, 
+        value1Byte := value, 
+        value2Bytes := 0, 
+        value4Bytes := 0);
+
+    _currentInitializingState := _currentInitializingState + 1;
+        
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_initializing_write2Bytes" Id="{bb8576ad-fff7-4cdb-8dd8-522100151226}">
+      <Declaration><![CDATA[METHOD _initializing_write2Bytes
+VAR_INPUT
+    index : UINT;
+    subIndex : USINT;
+    value : UINT;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF processes.write.isIdle() THEN
+    
+    processes.write.start(
+        index := index, 
+        subindex := subIndex, 
+        noOfBytes := 2, 
+        value1Byte := 0, 
+        value2Bytes := value, 
+        value4Bytes := 0);
+
+    _currentInitializingState := _currentInitializingState + 1;
+            
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_initializing_waitForWrite" Id="{c84f772d-651a-427f-a973-37d6c14ce543}">
+      <Declaration><![CDATA[METHOD _initializing_waitForWrite
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF processes.write.isIdle() THEN
+    IF processes.write.isGood() THEN
+        _currentInitializingState := _currentInitializingState + 1;
+    ELSE
+        _currentInitializingState := 999;
+    END_IF
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_sdoWriting" Id="{d4054757-a55a-4687-92e6-dfe359b43eb5}">
+      <Declaration><![CDATA[METHOD _sdoWriting
+VAR_INPUT
+END_VAR
+VAR
+    srcAddress : PVOID;
+END_VAR]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF processes.write.statuses.busyStatus.busy THEN
+    
+    IF processes.write.get.noOfBytes = 1 THEN
+        srcAddress := ADR(processes.write.get.value1Byte);
+        processes.write.setGood();
+    ELSIF processes.write.get.noOfBytes = 2 THEN
+        srcAddress := ADR(processes.write.get.value2Bytes);
+        processes.write.setGood();
+    ELSIF processes.write.get.noOfBytes = 4 THEN
+        srcAddress := ADR(processes.write.get.value4Bytes);
+        processes.write.setGood();
+    ELSE
+        processes.write.setBad();
+        processes.write.setFinished();
+	END_IF
+     
+    
+    IF processes.write.statuses.healthStatus.good THEN
+         
+        IF NOT processes.write.statuses.startedStatus.started THEN
+        
+            noOfWrites := noOfWrites + 1;
+            
+            (* Make sure the Execute input is reset *)
+            _sdoWrite(WRITE := FALSE);
+        
+            (* execute the SDO read command *)
+            _sdoWrite(
+                 NETID      := config.CANopenBusNetId,
+                 PORT       := config.CANopenNodePort,
+                 IDXGRP     := processes.write.get.index,
+                 IDXOFFS    := processes.write.get.subindex,
+                 SRCADDR    := srcAddress,
+                 LEN        := processes.write.get.noOfBytes,
+                 WRITE      := TRUE);
+            
+             processes.write.setStarted();
+        ELSE
+            (* Make sure the Execute input is reset *)
+            _sdoWrite(WRITE := FALSE);
+            
+            (* update the health status *)
+            SUPER^.processes.write.statuses.healthStatus(isGood := NOT _sdoWrite.ERR);
+            
+            (* update the busy status *)
+            SUPER^.processes.write.statuses.busyStatus(isBusy := _sdoWrite.BUSY);
+            
+            (* update the error ID *)
+            SUPER^.processes.write.errorId := _sdoWrite.ERRID;
+		END_IF
+        
+             
+	END_IF
+    
+
+ 
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_sdoReading" Id="{f7a1568b-b5a4-4c14-b600-7cb08e7bc40b}">
+      <Declaration><![CDATA[METHOD _sdoReading
+VAR_INPUT
+END_VAR
+VAR
+    valueAddress : PVOID;
+END_VAR]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF processes.read.statuses.busyStatus.busy THEN
+    
+    IF processes.read.get.noOfBytes = 1 THEN
+        valueAddress := ADR(processes.read.value1Byte);
+        processes.read.setGood();
+    ELSIF processes.read.get.noOfBytes = 2 THEN
+        valueAddress := ADR(processes.read.value2Bytes);
+        processes.read.setGood();
+    ELSIF processes.read.get.noOfBytes = 4 THEN
+        valueAddress := ADR(processes.read.value4Bytes);
+        processes.read.setGood();
+    ELSE
+        processes.read.setBad();
+        processes.read.setFinished();
+	END_IF
+     
+    
+    IF processes.read.statuses.healthStatus.good THEN
+         
+        IF NOT processes.read.statuses.startedStatus.started THEN
+            _sdoRead(READ   := FALSE);
+            
+            (* execute the SDO read command *)
+            _sdoRead(
+                 NETID      := config.CANopenBusNetId,
+                 PORT       := config.CANopenNodePort,
+                 IDXGRP     := processes.read.get.index,
+                 IDXOFFS    := processes.read.get.subindex,
+                 DESTADDR   := valueAddress,
+                 LEN        := processes.read.get.noOfBytes,
+                 READ       := TRUE);
+            
+             processes.read.setStarted();
+             
+		END_IF
+        
+       (* Make sure the Execute input is reset *)
+       //_sdoRead(bExecute   := FALSE);
+        _sdoRead(READ   := FALSE);
+        
+        (* update the health status *)
+        SUPER^.processes.read.statuses.healthStatus(isGood := NOT _sdoRead.ERR);
+        
+        (* update the busy status *)
+        SUPER^.processes.read.statuses.busyStatus(isBusy := _sdoRead.BUSY);
+        
+        (* update the error ID *)
+        SUPER^.processes.read.errorId := _sdoRead.ERRID;
+             
+	END_IF
+    
+
+ 
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+  </POU>
+</TcPlcObject>

@@ -1,0 +1,102 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="AxesStopHelper" Id="{c3f7c79e-bc29-45ce-9048-8ef9b3729f83}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK AxesStopHelper
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+    setpointGenerator : AxesExternalSetpointGenerator;
+    stop     : AxesStopProcess;
+    virtual : AngularAxis;
+    physical : AngularAxis;
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[IF stop.isBusy() THEN
+    
+    IF NOT stop.isStarted() THEN
+        stop.state := 0;
+        stop.setStarted();
+	END_IF
+    
+    // two cases are possible:
+    //  1) the external setpoint generator is enabled
+    //     --> 1.a) synchronize the virtual with the physical axis
+    //         1.b) stop tracking
+    //         1.c) stop the virtual axis (even if it was not moving)
+    //  2) the external setpoint generator is disabled
+    //     --> 2.a) stop both the physical axis and the virtual axis (even if they were not moving)'
+    //  
+    //  Either case, if they fail to stop, we power off the axes
+    
+    CASE stop.state OF
+        0:
+            stop.setActualStatus('Now stopping'); 
+            IF physical.axis_ref.Status.ExtSetPointGenEnabled THEN
+                // case 1.a) synchronize the virtual with the physical axis
+                virtual.processes.setPosition.start(value := physical.axis_ref.NcToPlc.ActPos);
+                stop.state := 1;
+            ELSE
+                // case 2.a) stop both the physical axis and the virtual axis (even if they were not moving)
+                physical.processes.stop.start();
+                virtual.processes.stop.start(); // not needed in fact, but it's better to make sure it is stopped too
+                stop.state := 3;
+			END_IF
+        1:
+            IF virtual.processes.setPosition.isIdle() THEN
+                // regardless of whether the stopping worked or not go to the next step
+                // 1.b) stop tracking
+                setpointGenerator.stopTracking();
+                // 1.c) stop the virtual axis (even if it was not moving)
+                virtual.processes.stop.start();
+                stop.state := 2;
+			END_IF
+        2:
+            IF virtual.processes.stop.isIdle() THEN
+                IF virtual.processes.stop.isGood() THEN
+                    stop.state := 1000;
+                ELSE
+                    stop.setActualStatus('Could not stop the virtual axis');
+                    stop.state := 999;
+                END_IF
+            END_IF
+        3:
+            IF      physical.processes.stop.isIdle()
+                AND virtual.processes.stop.isIdle() 
+            THEN
+                IF     physical.processes.stop.isGood()
+                   AND virtual.processes.stop.isGood() 
+                THEN
+                    stop.state := 1000;
+                ELSE
+                    stop.setActualStatus('Could not stop the physical and virtual axes');
+                    stop.state := 999;
+                END_IF
+			END_IF
+        1000:
+            // ok done
+            stop.setFinished();
+            stop.setGood();
+            stop.setActualStatus('Stopped');
+        999:
+            // error!
+            // try to power off the motors
+            stop.setBad();
+            stop.state := 9991;
+        9991:
+            physical.processes.power.start(enable := FALSE);
+            virtual.processes.power.start(enable := FALSE);
+        9992:
+            // still in error, nothing to do
+            stop.setFinished();
+            
+    END_CASE
+    
+END_IF]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

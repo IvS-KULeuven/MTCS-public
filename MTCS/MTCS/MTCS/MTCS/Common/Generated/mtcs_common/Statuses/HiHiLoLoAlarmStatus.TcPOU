@@ -1,0 +1,54 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="HiHiLoLoAlarmStatus" Id="{a7cc5110-f946-45d5-b3ee-303802f39658}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK HiHiLoLoAlarmStatus
+VAR_INPUT
+	///Super state (TRUE if the super state is active, or if there is no super state)
+	superState: BOOL := TRUE;
+	///Config
+	config: HiHiLoLoAlarmConfig;
+	///Value in the correct units to compare to the values from the config
+	value: LREAL;
+END_VAR
+VAR_OUTPUT
+	///The alarm is disabled
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	disabled: BOOL;
+	///HighHigh limit active
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	hiHi: BOOL;
+	///High limit active
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	hi: BOOL;
+	///The value is within normal range
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	ok: BOOL;
+	///Low limit active
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	lo: BOOL;
+	///LowLow limit active
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	loLo: BOOL;
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[lo := (config.enabled AND ((value <= config.lo) AND (value < config.loLo))) AND superState;
+hiHi := (config.enabled AND (value >= config.hiHi)) AND superState;
+loLo := (config.enabled AND (value <= config.loLo)) AND superState;
+hi := (config.enabled AND ((value >= config.hi) AND (value < config.hiHi))) AND superState;
+ok := (config.enabled AND ((value > config.lo) AND (value < config.hi))) AND superState;
+disabled := (NOT(config.enabled)) AND superState;
+]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

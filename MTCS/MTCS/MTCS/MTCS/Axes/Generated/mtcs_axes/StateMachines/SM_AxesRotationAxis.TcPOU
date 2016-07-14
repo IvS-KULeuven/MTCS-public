@@ -1,0 +1,307 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="SM_AxesRotationAxis" Id="{fd0ef2bc-3c85-4aff-a561-7884707746fb}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK SM_AxesRotationAxis
+VAR_INPUT
+	///Id of this axis
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	id: AxesIds;
+	///Is control enabled?
+	{attribute 'OPC.UA.DA' := '0'}
+	isEnabled: BOOL;
+END_VAR
+VAR_OUTPUT
+	///Current status description
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	actualStatus: STRING;
+	///TRUE if the positive limit switch has detected the axis
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	positiveLimitSwitchError: BOOL;
+	///TRUE if the negative limit switch has detected the axis
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	negativeLimitSwitchError: BOOL;
+	///TRUE if the setpoint position has reached its limit
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	setPosLimitReached: BOOL;
+	///The deviation between target position and actual position, as a 1 second moving average
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	deviation1SecAverage: AngularPosition;
+	///The deviation between target position and actual position, as a 1 second moving RMS error
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	deviation1SecRMS: AngularPosition;
+	///The target position
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	targetPos: AngularPosition;
+	///Cumulative offset of targetPos. Equals targetPos - targetStart
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	targetOffset: AngularPosition;
+	///Last absolute movement end position of the axis
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	targetStart: AngularPosition;
+	///The setpoint position (same as parts.physicalAxis!)
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	setPos: AngularPosition;
+	///The setpoint velocity (same as parts.physicalAxis!)
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	setVelo: AngularVelocity;
+	///The setpoint acceleration (same as parts.physicalAxis!)
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	setAcc: AngularAcceleration;
+	///The actual position (same as parts.eleAxis!)
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	actPos: AngularPosition;
+	///The actual velocity (same as parts.eleAxis!)
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	actVelo: AngularVelocity;
+	///The actual acceleration (same as parts.eleAxis!)
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	actAcc: AngularAcceleration;
+	///The actual torque on the telescope axis by the ELE motor
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	actTorque: Torque;
+	///Statuses of the state machine
+	statuses: AxesRotationAxisStatuses;
+	///Parts of the state machine
+	parts: AxesRotationAxisParts;
+	///Processes of the state machine
+	processes: AxesRotationAxisProcesses;
+END_VAR
+VAR_IN_OUT
+	///Reference to the rotation config
+	{attribute 'OPC.UA.DA' := '0'}
+	config: AxesRotationConfig;
+	///Reference to the axis drive channel
+	{attribute 'OPC.UA.DA' := '0'}
+	driveChannel: AX52XXDriveChannel;
+	///Reference to the main drive channel (channel A) of the drive
+	{attribute 'OPC.UA.DA' := '0'}
+	mainDriveChannel: AX52XXDriveChannel;
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[parts.virtualAxis( isEnabled := isEnabled );
+parts.physicalAxis( isEnabled := isEnabled );
+statuses.busyStatus( isBusy := driveChannel.statuses.busyStatus.busy OR (parts.virtualAxis.statuses.busyStatus.busy OR (parts.physicalAxis.statuses.busyStatus.busy OR (processes.moveAbsolute.statuses.busyStatus.busy OR (processes.moveRelative.statuses.busyStatus.busy OR (processes.moveVelocity.statuses.busyStatus.busy OR (processes.reset.statuses.busyStatus.busy OR (processes.moveOutOfLimitSwitch.statuses.busyStatus.busy OR (processes.powerOn.statuses.busyStatus.busy OR (processes.powerOff.statuses.busyStatus.busy OR (processes.stop.statuses.busyStatus.busy OR (processes.quickStop.statuses.busyStatus.busy OR processes.setPosition.statuses.busyStatus.busy))))))))))) );
+statuses.healthStatus(
+    isGood := (driveChannel.statuses.healthStatus.isGood AND (parts.virtualAxis.statuses.healthStatus.isGood AND (parts.physicalAxis.statuses.healthStatus.isGood AND (processes.moveAbsolute.statuses.healthStatus.isGood AND (processes.moveRelative.statuses.healthStatus.isGood AND (processes.moveVelocity.statuses.healthStatus.isGood AND (processes.reset.statuses.healthStatus.isGood AND (processes.moveOutOfLimitSwitch.statuses.healthStatus.isGood AND (processes.powerOn.statuses.healthStatus.isGood AND (processes.powerOff.statuses.healthStatus.isGood AND (processes.stop.statuses.healthStatus.isGood AND (processes.quickStop.statuses.healthStatus.isGood AND processes.setPosition.statuses.healthStatus.isGood)))))))))))) AND ((NOT(positiveLimitSwitchError)) AND (NOT(negativeLimitSwitchError))),
+    hasWarning := driveChannel.statuses.healthStatus.hasWarning OR (parts.virtualAxis.statuses.healthStatus.hasWarning OR (parts.physicalAxis.statuses.healthStatus.hasWarning OR (processes.moveAbsolute.statuses.healthStatus.hasWarning OR (processes.moveRelative.statuses.healthStatus.hasWarning OR (processes.moveVelocity.statuses.healthStatus.hasWarning OR (processes.reset.statuses.healthStatus.hasWarning OR (processes.moveOutOfLimitSwitch.statuses.healthStatus.hasWarning OR (processes.powerOn.statuses.healthStatus.hasWarning OR (processes.powerOff.statuses.healthStatus.hasWarning OR (processes.stop.statuses.healthStatus.hasWarning OR (processes.quickStop.statuses.healthStatus.hasWarning OR processes.setPosition.statuses.healthStatus.hasWarning))))))))))));
+statuses.poweredStatus( isEnabled := parts.virtualAxis.statuses.poweredStatus.enabled AND parts.physicalAxis.statuses.poweredStatus.enabled );
+processes.moveAbsolute( isEnabled := isEnabled );
+processes.moveRelative( isEnabled := isEnabled );
+processes.moveVelocity( isEnabled := isEnabled );
+processes.reset( isEnabled := isEnabled );
+processes.moveOutOfLimitSwitch( isEnabled := isEnabled );
+processes.powerOn( isEnabled := isEnabled );
+processes.powerOff( isEnabled := isEnabled );
+processes.stop( isEnabled := isEnabled );
+processes.quickStop( isEnabled := isEnabled );
+processes.setPosition( isEnabled := isEnabled );
+]]></ST>
+    </Implementation>
+    <Method Name="setPosition" Id="{19253c02-1c10-454f-ace4-8d632dd43780}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD setPosition : RequestResults
+VAR_INPUT
+	value: LREAL;
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[setPosition := THIS^.processes.setPosition.request( value := value );
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="moveRelative" Id="{20618092-dab8-4f31-96c8-db17ef140860}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD moveRelative : RequestResults
+VAR_INPUT
+	units: AxesMoveUnits;
+	value: LREAL;
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[moveRelative := THIS^.processes.moveRelative.request(
+    units := units,
+    value := value);
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="moveAbsolute" Id="{2315dec4-dd9d-4f1b-854a-bcec201605ad}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD moveAbsolute : RequestResults
+VAR_INPUT
+	units: AxesMoveUnits;
+	value: LREAL;
+	offset: LREAL;
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[moveAbsolute := THIS^.processes.moveAbsolute.request(
+    units := units,
+    value := value,
+    offset := offset);
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="quickStop" Id="{5048c306-a7f7-4fd5-96ea-a89e425d0ef7}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD quickStop : RequestResults
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[quickStop := THIS^.processes.quickStop.request();
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="moveVelocity" Id="{537fee5e-c709-41e8-a96f-7a9da3642dd9}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD moveVelocity : RequestResults
+VAR_INPUT
+	units: AxesMoveVelocityUnits;
+	value: LREAL;
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[moveVelocity := THIS^.processes.moveVelocity.request(
+    units := units,
+    value := value);
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="powerOff" Id="{bc1711fd-d23b-4285-862d-e1eaefce7642}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD powerOff : RequestResults
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[powerOff := THIS^.processes.powerOff.request();
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="moveOutOfLimitSwitch" Id="{c45112c5-6ee5-412e-80bc-4b80e5828778}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD moveOutOfLimitSwitch : RequestResults
+VAR_INPUT
+	switch: LimitSwitches;
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[moveOutOfLimitSwitch := THIS^.processes.moveOutOfLimitSwitch.request( switch := switch );
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="powerOn" Id="{de054ea6-a10a-4b05-8baf-8ee49c21bb43}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD powerOn : RequestResults
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[powerOn := THIS^.processes.powerOn.request();
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="reset" Id="{e3ea9816-d001-4b41-bec0-ce7ddb12f1cf}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD reset : RequestResults
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[reset := THIS^.processes.reset.request();
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="stop" Id="{f60ca9dd-a050-4061-84d5-f31e6a794459}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD stop : RequestResults
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[stop := THIS^.processes.stop.request();
+]]></ST>
+      </Implementation>
+    </Method>
+  </POU>
+</TcPlcObject>

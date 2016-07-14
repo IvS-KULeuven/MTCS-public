@@ -1,0 +1,16 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="TemperatureMeasurementStatuses" Id="{715d1fac-df44-4ff4-aaf3-73d68fc5999c}">
+    <Declaration><![CDATA[TYPE TemperatureMeasurementStatuses :
+STRUCT
+	///Is the temperature being measured?
+	enabledStatus: EnabledStatus;
+	///Is the measurement OK?
+	healthStatus: HealthStatus;
+	///Alarm status
+	alarmStatus: HiHiLoLoAlarmStatus;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

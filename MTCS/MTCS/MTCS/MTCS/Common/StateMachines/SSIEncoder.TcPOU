@@ -1,0 +1,17 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.2">
+  <POU Name="SSIEncoder" Id="{2c1ba836-4116-41a8-9a3f-283d71a8da27}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK SSIEncoder EXTENDS SM_SSIEncoder
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR
+    _testVar_SSIEncoder : BOOL; // at least one variable is needed to expose this FB via OPC UA
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[SUPER^();]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

@@ -1,0 +1,50 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.5">
+  <POU Name="InitializeButtonWidget" Id="{c1242424-4e44-4fc1-91fc-a972cf8203be}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK InitializeButtonWidget
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+    text : STRING;
+    textOneLine : STRING;
+    deactivate : BOOL;
+END_VAR
+VAR_IN_OUT
+    status : InitializationStatus;
+	process : Process;
+END_VAR
+VAR
+    do_request : BOOL := FALSE;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[IF status.initialized THEN
+    text := 'Re-$ninitialize';
+    textOneLine := 'Reinitialize';
+    deactivate := process.statuses.enabledStatus.disabled;
+ELSIF status.initializing THEN
+    text := 'Re-$ninitialize';
+    textOneLine := 'Reinitialize';
+    deactivate := process.statuses.enabledStatus.disabled;
+ELSIF status.initializingFailed THEN
+    text := 'Re-$ninitialize';
+    textOneLine := 'Reinitialize';
+    deactivate := process.statuses.enabledStatus.disabled;
+ELSIF status.shutdown THEN
+    text := 'Initialize';
+    textOneLine := 'Initialize';
+    deactivate := process.statuses.enabledStatus.disabled;
+ELSE
+    text := 'Re-$ninitialize';
+    textOneLine := 'Reinitialize';
+    deactivate := process.statuses.enabledStatus.disabled;
+END_IF
+
+
+IF do_request THEN
+    process.request();
+    do_request := FALSE;
+END_IF]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

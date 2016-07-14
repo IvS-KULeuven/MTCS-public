@@ -1,0 +1,60 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.5">
+  <POU Name="TelemetryTemperaturesWidget" Id="{c829bc57-61d7-4b6a-aa8c-b1413d3c1621}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK TelemetryTemperaturesWidget 
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+    ref : SM_TelemetryTemperatures;
+END_VAR
+VAR
+    actualStatus : StatusWidget;
+    // temperatures
+    m1                      : MeasurementWidget('M1', '%.2f °C');
+    mirrorCell              : MeasurementWidget('Mirror cell', '%.2f °C');
+    m2                      : MeasurementWidget('M2', '%.2f °C');
+    m2Electronics           : MeasurementWidget('M2 electronics', '%.2f °C');
+    topTube                 : MeasurementWidget('Top tube', '%.2f °C');
+    centreTube              : MeasurementWidget('Centre tube', '%.2f °C');
+    fork                    : MeasurementWidget('Fork', '%.2f °C');
+    nasmythAir              : MeasurementWidget('Nasmyth air', '%.2f °C');
+    rem                     : MeasurementWidget('REM cabinet', '%.2f °C');
+    rpm                     : MeasurementWidget('RPM cabinet', '%.2f °C');
+    hermesTelescopeAdapter  : MeasurementWidget('HERMES telescope adapter', '%.2f °C');
+    topAir                  : MeasurementWidget('Top air', '%.2f °C');
+    insideTube              : MeasurementWidget('Inside tube', '%.2f °C');
+END_VAR]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[actualStatus(text := ref.actualStatus, color := HealthToColor(ref.statuses.healthStatus));
+
+_updateTemperature(ref.m1, m1);
+_updateTemperature(ref.mirrorCell, mirrorCell);
+_updateTemperature(ref.m2, m2);
+_updateTemperature(ref.m2Electronics, m2Electronics);
+_updateTemperature(ref.topTube, topTube);
+_updateTemperature(ref.centreTube, centreTube);
+_updateTemperature(ref.fork, fork);
+_updateTemperature(ref.nasmythAir, nasmythAir);
+_updateTemperature(ref.rem, rem);
+_updateTemperature(ref.rpm, rpm);
+_updateTemperature(ref.hermesTelescopeAdapter, hermesTelescopeAdapter);
+_updateTemperature(ref.topAir, topAir);
+_updateTemperature(ref.insideTube, insideTube);]]></ST>
+    </Implementation>
+    <Method Name="_updateTemperature" Id="{5c4b7ece-88e7-4cd2-a5a2-98b9c6219e64}">
+      <Declaration><![CDATA[METHOD _updateTemperature : BOOL
+VAR_INPUT
+END_VAR
+VAR_IN_OUT
+    ref : TemperatureMeasurement;
+    widget : MeasurementWidget;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[widget(value := ref.average.celsius.value, actualStatus := ref.actualStatus, healthStatus := ref.statuses.healthStatus);]]></ST>
+      </Implementation>
+    </Method>
+  </POU>
+</TcPlcObject>

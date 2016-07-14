@@ -1,0 +1,17 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.5">
+  <POU Name="CurrentMeasurement" Id="{66078c62-c0b3-490c-8d00-41f1d8c2fb4f}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK CurrentMeasurement EXTENDS SM_CurrentMeasurement
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR
+    testVar : INT;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[SUPER^();]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

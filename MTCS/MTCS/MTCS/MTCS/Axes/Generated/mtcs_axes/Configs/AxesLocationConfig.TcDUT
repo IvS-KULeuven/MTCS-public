@@ -1,0 +1,24 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="AxesLocationConfig" Id="{840fb84e-a44a-4809-8f59-c6ae676e5e46}">
+    <Declaration><![CDATA[TYPE AxesLocationConfig :
+STRUCT
+	///Observatory location: longitude [degrees, positive = E, negative = W]
+	longitude: LREAL;
+	///Observatory location: latitude [degrees, positive = N, negative = S]
+	latitude: LREAL;
+	///Observatory location: height above sea-level [m]
+	height: REAL;
+	///Earth polar motion x in degrees
+	polarMotionX: REAL;
+	///Earth polar motion y in degrees
+	polarMotionY: REAL;
+	///Nutation adjustment dX in degrees
+	nutationDx: REAL;
+	///Nutation adjustment dY in degrees
+	nutationDy: REAL;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

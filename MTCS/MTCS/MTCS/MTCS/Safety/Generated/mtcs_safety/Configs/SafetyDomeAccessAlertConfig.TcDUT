@@ -1,0 +1,18 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="SafetyDomeAccessAlertConfig" Id="{85901b78-89ab-4e8f-88c8-9b4bdc1d7213}">
+    <Declaration><![CDATA[TYPE SafetyDomeAccessAlertConfig :
+STRUCT
+	///Bit pattern, for which bit=high means alert active, bit=low means alert off
+	pattern: UDINT;
+	///Number of bits of the bitPattern to use (between 1 and 32)
+	patternLength: USINT;
+	///Sound length of 1 bit, in milliseconds
+	bitLength: UINT;
+	///The time, in number of milliseconds, during which the pattern is repeated. 0 means repeat forever.
+	totalTime: UINT;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

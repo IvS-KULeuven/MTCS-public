@@ -1,0 +1,24 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.5">
+  <POU Name="SafetyEmergencyStopsWidget" Id="{f4ff4b53-922d-4176-b74d-4a73e677f524}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK SafetyEmergencyStopsWidget
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+	actualStatus : StatusWidget;
+END_VAR
+VAR_IN_OUT
+	ref : SafetyEmergencyStops;
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[
+actualStatus(text  := ref.actualStatus,
+             color := HealthBusyToColor(healthStatus := ref.statuses.healthStatus, busyStatus := ref.statuses.busyStatus));
+
+]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

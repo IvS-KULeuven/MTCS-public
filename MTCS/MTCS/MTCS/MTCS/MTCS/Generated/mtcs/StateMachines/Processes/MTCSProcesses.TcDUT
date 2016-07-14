@@ -1,0 +1,30 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="MTCSProcesses" Id="{29f71867-bbcb-4777-a38a-ab9c92c96d44}">
+    <Declaration><![CDATA[TYPE MTCSProcesses :
+STRUCT
+	///Start initializing the whole MTCS
+	initialize: Process;
+	///Lock the whole MTCS
+	lock: Process;
+	///Unlock the whole MTCS
+	unlock: Process;
+	///Change the operator (e.g. OBSERVER, TECH, ...)
+	changeOperator: ChangeOperatorStateProcess;
+	///Only verify the operator password
+	verifyPassword: ChangeOperatorStateProcess;
+	///Reboot the whole MTCS
+	reboot: Process;
+	///Shutdown the whole MTCS
+	shutdown: Process;
+	///Wake up the whole MTCS
+	wakeUp: Process;
+	///Let the whole MTCS go to sleep
+	goToSleep: Process;
+	///Change the instrument
+	changeInstrument: MTCSChangeInstrumentProcess;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

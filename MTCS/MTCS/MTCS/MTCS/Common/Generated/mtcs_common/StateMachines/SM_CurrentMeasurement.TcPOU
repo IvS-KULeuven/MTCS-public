@@ -1,0 +1,36 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="SM_CurrentMeasurement" Id="{28c788c6-d5b4-4ba6-8441-7356c821cc0f}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK SM_CurrentMeasurement
+VAR_INPUT
+	///Measured current in microamps
+	{attribute 'OPC.UA.DA' := '0'}
+	microAmpsValue AT %I*: DINT;
+	///Error
+	{attribute 'OPC.UA.DA' := '0'}
+	error AT %I*: BOOL;
+END_VAR
+VAR_OUTPUT
+	///Current status description
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	actualStatus: STRING;
+	///The measured current
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	current: Current;
+	///Statuses of the state machine
+	statuses: CurrentMeasurementStatuses;
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[current( newAmpsValue := microAmpsValue / 1000000.0 );
+statuses.healthStatus( isGood := NOT(error) );
+]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

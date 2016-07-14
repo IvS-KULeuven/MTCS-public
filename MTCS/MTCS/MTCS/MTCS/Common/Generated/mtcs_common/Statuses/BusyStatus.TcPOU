@@ -1,0 +1,32 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="BusyStatus" Id="{3760d059-b6e1-40dc-9732-2c74ab9c0de6}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK BusyStatus
+VAR_INPUT
+	///Super state (TRUE if the super state is active, or if there is no super state)
+	superState: BOOL := TRUE;
+	///TRUE if busy
+	isBusy: BOOL;
+END_VAR
+VAR_OUTPUT
+	///The subject is idle
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	idle: BOOL;
+	///The subject is busy
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	busy: BOOL;
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[busy := isBusy AND superState;
+idle := (NOT(isBusy)) AND superState;
+]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

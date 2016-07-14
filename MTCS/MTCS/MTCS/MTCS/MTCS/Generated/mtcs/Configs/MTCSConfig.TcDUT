@@ -1,0 +1,12 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="MTCSConfig" Id="{857c264b-e445-497e-b758-45ed8a8aeba5}">
+    <Declaration><![CDATA[TYPE MTCSConfig :
+STRUCT
+	///Configure the instruments
+	instruments: MTCSInstrumentsConfig;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

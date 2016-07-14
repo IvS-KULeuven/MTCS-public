@@ -1,0 +1,40 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.5">
+  <POU Name="M3NameToPositionId" Id="{b1d2a34f-d358-40d8-a7c4-7813a1b04ae5}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION M3NameToPositionId : M3PositionIDs
+VAR_INPUT
+    name : STRING;
+END_VAR
+VAR_IN_OUT
+    config : M3KnownPositionsConfig;
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[IF name = config.cassegrain.name THEN
+    M3NameToPositionId := M3PositionIDs.CASSEGRAIN;
+ELSIF name = config.nasmythA.name THEN
+    M3NameToPositionId := M3PositionIDs.NASMYTH_A;
+ELSIF name = config.nasmythB.name THEN
+    M3NameToPositionId := M3PositionIDs.NASMYTH_B;
+ELSIF name = config.nasmythC.name THEN
+    M3NameToPositionId := M3PositionIDs.NASMYTH_C;
+ELSIF name = config.nasmythD.name THEN
+    M3NameToPositionId := M3PositionIDs.NASMYTH_D;
+ELSIF name = config.other0.name THEN
+    M3NameToPositionId := M3PositionIDs.OTHER_0;
+ELSIF name = config.other1.name THEN
+    M3NameToPositionId := M3PositionIDs.OTHER_1;
+ELSIF name = config.other2.name THEN
+    M3NameToPositionId := M3PositionIDs.OTHER_2;
+ELSIF name = config.other3.name THEN
+    M3NameToPositionId := M3PositionIDs.OTHER_3;
+ELSIF name = config.other4.name THEN
+    M3NameToPositionId := M3PositionIDs.OTHER_4;
+ELSE
+    M3NameToPositionId := M3PositionIDs.UNKNOWN;
+END_IF]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

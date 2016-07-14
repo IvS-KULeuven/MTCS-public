@@ -1,0 +1,67 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.5">
+  <POU Name="MeasurementToString" Id="{378920dc-68d1-42b1-b1f6-1af6201952d3}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK MeasurementToString
+VAR_INPUT
+    value : LREAL;
+    format : STRING;
+    overrange : BOOL;
+    underrange: BOOL;
+    error : BOOL;
+END_VAR
+VAR_OUTPUT
+    display : STRING;
+    actualStatus : STRING;
+END_VAR
+VAR_IN_OUT
+    alarmStatus : HiHiLoLoAlarmStatus;
+    enabledStatus : EnabledStatus;
+END_VAR
+VAR
+    _formatString : FB_FormatString;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[// update the display and actualStatus
+IF enabledStatus.enabled THEN
+    IF overrange THEN
+        display := '';
+        actualStatus := 'Overrange';
+    ELSIF underrange THEN
+        display := '';
+        actualStatus := 'Underrange';
+    ELSIF error THEN
+        display := '';
+        actualStatus := 'Error';
+    ELSE
+        // update display:
+        _formatString(sFormat := format, 
+                      arg1    := F_LREAL(value),
+                      sOut    => display);
+        // update actualStatus:
+        IF alarmStatus.disabled THEN
+            actualStatus := 'Valid';
+        ELSIF alarmStatus.ok THEN
+            actualStatus := 'Valid and within range';
+        ELSIF alarmStatus.hi THEN
+            actualStatus := 'High!';
+        ELSIF alarmStatus.hiHi THEN
+            actualStatus := 'Critically high!';
+        ELSIF alarmStatus.lo THEN
+            actualStatus := 'Low!';
+        ELSIF alarmStatus.loLo THEN
+            actualStatus := 'Critically low!';
+        ELSE
+            actualStatus := display;
+        END_IF
+    END_IF
+ELSIF enabledStatus.disabled THEN
+    display := '';
+    actualStatus := 'Disabled';
+ELSE
+    display := '';
+    actualStatus := 'UNKNOWN';
+END_IF]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

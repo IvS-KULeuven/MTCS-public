@@ -1,0 +1,114 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="AxesPointRelativeProcessWidget" Id="{414dbb3c-972c-42a3-9e5b-bbf3b9355d69}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK AxesPointRelativeProcessWidget
+VAR_INPUT
+    title : STRING;
+    units : AxesMoveProcessWidgetUnits;
+    
+    actualStatus : StatusWidget;
+    
+    
+    field_alpha_sign : AxesDialogSign;
+    field_alpha_h : LREAL;
+    field_alpha_m : LREAL;
+    field_alpha_s : LREAL;
+    field_alpha_decimal : LREAL;
+    
+    field_delta_sign : AxesDialogSign;
+    field_delta_d : LREAL;
+    field_delta_m : LREAL;
+    field_delta_s : LREAL;
+    field_delta_decimal : LREAL;
+    
+    field_roc_sign : AxesDialogSign;
+    field_roc_d : LREAL;
+    field_roc_m : LREAL;
+    field_roc_s : LREAL;
+    field_roc_decimal : LREAL;
+    
+    field_ron_sign : AxesDialogSign;
+    field_ron_d : LREAL;
+    field_ron_m : LREAL;
+    field_ron_s : LREAL;
+    field_ron_decimal : LREAL;
+    
+    alphaDisabled : BOOL;
+    deltaDisabled : BOOL;
+    rocDisabled : BOOL;
+    ronDisabled : BOOL;
+END_VAR
+VAR_OUTPUT
+    unitsText : STRING;
+    alphaDeg : LREAL;
+    deltaDeg : LREAL;
+    rocDeg : LREAL;
+    ronDeg : LREAL;
+    
+    
+END_VAR
+VAR_IN_OUT
+    process : AxesPointRelativeProcess;
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[
+actualStatus(
+    text  := process.actualStatus,
+    color := HealthBusyToColor(healthStatus := process.statuses.healthStatus, 
+                               busyStatus   := process.statuses.busyStatus));
+
+CASE units OF
+    AxesMoveProcessWidgetUnits.ARCMINUTES:
+        unitsText := '$'';
+        alphaDeg := field_alpha_decimal / 60.0;
+        deltaDeg := field_delta_decimal / 60.0;
+        rocDeg := field_roc_decimal / 60.0;
+        ronDeg := field_ron_decimal / 60.0;
+    AxesMoveProcessWidgetUnits.ARCSECCONDS:
+        unitsText := '"';
+        alphaDeg := field_alpha_decimal / 3600.0;
+        deltaDeg := field_delta_decimal / 3600.0;
+        rocDeg := field_roc_decimal / 3600.0;
+        ronDeg := field_ron_decimal / 3600.0;
+    AxesMoveProcessWidgetUnits.DEGMINSEC:
+        unitsText := '';
+        alphaDeg := HMS_TO_DEG(
+            positive := field_alpha_sign = AxesDialogSign.DIALOG_PLUS,
+            hours    := field_alpha_h,
+            minutes  := field_alpha_m,
+            seconds  := field_alpha_s);
+        deltaDeg := DMS_TO_DEG(
+            positive := field_delta_sign = AxesDialogSign.DIALOG_PLUS,
+            degrees  := field_delta_d,
+            minutes  := field_delta_m,
+            seconds  := field_delta_s);
+        rocDeg := DMS_TO_DEG(
+            positive := field_roc_sign = AxesDialogSign.DIALOG_PLUS,
+            degrees  := field_roc_d,
+            minutes  := field_roc_m,
+            seconds  := field_roc_s);
+        ronDeg := DMS_TO_DEG(
+            positive := field_ron_sign = AxesDialogSign.DIALOG_PLUS,
+            degrees  := field_ron_d,
+            minutes  := field_ron_m,
+            seconds  := field_ron_s);
+    AxesMoveProcessWidgetUnits.DEGREES:
+        unitsText := '°';
+        alphaDeg := field_alpha_decimal;
+        deltaDeg := field_delta_decimal;
+        rocDeg := field_roc_decimal;
+        ronDeg := field_ron_decimal;
+    AxesMoveProcessWidgetUnits.RADIANS:
+        unitsText := 'rad';
+        alphaDeg := RAD_TO_DEG(field_alpha_decimal);
+        deltaDeg := RAD_TO_DEG(field_delta_decimal);
+        rocDeg := RAD_TO_DEG(field_roc_decimal);
+        ronDeg := RAD_TO_DEG(field_ron_decimal);
+END_CASE
+]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

@@ -1,0 +1,160 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.5">
+  <POU Name="SafetyEmergencyStops" Id="{37bc5fef-aa3d-4038-8790-ded7ed42ae3f}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK SafetyEmergencyStops EXTENDS SM_SafetyEmergencyStops
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR
+    _resetState : INT := 0;
+    _resetLoopIndex : INT := 0;
+    _resetTon   : TON;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[_update();
+
+_resetting();
+
+_update();
+]]></ST>
+    </Implementation>
+    <Method Name="_resetting" Id="{8e816ff9-fa26-4e90-8c66-6cfa2a693318}">
+      <Declaration><![CDATA[METHOD _resetting
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF processes.reset.statuses.busyStatus.busy THEN
+	
+    // do a 0 -> 1 -> 0 pulse at the errorAcknowledge and restartOutput outputs
+    // DO IT TWICE, because apparently sometimes it fails (probably due to wrong order of pulsing the 2 variables).
+
+    CASE _resetState OF
+        0:
+            _resetLoopIndex := 0;
+            _resetState := 1;
+        1:
+            errorAcknowledge := FALSE;
+            restartOutput := FALSE;
+            _resetTon(IN := FALSE);
+            _resetTon(IN := TRUE, PT := T#200MS);
+            _resetState := 2;
+        2:
+            _resetTon(IN := TRUE);
+            IF _resetTon.Q THEN
+                _resetState := 3;
+			END_IF
+        3:
+            errorAcknowledge := TRUE;
+            _resetTon(IN := FALSE);
+            _resetTon(IN := TRUE, PT := T#200MS);
+            _resetState := 4;
+        4:
+            _resetTon(IN := TRUE);
+            IF _resetTon.Q THEN
+                _resetState := 5;
+			END_IF
+        5:
+            errorAcknowledge := FALSE;
+            _resetState := 6;
+        6:
+            _resetTon(IN := FALSE);
+            _resetTon(IN := TRUE, PT := T#200MS);
+            _resetState := 7;
+        7:
+            _resetTon(IN := TRUE);
+            IF _resetTon.Q THEN
+                _resetState := 8;
+			END_IF
+        8:
+            restartOutput := TRUE;
+            _resetTon(IN := FALSE);
+            _resetTon(IN := TRUE, PT := T#200MS);
+            _resetState := 9;
+        9:
+            _resetTon(IN := TRUE);
+            IF _resetTon.Q THEN
+                _resetState := 10;
+			END_IF
+        10:
+            restartOutput := FALSE;
+            _resetTon(IN := FALSE);
+            _resetTon(IN := TRUE, PT := T#200MS);
+            _resetState := 11;
+        11:
+            _resetTon(IN := TRUE);
+            IF _resetTon.Q THEN
+                _resetState := 12;
+			END_IF
+        12:
+            IF _resetLoopIndex < 2 AND (groupComError OR groupFBError OR groupOutError ) THEN
+                _resetLoopIndex := _resetLoopIndex + 1;
+                _resetState := 1;
+            ELSE
+                _resetState := 13;
+			END_IF
+        13:
+            IF groupComError OR groupFBError OR groupOutError THEN
+                processes.reset.setBad();
+                processes.reset.setFinished();
+            ELSE
+                processes.reset.setGood();
+                processes.reset.setFinished();
+			END_IF
+            _resetState := 0;
+    END_CASE 
+
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_update" Id="{aca112bd-ef8b-4449-859c-cbce3ac87c7c}">
+      <Declaration><![CDATA[METHOD _update
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[SUPER^();
+
+IF statuses.busyStatus.busy THEN
+    IF processes.reset.isBusy() THEN
+        actualStatus := 'Resetting...';
+    ELSE
+        actualStatus := 'BUSY';
+	END_IF
+ELSE
+    IF statuses.healthStatus.good THEN
+        actualStatus := 'No emergency stop pressed';
+    ELSIF statuses.healthStatus.bad THEN
+        IF groupComError THEN
+            actualStatus := 'Communication error';
+        ELSIF groupFbError THEN
+            actualStatus := 'FunctionBlock error';
+        ELSIF groupOutError THEN
+            actualStatus := 'Output error';
+        ELSE 
+            IF NOT dome1NC THEN 
+                actualStatus := 'E-Stop 1 @ dome pressed!';
+            ELSIF NOT dome2NC THEN 
+                actualStatus := 'E-Stop 2 @ dome pressed!';
+            ELSIF NOT firstFloorNC THEN 
+                actualStatus := 'E-Stop @ first floor pressed!';
+            ELSIF NOT controlRoomNC THEN 
+                actualStatus := 'E-Stop @ control room pressed!';
+            ELSIF NOT domeAccessNC THEN 
+                actualStatus := 'E-Stop @ dome access pressed!';
+            ELSE
+                actualStatus := 'ERROR';
+			END_IF
+        END_IF
+    ELSIF statuses.healthStatus.warning THEN
+        actualStatus := 'WARNING';
+    ELSE
+        actualStatus := 'Unknown';
+    END_IF
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+  </POU>
+</TcPlcObject>

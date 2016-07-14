@@ -1,0 +1,75 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.5">
+  <POU Name="SafetyWidget" Id="{1d699739-78aa-4c95-9bcb-deebdf727d03}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK SafetyWidget
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+    configManager : ConfigManagerWidget;
+	initializationStatus : InitializationStatusWidget;
+	actualStatus : StatusWidget;
+    name : STRING := 'Safety';
+    
+END_VAR
+VAR_IN_OUT
+	ref : Safety;
+    ref_activityStatus : ActivityStatus;
+END_VAR
+VAR
+    io : SafetyIOWidget;
+    
+    button_initialize : InitializeButtonWidget;
+    button_operating  : OperatingButtonWidget;
+    button_locking    : LockingButtonWidget;
+    
+    activeConfigTab : INT;
+    
+    activeTab               : SafetyTabs := SafetyTabs.OVERVIEW;
+    button_overview         : SubSystemButtonWidget('Overview'        , SafetyTabs.OVERVIEW);
+    button_emergencyStops   : SubSystemButtonWidget('Emergency stops' , SafetyTabs.EMERGENCY_STOPS);
+    button_hydraulics       : SubSystemButtonWidget('Hydraulics'      , SafetyTabs.HYDRAULICS);
+    button_domeAccess       : SubSystemButtonWidget('Dome access' , SafetyTabs.DOME_ACCESS);
+    button_motionBlocking   : SubSystemButtonWidget('Motion blocking' , SafetyTabs.MOTION_BLOCKING);
+    button_io               : SubSystemButtonWidget('I/O'         , SafetyTabs.IO);
+    button_config           : SubSystemButtonWidget('Config'      , SafetyTabs.CONFIG);
+    
+    hydraulics      : SafetyHydraulicsWidget;
+    emergencyStops  : SafetyEmergencyStopsWidget;
+	domeAccess      : SafetyDomeAccessWidget;
+	motionBlocking  : SafetyMotionBlockingWidget;
+    
+    
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[initializationStatus(status := ref.statuses.initializationStatus);
+configManager(mgr := ref.parts.configManager);
+
+actualStatus(text  := ref.actualStatus,
+             color := SystemToColor(healthStatus := ref.statuses.healthStatus,
+                                    busyStatus   := ref.statuses.busyStatus,
+                                    initializationStatus := ref.statuses.initializationStatus,
+                                    operatingStatus := ref.statuses.operatingStatus));
+                                    
+io(ref := ref.parts.io);
+
+button_initialize(status := ref.statuses.initializationStatus, process := ref.processes.initialize);
+button_operating(status := ref.statuses.operatingStatus, process := ref.processes.changeOperatingState);
+button_locking(status := ref.statuses.initializationStatus, lock := ref.processes.lock, unlock := ref.processes.unlock);
+
+button_overview(        color := actualStatus.color                 , activeTab := activeTab);
+button_emergencyStops(  color := emergencyStops.actualStatus.color  , activeTab := activeTab);
+button_hydraulics(      color := hydraulics.actualStatus.color      , activeTab := activeTab);
+button_motionBlocking(  color := motionBlocking.actualStatus.color  , activeTab := activeTab);
+button_domeAccess(      color := motionBlocking.actualStatus.color  , activeTab := activeTab);
+button_io(              color := io.actualStatus.color              , activeTab := activeTab);
+button_config(          color := configManager.actualStatus.color   , activeTab := activeTab);
+
+
+hydraulics(ref := ref.parts.hydraulics);
+emergencyStops(ref := ref.parts.emergencyStops);
+domeAccess(ref := ref.parts.domeAccess, ref_config := ref.config.domeAccess, ref_activityStatus := ref_activityStatus);
+motionBlocking(ref := ref.parts.motionBlocking);]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

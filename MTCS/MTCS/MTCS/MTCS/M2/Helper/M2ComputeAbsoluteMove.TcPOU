@@ -1,0 +1,31 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.5">
+  <POU Name="M2ComputeAbsoluteMove" Id="{a226e1d5-96ff-4c0d-a85f-98a561042efc}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION M2ComputeAbsoluteMove : BOOL
+VAR_INPUT
+    initialPosition : LREAL;
+    finalPosition : LREAL;
+    gearReduction : LREAL;
+    feedbackResolution : LREAL;
+    screwPitch : LREAL;
+END_VAR
+VAR_OUTPUT
+    steps : UDINT;
+    cw : BOOL;
+    deltaPosition : LREAL;
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[// first calculate the delta position in micrometers
+deltaPosition := finalPosition - initialPosition;
+
+// the CCW or CW sense depends on the sign of the delta
+cw := (deltaPosition < 0);
+
+// calculate the steps (LREAL_TO_UDINT rounds the number instead of truncating it!)
+steps := LREAL_TO_UDINT( ABS(deltaPosition) * gearReduction * feedbackResolution / screwPitch );]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

@@ -1,0 +1,372 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.2">
+  <POU Name="M3TranslationGotoProcedure" Id="{ba9f37f6-c5b5-4d30-ac4a-d8c740a3939d}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK M3TranslationGotoProcedure EXTENDS SM_M3TranslationGotoProcedure
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR
+    substate : INT;
+    _cause : M3TranslateProcedureStates;
+    _ton : TON;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[_update();
+
+// run the procedure
+CASE state OF
+    M3TranslateProcedureStates.IDLE: 
+        _idle();
+    M3TranslateProcedureStates.ABORTED: 
+        _aborted();
+    M3TranslateProcedureStates.PREPARE_PROCESS: 
+        _prepareProcess();
+    M3TranslateProcedureStates.ENABLING_AXIS: 
+        _enablingAxis();
+    M3TranslateProcedureStates.MOVING: 
+        _moving();
+    M3TranslateProcedureStates.IMPROVING_POSITION: 
+        _improvingPosition();
+    M3TranslateProcedureStates.DISABLING_AXIS: 
+        _disablingAxis();
+    M3TranslateProcedureStates.ERROR: 
+        _error();
+    M3TranslateProcedureStates.RESETTING: 
+        _resetting();
+    M3TranslateProcedureStates.ABORTING: 
+        _aborting();
+END_CASE
+
+IF state = M3TranslateProcedureStates.ERROR THEN
+    actualStatus := CONCAT('Error @ ',_stateToString(_cause));
+ELSE
+    actualStatus := _stateToString(state);
+END_IF
+
+_update();]]></ST>
+    </Implementation>
+    <Method Name="_stateToString" Id="{02bae2aa-6554-4617-acbd-269fe02dbd9b}">
+      <Declaration><![CDATA[METHOD _stateToString : STRING
+VAR_INPUT
+    x : M3TranslateProcedureStates;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[CASE x OF
+    M3TranslateProcedureStates.IDLE: 
+        _stateToString := 'Idle';
+    M3TranslateProcedureStates.ABORTED: 
+        _stateToString := 'Aborted';
+    M3TranslateProcedureStates.PREPARE_PROCESS: 
+        _stateToString := 'Preparing process';
+    M3TranslateProcedureStates.ENABLING_AXIS: 
+        _stateToString := 'Enabling axis';
+    M3TranslateProcedureStates.MOVING: 
+        _stateToString := 'Moving to target';
+    M3TranslateProcedureStates.IMPROVING_POSITION: 
+        _stateToString := 'Improving position';
+    M3TranslateProcedureStates.DISABLING_AXIS: 
+        _stateToString := 'Disabling axis';
+    M3TranslateProcedureStates.ERROR: 
+        _stateToString := 'Error';
+    M3TranslateProcedureStates.RESETTING: 
+        _stateToString := 'Resetting';
+    M3TranslateProcedureStates.ABORTING: 
+        _stateToString := 'Aborting';
+END_CASE]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="reset" Id="{06e0e6e4-66dd-4ef0-9f97-74c35359138e}">
+      <Declaration><![CDATA[METHOD reset
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF state = M3TranslateProcedureStates.ERROR THEN
+    // return to the idle state via the resetting state
+    state    := M3TranslateProcedureStates.RESETTING;
+    substate := 0;
+    _cause   := M3TranslateProcedureStates.ERROR;
+    _update();
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_prepareProcess" Id="{12763b96-8c95-4a93-82ec-7913126af89e}">
+      <Declaration><![CDATA[METHOD _prepareProcess
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// reset the axes
+CASE substate OF
+    0:
+        motorAxis.processes.reset.start();
+        substate := 1;
+    1:
+        IF motorAxis.processes.reset.isIdle() THEN
+            IF motorAxis.processes.reset.isGood() THEN
+                state    := M3TranslateProcedureStates.ENABLING_AXIS;
+                substate := 0;
+            ELSE
+                state    := M3TranslateProcedureStates.ERROR;
+                substate := 0;
+                _cause   := M3TranslateProcedureStates.PREPARE_PROCESS;
+            END_IF
+        END_IF
+END_CASE]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_update" Id="{206f4df3-fdee-46cd-b21e-561731f3d3b9}">
+      <Declaration><![CDATA[METHOD _update
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[SUPER^(
+    config                      := config, 
+    motorAxis                   := motorAxis, 
+    motorDrive                  := motorDrive, 
+    target                      := target, 
+    positiveLimitSwitchActive   := positiveLimitSwitchActive, 
+    negativeLimitSwitchActive   := negativeLimitSwitchActive, 
+    actualPosition              := actualPosition, 
+    actualPositionError         := actualPositionError);
+    
+    
+// this flag allows us to allow Goto even at certain times during the procedure!
+isGotoAllowed :=    state = M3TranslateProcedureStates.IDLE
+                 OR state = M3TranslateProcedureStates.ABORTED
+                 OR state = M3TranslateProcedureStates.ERROR
+                 OR state = M3TranslateProcedureStates.MOVING;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_resetting" Id="{3a8b8a02-e02c-44db-928a-a0df49e20dee}">
+      <Declaration><![CDATA[METHOD _resetting
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// reset the axes
+CASE substate OF
+    0:
+        motorAxis.processes.reset.start();
+        substate := 1;
+    1:
+        IF motorAxis.processes.reset.isIdle() THEN
+            IF motorAxis.processes.reset.isGood() THEN
+                state    := M3TranslateProcedureStates.IDLE;
+                substate := 0;
+            ELSE
+                state    := M3TranslateProcedureStates.ERROR;
+                substate := 0;
+                _cause   := M3TranslateProcedureStates.RESETTING;
+            END_IF
+        END_IF
+END_CASE]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_aborting" Id="{3f3b3c41-d469-4a50-835e-f8d9e19b555c}">
+      <Declaration><![CDATA[METHOD _aborting
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[CASE substate OF
+    0:  
+        // halt the axis
+        motorAxis.processes.stop.start();
+        substate := 1;
+    1: 
+        IF motorAxis.processes.stop.isIdle() THEN
+            // whatever happens, always try to disable the drive
+            substate := 2;
+        END_IF
+    2:
+        // disable the drive
+        motorAxis.processes.power.start(enable := FALSE);
+        substate := 3;
+    3: 
+        IF motorAxis.processes.power.isIdle() THEN
+            IF motorAxis.processes.power.isGood() THEN
+                // Okay, all done!
+                state    := M3TranslateProcedureStates.ABORTED;
+                substate := 0;
+            ELSE
+                state    := M3TranslateProcedureStates.ERROR;
+                substate := 0;
+                _cause   := M3TranslateProcedureStates.ABORTING;
+            END_IF
+        END_IF
+            
+END_CASE]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="start" Id="{4302e429-f052-4bce-8a04-f379e3ae72c3}">
+      <Declaration><![CDATA[METHOD start
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF state = M3TranslateProcedureStates.IDLE OR state = M3TranslateProcedureStates.ERROR OR state = M3TranslateProcedureStates.ABORTED THEN
+    state    := M3TranslateProcedureStates.PREPARE_PROCESS;
+    substate := 0;
+ELSIF state = M3TranslateProcedureStates.MOVING THEN
+    // stay in the M3TranslateProcedureStates.MOVING state, but "restart" from substate 0 
+    substate := 0;
+END_IF
+
+_update();]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_moving" Id="{4e798aa2-fcd5-4f5c-a4c3-4ded312cc08f}">
+      <Declaration><![CDATA[METHOD _moving
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[
+CASE substate OF
+    0:
+        motorAxis.processes.moveAbsolute.start(
+                    position    := target.position.millimeters.value,
+                    maxVelocity := config.gotoVelocity);
+        substate := 1;
+    1:
+        IF motorAxis.processes.moveAbsolute.isIdle() THEN
+            IF motorAxis.processes.moveAbsolute.isGood() THEN
+                state    := M3TranslateProcedureStates.IMPROVING_POSITION;
+                substate := 0;
+            ELSE
+                state    := M3TranslateProcedureStates.ERROR;
+                substate := 0;
+                _cause   := M3TranslateProcedureStates.MOVING;
+            END_IF
+        END_IF
+END_CASE]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_idle" Id="{817dd911-8ec5-4abb-9cdc-924bfbe61f58}">
+      <Declaration><![CDATA[METHOD _idle
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// not doing anything, just being idle... :-)
+;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_disablingAxis" Id="{b1d3da17-8ad9-4505-86b7-be278054ba4a}">
+      <Declaration><![CDATA[METHOD _disablingAxis
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// enable the axes
+CASE substate OF
+    0:
+        motorAxis.processes.power.start(enable := FALSE);
+        substate := 1;
+    1:
+        IF motorAxis.processes.power.isIdle() THEN
+            IF motorAxis.processes.power.isGood() THEN
+                // all done!
+                state    := M3TranslateProcedureStates.IDLE;
+                substate := 0;
+            ELSE
+                state    := M3TranslateProcedureStates.ERROR;
+                substate := 0;
+                _cause   := M3TranslateProcedureStates.DISABLING_AXIS;
+            END_IF
+        END_IF
+END_CASE]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="abort" Id="{ba9d1bb9-95bc-4860-b7e6-eeb28939c87e}">
+      <Declaration><![CDATA[METHOD abort
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF statuses.busyStatus.busy THEN
+    // go to the aborting state
+    state    := M3TranslateProcedureStates.ABORTING;
+    substate := 0;
+    _cause   := M3TranslateProcedureStates.ABORTING;
+    _update();
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_enablingAxis" Id="{c10a707e-f5be-464a-a6b2-ec0d6b27259f}">
+      <Declaration><![CDATA[METHOD _enablingAxis
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// enable the axes
+CASE substate OF
+    0:
+        motorAxis.processes.power.start(enable := TRUE);
+        substate := 1;
+    1:
+        IF motorAxis.processes.power.isIdle() THEN
+            IF motorAxis.processes.power.isGood() THEN
+                state    := M3TranslateProcedureStates.MOVING;
+                substate := 0;
+            ELSE
+                state    := M3TranslateProcedureStates.ERROR;
+                substate := 0;
+                _cause   := M3TranslateProcedureStates.ENABLING_AXIS;
+            END_IF
+        END_IF
+END_CASE]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_improvingPosition" Id="{d023613f-8f2d-4749-8bee-5d2d52ff03d3}">
+      <Declaration><![CDATA[METHOD _improvingPosition
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// After the previous command, we know that the position is within the required limits.
+// By taking some extra seconds (during which the controller remains enabled!), we can improve it even further!
+CASE substate OF
+    0:
+        _ton(IN := FALSE);
+        _ton(IN := TRUE,
+             PT := LREAL_TO_TIME(1000.0 * config.gotoImprovingPositionTime)); // convert sec to millisec
+        substate := 1;
+    1:
+        _ton(IN := TRUE);
+        IF _ton.Q THEN
+            substate := 2;
+		END_IF
+    2:
+        state    := M3TranslateProcedureStates.DISABLING_AXIS;
+        substate := 0;
+END_CASE]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_error" Id="{fce3ae6b-702d-4f58-9ae6-b0676bef1479}">
+      <Declaration><![CDATA[METHOD _error
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// nothing to do, just waiting for the reset...
+;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_aborted" Id="{feb07879-4633-46cf-a991-887b7ce59b7c}">
+      <Declaration><![CDATA[METHOD _aborted
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// not doing anything, just being aborted... :-)
+;]]></ST>
+      </Implementation>
+    </Method>
+  </POU>
+</TcPlcObject>

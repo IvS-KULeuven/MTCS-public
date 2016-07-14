@@ -1,0 +1,23 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.5">
+  <POU Name="AngularPosition" Id="{39fd64bb-31c7-4e2a-ba54-df56e455b4a4}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK AngularPosition EXTENDS SM_AngularPosition
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR
+    _testVar : INT;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[SUPER^();
+
+
+
+// do stuff
+
+//SUPER^();]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

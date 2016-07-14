@@ -1,0 +1,98 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="AxesPointRelativeProcess" Id="{5e65358d-0e8b-4025-9042-683375f06b50}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK AxesPointRelativeProcess EXTENDS BaseProcess
+VAR_INPUT
+	///Arguments to be set, before writing do_request TRUE
+	{attribute 'OPC.UA.DA' := '1'}
+	set: AxesPointRelativeProcessArgs;
+END_VAR
+VAR_OUTPUT
+	///Arguments in use by the process, if do_request was accepted
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	get: AxesPointRelativeProcessArgs;
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[IF do_request THEN
+    do_request_result := request(
+    alphaUnits := set.alphaUnits,
+    alpha := set.alpha,
+    deltaUnits := set.deltaUnits,
+    delta := set.delta);
+    do_request := FALSE;
+END_IF;
+SUPER^();
+]]></ST>
+    </Implementation>
+    <Method Name="request" Id="{eee0c5f6-1ef7-4771-89bb-d9718e3bd502}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD request : RequestResults
+VAR_INPUT
+	///The units in which alpha is given
+	alphaUnits: AxesAlphaUnits;
+	///Right ascention, in the units of the alphaUnits argument
+	alpha: LREAL;
+	///The units in which delta is given
+	deltaUnits: AxesDeltaUnits;
+	///Declination, in the units of the deltaUnits argument
+	delta: LREAL;
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF THIS^.statuses.enabledStatus.enabled THEN
+    THIS^.start(
+        alphaUnits := alphaUnits,
+        alpha := alpha,
+        deltaUnits := deltaUnits,
+        delta := delta);
+    request := RequestResults.ACCEPTED;
+ELSE
+    request := RequestResults.REJECTED;
+END_IF;
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="start" Id="{fac06294-3130-479d-a8fc-7ef0f13ea890}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD start
+VAR_INPUT
+	///The units in which alpha is given
+	alphaUnits: AxesAlphaUnits;
+	///Right ascention, in the units of the alphaUnits argument
+	alpha: LREAL;
+	///The units in which delta is given
+	deltaUnits: AxesDeltaUnits;
+	///Declination, in the units of the deltaUnits argument
+	delta: LREAL;
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[THIS^.get.alphaUnits := alphaUnits;
+THIS^.get.alpha := alpha;
+THIS^.get.deltaUnits := deltaUnits;
+THIS^.get.delta := delta;
+THIS^.statuses.busyStatus( isBusy := TRUE );
+THIS^.statuses.healthStatus( isGood := TRUE );
+]]></ST>
+      </Implementation>
+    </Method>
+  </POU>
+</TcPlcObject>

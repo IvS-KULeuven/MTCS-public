@@ -1,0 +1,33 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.0.36">
+  <GVL Name="REMANENT" Id="{9748a6da-99aa-4ad2-bea2-84830502ef1b}">
+    <Declaration><![CDATA[VAR_GLOBAL
+END_VAR
+
+(* below are some "special" variables wich must be stored persistently in memory. *)
+(* !!! NOTE !!!
+   New declarations only can be added at the end of the list. 
+   At a download those will be detected as "new" and will not demand a 
+   re-initialization of the complete list. *)
+
+VAR_GLOBAL RETAIN PERSISTENT
+    
+    (* The following variables represent the actual values
+       of the Faulhaber drives of the rotation mechanism of M3.
+       They are continuously updated, so at all times they correspond to the
+       actual value. When the PLC software starts, these
+       values will be written back to the axes. If the axes have not
+       moved, then they will be again (more or less) at the same position,
+       just like an absolute encoder. It' s not very precise, but it' s good
+       enough in 99% of the cases because M3 is positioned using an absolute
+       encoder. The "semi-absolute" motor position values are only needed to 
+       maintain a certain offset between both motors, in order to apply a
+       counter-acting torque by the magnetic clutch. This doesn' t have to
+       be very accurate, hence we can use the approach of storing them
+       in the persistent memory of the PLC. 
+       In case these values get lost, a new calibration procedure is needed. *)
+	M3_ROTPOS_POSITION: LREAL; // positioning motor of the rotation mechanism
+    M3_ROTABL_POSITION: LREAL; // anti-backlash motor of the rotation mechanism
+END_VAR]]></Declaration>
+  </GVL>
+</TcPlcObject>

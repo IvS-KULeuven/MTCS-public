@@ -1,0 +1,20 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="BaseAxisStatuses" Id="{da4b2bac-b841-4739-af67-c177378ffe55}">
+    <Declaration><![CDATA[TYPE BaseAxisStatuses :
+STRUCT
+	///Is the NcAxis in a busy state?
+	busyStatus: BusyStatus;
+	///Is the NcAxis in a healthy state?
+	healthStatus: HealthStatus;
+	///Is the NcAxis powered?
+	poweredStatus: PoweredStatus;
+	///Is the NcAxis its external setpoint generator enabled?
+	extSetGenStatus: EnabledStatus;
+	///Is the NcAxis moving forward or backward or standing still?
+	motionStatus: MotionStatus;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

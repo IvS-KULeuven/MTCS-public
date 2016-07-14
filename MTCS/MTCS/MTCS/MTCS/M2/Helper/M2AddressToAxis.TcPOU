@@ -1,0 +1,26 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.5">
+  <POU Name="M2AddressToAxis" Id="{945352ce-2544-43ba-bfc1-70bc423378fc}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION M2AddressToAxis : M2Axes
+VAR_INPUT
+    address : WORD;
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[CASE address OF
+    0:
+        M2AddressToAxis := M2Axes.Z;
+    1:
+        M2AddressToAxis := M2Axes.Y;
+    2:
+        M2AddressToAxis := M2Axes.X;
+    3:
+        M2AddressToAxis := M2Axes.TILTY;
+    4:
+        M2AddressToAxis := M2Axes.TILTX;
+END_CASE]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

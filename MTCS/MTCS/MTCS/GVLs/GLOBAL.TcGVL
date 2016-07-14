@@ -1,0 +1,18 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <GVL Name="GLOBAL" Id="{2fd0f540-6fa7-47c3-ae59-7084709372a1}">
+    <Declaration><![CDATA[VAR_GLOBAL
+    
+    // declare the global config FIRST (so it is initialized before all the rest *)
+    config : MTCSGlobalConfig;
+    
+	mtcs : MTCS;
+    
+	{attribute 'OPC.UA.DA' := '0'}
+	gui : MTCSWidget;
+    
+    
+END_VAR
+]]></Declaration>
+  </GVL>
+</TcPlcObject>

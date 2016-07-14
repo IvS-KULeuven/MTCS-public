@@ -1,0 +1,22 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.5">
+  <POU Name="AxesIOWidget" Id="{022afcb2-7b1e-47fe-bc2a-502f68050d73}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK AxesIOWidget
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR
+	actualStatus : StatusWidget;
+END_VAR
+VAR_IN_OUT
+	ref : AxesIO;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[actualStatus(text  := ref.actualStatus,
+             color := HealthToColor(ref.statuses.healthStatus));
+]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

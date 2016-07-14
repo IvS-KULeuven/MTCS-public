@@ -1,0 +1,20 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="HydraulicsPumpsStates" Id="{9bfdcb81-8441-406e-a13f-42f419c12ec5}">
+    <Declaration><![CDATA[TYPE HydraulicsPumpsStates :
+(
+	STOPPED := 0,
+	POWERING_ON := 1,
+	RESETTING_DRIVES := 2,
+	COMMANDING_SAFETY := 3,
+	BUILDING_UP_PRESSURE := 4,
+	RUNNING := 5,
+	STOPPING := 6,
+	POWERING_OFF := 7,
+	MANUAL := 8,
+	ERROR := 9
+);
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

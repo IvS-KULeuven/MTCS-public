@@ -1,0 +1,16 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="VoltageMeasurementStatuses" Id="{fb31bfd6-f0a8-4b1a-85f9-94062f856d77}">
+    <Declaration><![CDATA[TYPE VoltageMeasurementStatuses :
+STRUCT
+	///Is the voltage being measured?
+	enabledStatus: EnabledStatus;
+	///Is the measurement OK?
+	healthStatus: HealthStatus;
+	///Alarm status
+	alarmStatus: HiHiLoLoAlarmStatus;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

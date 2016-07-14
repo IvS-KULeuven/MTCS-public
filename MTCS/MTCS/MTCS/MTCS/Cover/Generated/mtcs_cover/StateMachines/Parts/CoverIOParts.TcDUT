@@ -1,0 +1,38 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="CoverIOParts" Id="{7f7cddb8-11ea-40eb-9eee-a518ee28030f}">
+    <Declaration><![CDATA[TYPE CoverIOParts :
+STRUCT
+	///Coupler
+	coupler: EtherCatDevice;
+	///Slot 1
+	slot1: EtherCatDevice;
+	///Slot 2
+	slot2: EtherCatDevice;
+	///Slot 3
+	slot3: EtherCatDevice;
+	///Slot 4
+	slot4: EtherCatDevice;
+	///Slot 5
+	slot5: EtherCatDevice;
+	///Slot 6
+	slot6: EtherCatDevice;
+	///Slot 7
+	slot7: EtherCatDevice;
+	///Slot 8
+	slot8: EtherCatDevice;
+	///Slot 9
+	slot9: EtherCatDevice;
+	///Slot 10
+	slot10: EtherCatDevice;
+	///Slot 11
+	slot11: EtherCatDevice;
+	///Slot 12
+	slot12: EtherCatDevice;
+	///Slot 13
+	slot13: EtherCatDevice;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

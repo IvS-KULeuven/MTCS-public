@@ -1,0 +1,54 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="AxesConfig" Id="{8951ced7-3b01-4299-ab83-535ab7f3ed65}">
+    <Declaration><![CDATA[TYPE AxesConfig :
+STRUCT
+	///Location of the observatory
+	location: AxesLocationConfig;
+	///Location of the observatory
+	localConditions: AxesLocalConditionsConfig;
+	///Known (predefined) positions (e.g. could be Park, Cover, Park winter, Mirror washing, ...)
+	knownPositions: AxesKnownPositionsConfig;
+	///Azimuth axis
+	azi: AxesAzimuthConfig;
+	///Elevation axis
+	ele: AxesElevationConfig;
+	///Cassegrain rotation axis
+	roc: AxesRotationConfig;
+	///Nasmyth rotation axis
+	ron: AxesRotationConfig;
+	///Name of the Cassegrain rotator
+	cassegrainRotatorName: STRING;
+	///Name of the Nasmyth rotator
+	nasmythRotatorName: STRING;
+	///Amgle to show ROC in the GUI
+	rocGuiAngle: LREAL;
+	///Amgle to show RON in the GUI
+	ronGuiAngle: LREAL;
+	///Tolerance (in degrees) to determine if the telescope is at a known position in azi direction
+	knownPositionToleranceAzi: LREAL;
+	///Tolerance (in degrees) to determine if the telescope is at a known position in ele direction
+	knownPositionToleranceEle: LREAL;
+	///Tolerance (in degrees) to determine if the telescope is at a known position in roc direction
+	knownPositionToleranceRoc: LREAL;
+	///Tolerance (in degrees) to determine if the telescope is at a known position in ron direction
+	knownPositionToleranceRon: LREAL;
+	///-1 to invert the sign of the PA for the cas derotator, 1 for positive
+	rocPositionAngleSign: INT;
+	///-1 to invert the sign of the PA for the cas derotator, 1 for positive
+	ronPositionAngleSign: INT;
+	///-1 or 1 to invert input for TPOINT: A
+	tpointAziSign: INT;
+	///-1 or 1 to invert input for TPOINT: E 
+	tpointEleSign: INT;
+	///-1 or 1 to invert input for TPOINT: DA
+	tpointDeltaAziSign: INT;
+	///-1 or 1 to invert input for TPOINT: DE
+	tpointDeltaEleSign: INT;
+	///True to use the old formulas
+	tpointOldFormulas: BOOL;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

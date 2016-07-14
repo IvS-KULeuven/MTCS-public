@@ -1,0 +1,105 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.2">
+  <POU Name="M3Widget" Id="{636a5638-9b4c-4a83-a5c0-b9a5be259fb4}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK M3Widget
+VAR_INPUT
+    currentConfigTab : M3ConfigTabs := M3ConfigTabs.KNOWN_POSITIONS;
+    currentConfigTabPosition : INT := 0;
+END_VAR
+VAR_OUTPUT
+    configManager : ConfigManagerWidget;
+	initializationStatus : InitializationStatusWidget;
+	actualStatus : StatusWidget;
+	gotoProcedureStatus : StatusWidget;
+    name : STRING := 'M3';
+    YES : BOOL := TRUE;
+    NO : BOOL := FALSE;
+    nasmythAAngle : LREAL;
+    nasmythBAngle : LREAL;
+    
+    cassegrainActive : BOOL;
+    nasmythAActive : BOOL;
+    nasmythBActive : BOOL;
+END_VAR
+VAR_IN_OUT
+	m3 : M3;
+END_VAR
+VAR
+    rotation : M3RotationWidget;
+    translation : M3TranslationWidget;
+    io : M3IOWidget;
+    
+    button_initialize : InitializeButtonWidget;
+    button_operating  : OperatingButtonWidget;
+    button_locking    : LockingButtonWidget;
+    
+    activeTab         : M3Tabs := M3Tabs.OVERVIEW;
+    button_overview   : SubSystemButtonWidget('Overview'    , M3Tabs.OVERVIEW);
+    button_rotation   : SubSystemButtonWidget('Rotation'    , M3Tabs.ROTATION);
+    button_translation: SubSystemButtonWidget('Translation' , M3Tabs.TRANSLATION);
+    button_io         : SubSystemButtonWidget('I/O'         , M3Tabs.IO);
+    button_config     : SubSystemButtonWidget('Config'      , M3Tabs.CONFIG);
+    
+    button_targetDialog_0   : M3TargetDialogButton(name := 'Cassegrain', big := TRUE);
+	button_targetDialog_1   : M3TargetDialogButton(name := 'Nasmyth A', big := TRUE);
+	button_targetDialog_2   : M3TargetDialogButton(name := 'Nasmyth B', big := TRUE);
+	button_targetDialog_3   : M3TargetDialogButton(name := 'Nasmyth C', big := TRUE);
+	button_targetDialog_4   : M3TargetDialogButton(name := 'Nasmyth D', big := TRUE);
+	button_targetDialog_5   : M3TargetDialogButton(name := 'Other 0', big := FALSE);
+	button_targetDialog_6   : M3TargetDialogButton(name := 'Other 1', big := FALSE);
+	button_targetDialog_7   : M3TargetDialogButton(name := 'Other 2', big := FALSE);
+	button_targetDialog_8   : M3TargetDialogButton(name := 'Other 3', big := FALSE);
+	button_targetDialog_9   : M3TargetDialogButton(name := 'Other 4', big := FALSE);
+	
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[initializationStatus(status := m3.statuses.initializationStatus);
+configManager(mgr := m3.parts.configManager);
+
+actualStatus(text  := m3.actualStatus,
+             color := SystemToColor(healthStatus := m3.statuses.healthStatus,
+                                    busyStatus   := m3.statuses.busyStatus,
+                                    initializationStatus := m3.statuses.initializationStatus,
+                                    operatingStatus := m3.statuses.operatingStatus));
+                                    
+rotation(ref := m3.parts.rotation, config := m3.config);
+translation(ref := m3.parts.translation, refCfg := m3.config.translation);
+io(ref := m3.parts.io);
+
+gotoProcedureStatus(text := m3.parts.gotoProcedure.actualStatus,
+                    color := HealthBusyToColor(healthStatus := m3.parts.gotoProcedure.statuses.healthStatus,
+                                               busyStatus   := m3.parts.gotoProcedure.statuses.busyStatus));
+
+button_initialize(status := m3.statuses.initializationStatus, process := m3.processes.initialize);
+button_operating(status := m3.statuses.operatingStatus, process := m3.processes.changeOperatingState);
+button_locking(status := m3.statuses.initializationStatus, lock := m3.processes.lock, unlock := m3.processes.unlock);
+
+// by design, the nasmythA is drawn at -90 degrees (i.e. right of the center).
+// all other positions are relative to this one.
+nasmythAAngle := -90.0;
+nasmythBAngle := -90.0 - (m3.config.knownPositions.nasmythB.rotationPosition - m3.config.knownPositions.nasmythA.rotationPosition);
+
+cassegrainActive := m3.actualKnownPositionName = m3.config.knownPositions.cassegrain.name;
+nasmythAActive   := m3.actualKnownPositionName = m3.config.knownPositions.nasmythA.name;
+nasmythBActive   := m3.actualKnownPositionName = m3.config.knownPositions.nasmythB.name;
+
+button_overview(    color := actualStatus.color                 , activeTab := activeTab);
+button_rotation(    color := rotation.actualStatus.color        , activeTab := activeTab);
+button_translation( color := translation.actualStatus.color     , activeTab := activeTab);
+button_io(          color := io.actualStatus.color              , activeTab := activeTab);
+button_config(      color := configManager.actualStatus.color   , activeTab := activeTab);
+
+button_targetDialog_0(cfg := m3.config.knownPositions.cassegrain, process := m3.processes.gotoKnownPosition);
+button_targetDialog_1(cfg := m3.config.knownPositions.nasmythA  , process := m3.processes.gotoKnownPosition);
+button_targetDialog_2(cfg := m3.config.knownPositions.nasmythB  , process := m3.processes.gotoKnownPosition);
+button_targetDialog_3(cfg := m3.config.knownPositions.nasmythC  , process := m3.processes.gotoKnownPosition);
+button_targetDialog_4(cfg := m3.config.knownPositions.nasmythD  , process := m3.processes.gotoKnownPosition);
+button_targetDialog_5(cfg := m3.config.knownPositions.other0    , process := m3.processes.gotoKnownPosition);
+button_targetDialog_6(cfg := m3.config.knownPositions.other1    , process := m3.processes.gotoKnownPosition);
+button_targetDialog_7(cfg := m3.config.knownPositions.other2    , process := m3.processes.gotoKnownPosition);
+button_targetDialog_8(cfg := m3.config.knownPositions.other3    , process := m3.processes.gotoKnownPosition);
+button_targetDialog_9(cfg := m3.config.knownPositions.other4    , process := m3.processes.gotoKnownPosition);]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

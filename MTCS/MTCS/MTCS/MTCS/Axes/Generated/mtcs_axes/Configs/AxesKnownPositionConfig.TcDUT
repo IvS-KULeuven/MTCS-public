@@ -1,0 +1,30 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="AxesKnownPositionConfig" Id="{5d254655-6025-4136-98d5-46ce46ad910b}">
+    <Declaration><![CDATA[TYPE AxesKnownPositionConfig :
+STRUCT
+	///The name of the position (e.g. 'PARK')
+	name: STRING;
+	///Can an observer switch to this position?
+	allowObserver: BOOL;
+	///Azimuth in degrees
+	azi: LREAL;
+	///Elevation in degrees
+	ele: LREAL;
+	///Cassegrain rotation in degrees
+	roc: LREAL;
+	///Nasmyth B rotation in degrees
+	ron: LREAL;
+	///Change the azimuth axis to the 'azi' position
+	doAzi: BOOL;
+	///Change the elevation axis to the 'ele' position
+	doEle: BOOL;
+	///Change the cassegrain rotation axis to the 'roc' position
+	doRoc: BOOL;
+	///Change the nasmyth rotation axis to the 'ron' position
+	doRon: BOOL;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

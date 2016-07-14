@@ -1,0 +1,62 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="SM_RelativeHumidityMeasurement" Id="{54e0b0da-1b46-4bf5-8a11-404df68920f5}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK SM_RelativeHumidityMeasurement
+VAR_INPUT
+	///Measured raw value
+	{attribute 'OPC.UA.DA' := '0'}
+	rawValue AT %I*: INT;
+	///Error
+	{attribute 'OPC.UA.DA' := '0'}
+	error AT %I*: BOOL;
+	///rawValue * conversionFactor = fraction.value
+	{attribute 'OPC.UA.DA' := '0'}
+	conversionFactor: LREAL := 3.0518509476E-05;
+END_VAR
+VAR_OUTPUT
+	///Current status description
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	actualStatus: STRING;
+	///Actual value
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	actual: Fraction;
+	///Moving average value
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	average: Fraction;
+	///Underrange
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	underrange AT %I*: BOOL;
+	///Overrange
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	overrange AT %I*: BOOL;
+	///Statuses of the state machine
+	statuses: RelativeHumidityMeasurementStatuses;
+END_VAR
+VAR_IN_OUT
+	///Reference to the config (alarms in percent)
+	{attribute 'OPC.UA.DA' := '0'}
+	config: MeasurementConfig;
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[actual( newFractionValue := (rawValue * conversionFactor) + config.offset );
+statuses.enabledStatus( isEnabled := config.enabled );
+statuses.healthStatus(
+    superState := statuses.enabledStatus.enabled,
+    isGood := NOT(error OR (underrange OR (overrange OR (statuses.alarmStatus.hiHi OR statuses.alarmStatus.loLo)))),
+    hasWarning := statuses.alarmStatus.hi OR statuses.alarmStatus.lo);
+statuses.alarmStatus(
+    superState := statuses.enabledStatus.enabled,
+    config := config.alarms,
+    value := average.percent.value);
+]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

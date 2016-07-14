@@ -1,0 +1,40 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="Units" Id="{36c62f88-5667-4352-aee2-2362789ef393}">
+    <Declaration><![CDATA[TYPE Units :
+(
+	DEGREE := 0,
+	RADIAN := 1,
+	PERCENT := 2,
+	RADIANS_PER_SECOND := 3,
+	DEGREES_PER_SECOND := 4,
+	MILLIMETERS_PER_SECOND := 5,
+	REVOLUTIONS_PER_SECOND := 6,
+	REVOLUTIONS_PER_MINUTE := 7,
+	AMPS := 8,
+	MILLIAMPS := 9,
+	MILLIMETER := 10,
+	MICROMETER := 11,
+	DEGREES_CELSIUS := 12,
+	KELVIN := 13,
+	BAR := 14,
+	PASCAL := 15,
+	UNITLESS := 16,
+	NEWTON := 17,
+	DECANEWTON := 18,
+	VOLT := 19,
+	MILLIVOLT := 20,
+	HERTZ := 21,
+	G := 22,
+	MILLIG := 23,
+	NEWTONMETER := 24,
+	ARCSECONDS := 25,
+	ARCSECONDS_PER_SECOND := 26,
+	RADIANS_PER_SQUARE_SECOND := 27,
+	DEGREES_PER_SQUARE_SECOND := 28,
+	ARCSECONDS_PER_SQUARE_SECOND := 29
+);
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

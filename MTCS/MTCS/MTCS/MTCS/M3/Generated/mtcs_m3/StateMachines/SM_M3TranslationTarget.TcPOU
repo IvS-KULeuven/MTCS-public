@@ -1,0 +1,43 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="SM_M3TranslationTarget" Id="{3bf56ef2-f35e-4827-8c63-ed2635e0eccb}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK SM_M3TranslationTarget
+VAR_INPUT
+	///TRUE if a target is given
+	{attribute 'OPC.UA.DA' := '0'}
+	isTargetGiven: BOOL := FALSE;
+	///New target position in millimeters
+	{attribute 'OPC.UA.DA' := '0'}
+	newPositionMillimeters: LREAL;
+END_VAR
+VAR_OUTPUT
+	///Current status description
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	actualStatus: STRING;
+	///Name of the target (only in case the position matches an entry in the config!)
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	name: STRING;
+	///Target position for M3 translation (only in case statuses.targetStatus.noTargetGiven is FALSE)
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	position: LinearPosition;
+	///Statuses of the state machine
+	statuses: M3TranslationTargetStatuses;
+END_VAR
+VAR_IN_OUT
+	///The known positions
+	{attribute 'OPC.UA.DA' := '0'}
+	knownPositions: M3KnownPositionsConfig;
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[position( newMillimetersValue := newPositionMillimeters );
+statuses.targetStatus();
+]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

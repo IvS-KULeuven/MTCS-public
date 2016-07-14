@@ -1,0 +1,114 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="AxesManualJoystickAziEleWidget" Id="{f6c60de3-26c7-4f45-afc6-95b1978e4db9}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK AxesManualJoystickAziEleWidget
+VAR_INPUT
+
+    joystick_hold : BOOL := TRUE; 
+
+    joystick_velocity_fast : LREAL := 3.0;   // degrees/s
+    joystick_velocity_medium : LREAL := 1.0; // degrees/s
+    joystick_velocity_slow : LREAL := 0.1;   // degrees/s
+    
+    jog_azi_forward_fast    : BOOL;
+    jog_azi_forward_medium  : BOOL;
+    jog_azi_forward_slow    : BOOL;
+    jog_azi_backwards_fast    : BOOL;
+    jog_azi_backwards_medium  : BOOL;
+    jog_azi_backwards_slow    : BOOL;
+    
+    jog_ele_forward_fast    : BOOL;
+    jog_ele_forward_medium  : BOOL;
+    jog_ele_forward_slow    : BOOL;
+    jog_ele_backwards_fast    : BOOL;
+    jog_ele_backwards_medium  : BOOL;
+    jog_ele_backwards_slow    : BOOL;
+END_VAR
+VAR_OUTPUT
+    jog_azi_disabled : BOOL;
+    jog_ele_disabled : BOOL;
+    
+    joystick_disabled : BOOL;
+    
+ 
+END_VAR
+VAR_IN_OUT
+    ref : Axes;
+END_VAR
+VAR
+    aziJogForward : BOOL;
+    aziJogBackwards : BOOL;
+    aziJogVelocity : LREAL;
+    eleJogForward : BOOL;
+    eleJogBackwards : BOOL;
+    eleJogVelocity : LREAL;
+    
+    aziJogForwardTrig : R_TRIG;
+    aziJogBackwardsTrig : R_TRIG;
+    eleJogForwardTrig : R_TRIG;
+    eleJogBackwardsTrig : R_TRIG;
+    
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[// azimuth
+IF joystick_hold THEN
+    jog_azi_disabled := (NOT ref.parts.azi.parts.virtualAxis.isJogEnabled) OR ref.parts.azi.statuses.poweredStatus.disabled;
+ELSE
+    jog_azi_disabled := ref.parts.azi.processes.moveVelocity.statuses.enabledStatus.disabled OR ref.parts.azi.statuses.poweredStatus.disabled;
+END_IF
+
+aziJogForward   := jog_azi_forward_fast OR jog_azi_forward_medium OR jog_azi_forward_slow;
+aziJogBackwards := jog_azi_backwards_fast OR jog_azi_backwards_medium OR jog_azi_backwards_slow;
+IF jog_azi_forward_fast OR jog_azi_backwards_fast THEN
+    aziJogVelocity := joystick_velocity_fast;
+ELSIF jog_azi_forward_medium OR jog_azi_backwards_medium THEN
+    aziJogVelocity := joystick_velocity_medium;
+ELSIF jog_azi_forward_slow OR jog_azi_backwards_slow THEN
+    aziJogVelocity := joystick_velocity_slow;
+END_IF
+
+aziJogForwardTrig(CLK := aziJogForward);
+aziJogBackwardsTrig(CLK := aziJogBackwards);
+
+IF joystick_hold THEN
+    ref.parts.azi.parts.virtualAxis.jog(aziJogForward, aziJogBackwards, aziJogVelocity, 0.0, 0.0);
+ELSIF aziJogForwardTrig.Q THEN
+    ref.parts.azi.processes.moveVelocity.request(units := AxesMoveVelocityUnits.DEGREES_PER_SECOND, aziJogVelocity);
+ELSIF aziJogBackwardsTrig.Q THEN
+    ref.parts.azi.processes.moveVelocity.request(units := AxesMoveVelocityUnits.DEGREES_PER_SECOND, -aziJogVelocity);
+END_IF
+
+// elevation
+IF joystick_hold THEN
+    jog_ele_disabled := (NOT ref.parts.ele.parts.virtualAxis.isJogEnabled) OR ref.parts.ele.statuses.poweredStatus.disabled;
+ELSE
+    jog_ele_disabled := ref.parts.ele.processes.moveVelocity.statuses.enabledStatus.disabled OR ref.parts.ele.statuses.poweredStatus.disabled;
+END_IF
+
+eleJogForward   := jog_ele_forward_fast OR jog_ele_forward_medium OR jog_ele_forward_slow;
+eleJogBackwards := jog_ele_backwards_fast OR jog_ele_backwards_medium OR jog_ele_backwards_slow;
+IF jog_ele_forward_fast OR jog_ele_backwards_fast THEN
+    eleJogVelocity := joystick_velocity_fast;
+ELSIF jog_ele_forward_medium OR jog_ele_backwards_medium THEN
+    eleJogVelocity := joystick_velocity_medium;
+ELSIF jog_ele_forward_slow OR jog_ele_backwards_slow THEN
+    eleJogVelocity := joystick_velocity_slow;
+END_IF
+
+eleJogForwardTrig(CLK := eleJogForward);
+eleJogBackwardsTrig(CLK := eleJogBackwards);
+
+IF joystick_hold THEN
+    ref.parts.ele.parts.virtualAxis.jog(eleJogForward, eleJogBackwards, eleJogVelocity, 0.0, 0.0);
+ELSIF eleJogForwardTrig.Q THEN
+    ref.parts.ele.processes.moveVelocity.request(units := AxesMoveVelocityUnits.DEGREES_PER_SECOND, eleJogVelocity);
+ELSIF eleJogBackwardsTrig.Q THEN
+    ref.parts.ele.processes.moveVelocity.request(units := AxesMoveVelocityUnits.DEGREES_PER_SECOND, -eleJogVelocity);
+END_IF
+
+joystick_disabled := jog_azi_disabled AND jog_ele_disabled;
+]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

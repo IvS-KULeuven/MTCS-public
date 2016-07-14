@@ -1,0 +1,31 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.2">
+  <POU Name="CoverPanel" Id="{ea08de1f-de5e-4142-915d-8e19020734b8}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK CoverPanel EXTENDS SM_CoverPanel
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR
+	_relativePosition : LREAL;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[SUPER^(
+	initializationStatus := initializationStatus, 
+	operatingStatus      := operatingStatus, 
+	operatorStatus       := operatorStatus, 
+	config               := config, 
+	coverConfig          := coverConfig);
+
+_relativePosition := parts.axis.actPos.degrees.value - config.closedPosition;
+
+SUPER^(
+	initializationStatus := initializationStatus, 
+	operatingStatus      := operatingStatus, 
+	operatorStatus       := operatorStatus, 
+	config               := config, 
+	coverConfig          := coverConfig);]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

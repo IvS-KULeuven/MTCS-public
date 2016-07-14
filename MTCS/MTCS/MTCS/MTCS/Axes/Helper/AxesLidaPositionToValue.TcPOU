@@ -1,0 +1,57 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="AxesLidaPositionToValue" Id="{1b3ff415-84f3-4d3c-b0cd-3f80433ce0d5}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION AxesLidaPositionToValue : UDINT
+VAR_INPUT
+    id : AxesIds;
+    position : LREAL; 
+    invert : BOOL;
+END_VAR
+VAR
+    BITS_PER_TELESCOPE_REVOLUTION : LREAL;
+    ENCODER_DIRECTION_INVERSE : BOOL;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[
+
+IF GLOBAL.config.SIMULATION_ACTIVE THEN
+    
+    CASE id OF
+        AxesIds.AZI:
+            BITS_PER_TELESCOPE_REVOLUTION := 3000    // bits per simulation encoder revolution
+                                             * 4     // quadrature interpolation
+                                             * 1440; // reduction
+        AxesIds.ELE:
+            BITS_PER_TELESCOPE_REVOLUTION := 3000    // bits per simulation encoder revolution
+                                             * 4     // quadrature interpolation
+                                             * 1440; // reduction
+	END_CASE
+ELSE
+    
+    CASE id OF
+        AxesIds.AZI:
+            BITS_PER_TELESCOPE_REVOLUTION := 45000    // marks (lines, ticks) on the linear Heidenhain encoder
+                                             * 100    // Heidenhain EXE interpolation
+                                             * 4;     // quadrature interpolation
+        AxesIds.ELE:
+            BITS_PER_TELESCOPE_REVOLUTION := 45000    // marks (lines, ticks) on the linear Heidenhain encoder
+                                             * 100    // Heidenhain EXE interpolation
+                                             * 4;     // quadrature interpolation
+	END_CASE
+
+END_IF
+
+IF invert THEN
+    position := -position;
+END_IF
+
+IF position < 0.0 THEN
+    AxesLidaPositionToValue := LREAL_TO_UDINT(position / 360.0 * BITS_PER_TELESCOPE_REVOLUTION + 4294967296);
+ELSE
+    AxesLidaPositionToValue := LREAL_TO_UDINT(position / 360.0 * BITS_PER_TELESCOPE_REVOLUTION);
+END_IF
+]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

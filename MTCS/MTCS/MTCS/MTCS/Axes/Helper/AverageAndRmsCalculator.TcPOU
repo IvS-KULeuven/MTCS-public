@@ -1,0 +1,50 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.5">
+  <POU Name="AverageAndRmsCalculator" Id="{fda5fad3-2480-4325-8858-596d7a03d65a}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK AverageAndRmsCalculator
+VAR_INPUT
+    in : LREAL;
+END_VAR
+VAR_OUTPUT
+    avg : LREAL;
+    rms : LREAL;
+END_VAR
+VAR
+	_executeMovingAverage : BOOL;
+    _ctrl_moving_avg : FB_CTRL_MOVING_AVERAGE;
+    _PARAMS : ST_CTRL_MOVING_AVERAGE_PARAMS;
+    _array : ARRAY [1..100] OF LREAL;
+    
+    i : INT := 0;
+    sumOfSquares : LREAL := 0.0;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[
+_params.nSamplesToFilter  := 100;
+_params.tCtrlCycleTime    := GLOBAL.config.PLC_CTRL_TIME;
+_params.tTaskCycleTime    := GLOBAL.config.PLC_TASK_TIME;
+_params.pWorkArray_ADR    := ADR(_array);
+_params.nWorkArray_SIZEOF := SIZEOF(_array);
+
+IF _executeMovingAverage <> GLOBAL.config.PLC_TASK_FLIP THEN
+	_executeMovingAverage := GLOBAL.config.PLC_TASK_FLIP;
+	_ctrl_moving_avg(
+		fIn             := in,
+		fManSyncValue   := 0.0,
+		bSync           := FALSE,
+		eMode           := E_CTRL_MODE.eCTRL_MODE_ACTIVE,
+		bHold           := FALSE,
+		stParams        := _params);
+    
+    sumOfSquares := 0.0;
+    FOR i := 1 TO 100 BY 1 DO
+        sumOfSquares := sumOfSquares + _array[i]*_array[i];
+    END_FOR 
+    
+    avg := _ctrl_moving_avg.fOut;
+    rms := SQRT(sumOfSquares / 100.0);
+END_IF]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

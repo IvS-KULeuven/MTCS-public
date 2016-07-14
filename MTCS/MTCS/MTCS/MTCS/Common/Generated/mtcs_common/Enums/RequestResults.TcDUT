@@ -1,0 +1,12 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="RequestResults" Id="{0612e4ac-c4f7-4cbe-8a1a-57accdec055f}">
+    <Declaration><![CDATA[TYPE RequestResults :
+(
+	ACCEPTED := 0,
+	REJECTED := 1
+);
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

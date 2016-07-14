@@ -1,0 +1,13 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="DriveBrakeStates" Id="{3c37f56b-b872-47d5-bb72-bb625bd9a43e}">
+    <Declaration><![CDATA[TYPE DriveBrakeStates :
+(
+	BRAKE_AUTOMATIC := 0,
+	BRAKE_FORCE_LOCK := 1,
+	BRAKE_FORCE_UNLOCK := 2
+);
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

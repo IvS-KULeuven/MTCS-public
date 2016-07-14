@@ -1,0 +1,70 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="AxesSlalibSmoothener" Id="{684f9232-6767-460a-8d87-894e53bbf5f3}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK AxesSlalibSmoothener
+VAR_INPUT
+    enableSmoothening : BOOL;
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+    fromCppAxes : TmcToPlcAxes;
+END_VAR
+VAR
+    AZI_MAX_OFFSET : LREAL := 0.35; // 0.35 rad = 20 degrees
+    PA_MAX_OFFSET : LREAL := 0.35; // 0.35 rad = 20 degrees
+    _previousObjectObservedFull : TmcAzElFull;
+    _aziZeroPositiveCrossingCounter : LINT;
+    _aziZeroNegativeCrossingCounter : LINT;
+    _paZeroPositiveCrossingCounter : LINT;
+    _paZeroNegativeCrossingCounter : LINT;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[// WARNING: only call this FB once per cycle!
+
+// fromCppAxes.object.observedFull.az is in the range [0..2*PI].
+//   ==> We must make sure that during tracking, the value does not go from 0.1 -> 6.2, or from 6.2 -> 0.01.
+// fromCppAxes.object.observedFull.el is in the range [-PI..PI] 
+//   ==> Here is no problem since our elevation is limited to 0..PI/2
+// fromCppAxes.object.observedFull.pa is in the range [-PI..PI]
+//   ==> We must make sure that during tracking, the value does not go from 3.1414 -> -3.1414, or from -3.1414 -> 3.1414.
+IF enableSmoothening THEN
+    
+    // try to keep the azi in the neighberhood of their previous value  
+    IF ABS(fromCppAxes.object.observedFull.az - _previousObjectObservedFull.az) >= AZI_MAX_OFFSET THEN
+        
+        IF  ABS(fromCppAxes.object.observedFull.az + 2*PI - _previousObjectObservedFull.az) < AZI_MAX_OFFSET THEN
+            fromCppAxes.object.observedFull.az := fromCppAxes.object.observedFull.az + 2*PI;
+            _aziZeroNegativeCrossingCounter := _aziZeroNegativeCrossingCounter + 1; // debug variable
+        ELSIF  ABS(fromCppAxes.object.observedFull.az - 2*PI - _previousObjectObservedFull.az) < AZI_MAX_OFFSET THEN
+            fromCppAxes.object.observedFull.az := fromCppAxes.object.observedFull.az - 2*PI;
+            _aziZeroPositiveCrossingCounter := _aziZeroPositiveCrossingCounter + 1; // debug variable
+        ELSE
+            ; // fromCppAxes.object.observedFull.az jumped more than the AZI_MAX_OFFSET, weird, nothing we can do about it
+		END_IF
+        
+	END_IF
+    
+    // try to keep the pa in the neighberhood of their previous value  
+    IF ABS(fromCppAxes.object.observedFull.pa - _previousObjectObservedFull.pa) >= PA_MAX_OFFSET THEN
+        
+        IF  ABS(fromCppAxes.object.observedFull.pa + 2*PI - _previousObjectObservedFull.pa) < PA_MAX_OFFSET THEN
+            fromCppAxes.object.observedFull.pa := fromCppAxes.object.observedFull.pa + 2*PI;
+            _paZeroPositiveCrossingCounter := _paZeroPositiveCrossingCounter + 1; // debug variable
+        ELSIF  ABS(fromCppAxes.object.observedFull.pa - 2*PI - _previousObjectObservedFull.pa) < PA_MAX_OFFSET THEN
+            fromCppAxes.object.observedFull.pa := fromCppAxes.object.observedFull.pa - 2*PI;
+            _paZeroNegativeCrossingCounter := _paZeroNegativeCrossingCounter + 1; // debug variable
+        ELSE
+            ; // fromCppAxes.object.observedFull.pa jumped more than the AZI_MAX_OFFSET, weird, nothing we can do about it
+		END_IF
+        
+	END_IF
+    
+END_IF
+
+// store the previous instance
+_previousObjectObservedFull := fromCppAxes.object.observedFull;]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

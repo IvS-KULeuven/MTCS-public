@@ -1,0 +1,36 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.2">
+  <POU Name="ComErrorToString" Id="{db513700-235e-47fc-97c3-d799e7c3e27e}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION ComErrorToString : STRING
+VAR_INPUT
+    errorId : ComError_t;
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[CASE ErrorID OF
+    ComError_t.COMERROR_NOERROR:                ComErrorToString := 'No error';
+    ComError_t.COMERROR_PARAMETERCHANGED:       ComErrorToString := 'Parameter changed';
+    ComError_t.COMERROR_TXBUFFOVERRUN:          ComErrorToString := 'Tx buffer overrun';
+    ComError_t.COMERROR_STRINGOVERRUN:          ComErrorToString := 'String overrun';
+    ComError_t.COMERROR_ZEROCHARINVALID:        ComErrorToString := 'Zero char invalid';
+    ComError_t.COMERROR_INVALIDPOINTER:         ComErrorToString := 'Invalid pointer';
+    ComError_t.COMERROR_INVALIDRXPOINTER:       ComErrorToString := 'Invalid Rx pointer';
+    ComError_t.COMERROR_INVALIDRXLENGTH:        ComErrorToString := 'Invalid Rx length';
+    ComError_t.COMERROR_DATASIZEOVERRUN:        ComErrorToString := 'Datasize overrun';
+    ComError_t.COMERROR_INVALIDPROCESSDATASIZE: ComErrorToString := 'Invalid process data size';
+    ComError_t.COMERROR_MODENOTSUPPORTED:       ComErrorToString := 'Mode not supported';
+    ComError_t.COMERROR_INVALIDCHANNELNUMBER:   ComErrorToString := 'Invalid channel number';
+    ComError_t.COMERROR_INVALIDBAUDRATE:        ComErrorToString := 'Invalid baudrate';
+    ComError_t.COMERROR_INVALIDNUMDATABITS:     ComErrorToString := 'Invalid number of data bits';
+    ComError_t.COMERROR_INVALIDNUMSTOPBITS:     ComErrorToString := 'Invalid number of stop bits';
+    ComError_t.COMERROR_INVALIDPARITY:          ComErrorToString := 'Invalid parity';
+    ComError_t.COMERROR_INVALIDHANDSHAKE:       ComErrorToString := 'Invalid handshake';
+    ComError_t.COMERROR_INVALIDNUMREGISTERS:    ComErrorToString := 'Invalid number of registers';
+    ComError_t.COMERROR_INVALIDREGISTER:        ComErrorToString := 'Invalid register';
+    ComError_t.COMERROR_TIMEOUT:                ComErrorToString := 'Timeout';
+END_CASE]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

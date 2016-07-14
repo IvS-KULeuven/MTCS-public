@@ -1,0 +1,79 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="MtcsGlobalConfig" Id="{d6e43da0-efd1-4f32-ad29-39a975d3fead}">
+    <Declaration><![CDATA[TYPE MtcsGlobalConfig :
+STRUCT
+
+    SIMULATION_ACTIVE               : BOOL := FALSE;
+    
+    PASSWORD_TECH : STRING := '1512'; // birth year of Gerardus Mercator :)
+    
+    STARTUP_WAIT_TIME : TIME := T#3S;
+    
+    PLC_TASK_TIME : TIME := T#10MS;
+    PLC_CTRL_TIME : TIME := T#10MS;
+    PLC_FAST_TASK_TIME : TIME := T#2MS;
+    SLALIB_TASK_TIME : TIME := T#10MS;
+	PLC_TASK_FLIP : BOOL; // constantly flips (True -> False -> True -> ...)
+    
+    
+    PLC_FAST_TASK_START_MS          : LREAL;
+    PLC_FAST_TASK_PREVIOUS_START_MS : LREAL;
+    PLC_FAST_MEASURED_TASK_TIME_MS  : LREAL;
+    
+    SYSTEM_TIME : GETSYSTEMTIME; // the actual system time
+    TIME_NOW_MS : LREAL;         // the actual time in milliseconds
+    TIME_NOW_S : LREAL;         // the actual time in seconds
+    
+    MTCS_EDITABLE_CONFIG_SYMBOL_NAME   : STRING := 'GLOBAL.mtcs.editableConfig';
+    MTCS_ACTIVE_CONFIG_SYMBOL_NAME     : STRING := 'GLOBAL.mtcs.config';
+    MTCS_CONFIG_FILE_PATH              : STRING := 'C:\MTCS_Config\Mtcs.xml';
+    
+    AXES_EDITABLE_CONFIG_SYMBOL_NAME   : STRING := 'GLOBAL.mtcs.parts.axes.editableConfig';
+    AXES_ACTIVE_CONFIG_SYMBOL_NAME     : STRING := 'GLOBAL.mtcs.parts.axes.config';
+    AXES_CONFIG_FILE_PATH              : STRING := 'C:\MTCS_Config\Axes.xml';
+    
+    COVER_EDITABLE_CONFIG_SYMBOL_NAME   : STRING := 'GLOBAL.mtcs.parts.cover.editableConfig';
+    COVER_ACTIVE_CONFIG_SYMBOL_NAME     : STRING := 'GLOBAL.mtcs.parts.cover.config';
+    COVER_CONFIG_FILE_PATH              : STRING := 'C:\MTCS_Config\Cover.xml';
+    
+    M1_EDITABLE_CONFIG_SYMBOL_NAME   : STRING := 'GLOBAL.mtcs.parts.m1.editableConfig';
+    M1_ACTIVE_CONFIG_SYMBOL_NAME     : STRING := 'GLOBAL.mtcs.parts.m1.config';
+    M1_CONFIG_FILE_PATH              : STRING := 'C:\MTCS_Config\M1.xml';
+    
+    M2_EDITABLE_CONFIG_SYMBOL_NAME   : STRING := 'GLOBAL.mtcs.parts.m2.editableConfig';
+    M2_ACTIVE_CONFIG_SYMBOL_NAME     : STRING := 'GLOBAL.mtcs.parts.m2.config';
+    M2_CONFIG_FILE_PATH              : STRING := 'C:\MTCS_Config\M2.xml';
+    
+    M3_EDITABLE_CONFIG_SYMBOL_NAME   : STRING := 'GLOBAL.mtcs.parts.m3.editableConfig';
+    M3_ACTIVE_CONFIG_SYMBOL_NAME     : STRING := 'GLOBAL.mtcs.parts.m3.config';
+    M3_CONFIG_FILE_PATH              : STRING := 'C:\MTCS_Config\M3.xml';
+    
+    SERVICES_EDITABLE_CONFIG_SYMBOL_NAME   : STRING := 'GLOBAL.mtcs.parts.services.editableConfig';
+    SERVICES_ACTIVE_CONFIG_SYMBOL_NAME     : STRING := 'GLOBAL.mtcs.parts.services.config';
+    SERVICES_CONFIG_FILE_PATH              : STRING := 'C:\MTCS_Config\Services.xml';
+    
+    TElEMETRY_EDITABLE_CONFIG_SYMBOL_NAME   : STRING := 'GLOBAL.mtcs.parts.telemetry.editableConfig';
+    TElEMETRY_ACTIVE_CONFIG_SYMBOL_NAME     : STRING := 'GLOBAL.mtcs.parts.telemetry.config';
+    TElEMETRY_CONFIG_FILE_PATH              : STRING := 'C:\MTCS_Config\Telemetry.xml';
+    
+    HYDRAULICS_EDITABLE_CONFIG_SYMBOL_NAME   : STRING := 'GLOBAL.mtcs.parts.hydraulics.editableConfig';
+    HYDRAULICS_ACTIVE_CONFIG_SYMBOL_NAME     : STRING := 'GLOBAL.mtcs.parts.hydraulics.config';
+    HYDRAULICS_CONFIG_FILE_PATH              : STRING := 'C:\MTCS_Config\Hydraulics.xml';
+    
+    SAFETY_EDITABLE_CONFIG_SYMBOL_NAME   : STRING := 'GLOBAL.mtcs.parts.safety.editableConfig';
+    SAFETY_ACTIVE_CONFIG_SYMBOL_NAME     : STRING := 'GLOBAL.mtcs.parts.safety.config';
+    SAFETY_CONFIG_FILE_PATH              : STRING := 'C:\MTCS_Config\Safety.xml';
+    
+    AXES_TPOINT_EDITABLE_CONFIG_SYMBOL_PREFIX : STRING :=  'GLOBAL.mtcs.parts.axes.parts.tpoint.parts.'; // + 'model?' + SUFFIX
+    AXES_TPOINT_EDITABLE_CONFIG_SYMBOL_SUFFIX : STRING :=  '.editableConfig'; 
+    AXES_TPOINT_ACTIVE_CONFIG_SYMBOL_PREFIX   : STRING :=  'GLOBAL.mtcs.parts.axes.parts.tpoint.parts.'; // + 'model?' + SUFFIX
+    AXES_TPOINT_ACTIVE_CONFIG_SYMBOL_SUFFIX   : STRING :=  '.config'; 
+    AXES_TPOINT_CONFIG_FILE_PATH_PREFIX       : STRING := 'C:\MTCS_Config\TPoint\'; // + 'instrument?' + SUFFIX
+    AXES_TPOINT_CONFIG_FILE_PATH_SUFFIX       : STRING := '.xml';
+    
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

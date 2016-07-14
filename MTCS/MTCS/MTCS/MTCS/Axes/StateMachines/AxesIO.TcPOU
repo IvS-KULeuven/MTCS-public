@@ -1,0 +1,21 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.5">
+  <POU Name="AxesIO" Id="{ed130642-6a7b-47c8-adb8-b940941127ae}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK AxesIO EXTENDS SM_AxesIO
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR
+    _testVar : BOOL; // without any variable, the superclass attributes are not visible in the UA address space
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[SUPER^();
+
+// do stuff
+
+//SUPER^();]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

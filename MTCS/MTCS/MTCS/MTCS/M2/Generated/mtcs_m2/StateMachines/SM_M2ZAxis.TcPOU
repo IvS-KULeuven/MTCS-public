@@ -1,0 +1,62 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="SM_M2ZAxis" Id="{5be978d7-8354-454b-987f-d4395bcbb215}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK SM_M2ZAxis
+VAR_INPUT
+	///Actual position of the axis
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	position: LinearPositionMeasurementU32;
+	///TRUE if the backlash was previously lifted
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	backlashLifted: BOOL;
+	///TRUE if the axis is powered
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	powered: BOOL;
+	///TRUE if the Z axis control is enabled, FALSE if not
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	isEnabled: BOOL;
+END_VAR
+VAR_OUTPUT
+	///Current status description
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	actualStatus: STRING;
+	///Some constants particular for this axis
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	constants: M2ConstantsZ;
+	///Statuses of the state machine
+	statuses: M2ZAxisStatuses;
+	///Parts of the state machine
+	parts: M2ZAxisParts;
+END_VAR
+VAR_IN_OUT
+	///The general M2 config
+	{attribute 'OPC.UA.DA' := '0'}
+	config: M2Config;
+	///The config particular for this axis
+	{attribute 'OPC.UA.DA' := '0'}
+	axisConfig: M2ZAxisConfig;
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[position(
+    rawValue := parts.encoder.counterValue,
+    error := parts.encoder.dataError OR (parts.encoder.frameError OR (parts.encoder.powerFailure OR parts.encoder.syncError)),
+    config := axisConfig.general.measurement,
+    conversionFactor := (constants.SCREW_TO_ENC_RATIO * constants.SCREW_PITCH) / (8192.0 * 1000.0));
+parts.highSpeed( isEnabled := isEnabled );
+parts.encoder();
+statuses.healthStatus(
+    isGood := position.statuses.healthStatus.isGood AND parts.encoder.statuses.healthStatus.isGood,
+    hasWarning := position.statuses.healthStatus.hasWarning OR parts.encoder.statuses.healthStatus.hasWarning);
+]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

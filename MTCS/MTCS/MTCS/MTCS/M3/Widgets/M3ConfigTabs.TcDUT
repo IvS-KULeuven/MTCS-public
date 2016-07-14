@@ -1,0 +1,17 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.5">
+  <DUT Name="M3ConfigTabs" Id="{b40c2886-50f2-427e-8b4b-1929372e3792}">
+    <Declaration><![CDATA[TYPE M3ConfigTabs :
+(
+    GENERAL := 0,
+    KNOWN_POSITIONS := 1,
+	ROTATION_GENERAL := 2,
+	ROTATION_POS_DRIVE := 3,
+	ROTATION_ABL_DRIVE := 4,
+    TRANSLATION_GENERAL := 5,
+    TRANSLATION_DRIVE := 6
+);
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

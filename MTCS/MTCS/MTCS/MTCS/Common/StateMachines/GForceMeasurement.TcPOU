@@ -1,0 +1,60 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.5">
+  <POU Name="GForceMeasurement" Id="{de903bf0-b5cc-4507-b905-dffb565fa4d5}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK GForceMeasurement EXTENDS SM_GForceMeasurement
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR
+    noOfSamples : UINT := 100;
+	_executeMovingAverage : BOOL;
+    _ctrl_moving_avg : FB_CTRL_MOVING_AVERAGE;
+    _params : ST_CTRL_MOVING_AVERAGE_PARAMS;
+    _array : ARRAY [1..100] OF LREAL;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[SUPER^();
+
+_params.nSamplesToFilter  := noOfSamples;
+_params.tCtrlCycleTime    := GLOBAL.config.PLC_CTRL_TIME;
+
+// only call the _ctrl_moving_avg FB once per task cycle (not once every time the xxxMeasurement FB is called)
+IF _executeMovingAverage <> GLOBAL.config.PLC_TASK_FLIP THEN
+	_executeMovingAverage := GLOBAL.config.PLC_TASK_FLIP;
+	_ctrl_moving_avg(
+		fIn             := actual.milliG.value,
+		fManSyncValue   := 0.0,
+		bSync           := FALSE,
+		eMode           := E_CTRL_MODE.eCTRL_MODE_ACTIVE,
+		bHold           := FALSE,
+		stParams        := _params);
+END_IF
+
+average(newMilliGValue := _ctrl_moving_avg.fOut);
+
+IF error THEN
+    actualStatus := 'Sensors error'; 
+ELSE
+    actualStatus := 'Sensors OK';
+END_IF
+    
+SUPER^();
+]]></ST>
+    </Implementation>
+    <Method Name="FB_init" Id="{e303313b-3d8c-47ee-ad97-a0a8e579a494}">
+      <Declaration><![CDATA[METHOD FB_init : BOOL
+VAR_INPUT
+	bInitRetains : BOOL; // if TRUE, the retain variables are initialized (warm start / cold start)
+	bInCopyCode : BOOL;  // if TRUE, the instance afterwards gets moved into the copy code (online change)
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[_params.tTaskCycleTime    := GLOBAL.config.PLC_TASK_TIME;
+_params.pWorkArray_ADR    := ADR(_array);
+_params.nWorkArray_SIZEOF := SIZEOF(_array);]]></ST>
+      </Implementation>
+    </Method>
+  </POU>
+</TcPlcObject>

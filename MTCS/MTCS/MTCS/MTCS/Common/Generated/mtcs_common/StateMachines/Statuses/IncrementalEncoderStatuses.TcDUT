@@ -1,0 +1,14 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="IncrementalEncoderStatuses" Id="{b7bf7374-46e5-462e-8748-6678abfe5bc9}">
+    <Declaration><![CDATA[TYPE IncrementalEncoderStatuses :
+STRUCT
+	///Is the device in a healthy state?
+	healthStatus: HealthStatus;
+	///Is the device in a busy state?
+	busyStatus: BusyStatus;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

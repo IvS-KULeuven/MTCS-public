@@ -1,0 +1,53 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.5">
+  <POU Name="ServicesWidget" Id="{91456e81-e819-41e8-be2e-6976de2151c5}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK ServicesWidget
+VAR_INPUT
+    activeTab : ServicesTabs := ServicesTabs.OVERVIEW;
+    configActiveTab : INT := 0;
+END_VAR
+VAR_OUTPUT
+    configManager           : ConfigManagerWidget;
+	actualStatus            : StatusWidget;
+	initializationStatus    : InitializationStatusWidget;
+    
+    name : STRING := 'Services';
+
+END_VAR
+VAR_IN_OUT
+	ref : Services;
+END_VAR
+VAR
+    button_initialize : InitializeButtonWidget;
+    button_operating  : OperatingButtonWidget;
+    button_locking    : LockingButtonWidget;
+    
+    button_overview   : SubSystemButtonWidget('Overview', ServicesTabs.OVERVIEW);
+    button_timing     : SubSystemButtonWidget('Timing'  , ServicesTabs.TIMING);
+    button_config     : SubSystemButtonWidget('Config'  , ServicesTabs.CONFIG);
+    
+    timing : ServicesTimingWidget;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[initializationStatus(status := ref.statuses.initializationStatus);
+configManager(mgr := ref.parts.configManager);
+
+button_initialize(status := ref.statuses.initializationStatus, process := ref.processes.initialize);
+button_operating(status := ref.statuses.operatingStatus, process := ref.processes.changeOperatingState);
+button_locking(status := ref.statuses.initializationStatus, lock := ref.processes.lock, unlock := ref.processes.unlock);
+
+button_overview(    color := actualStatus.color                 , activeTab := activeTab);
+button_timing(      color := timing.actualStatus.color          , activeTab := activeTab);
+button_config(      color := configManager.actualStatus.color   , activeTab := activeTab);
+
+actualStatus(text  := ref.actualStatus,
+             color := SystemToColor(healthStatus := ref.statuses.healthStatus,
+                                    busyStatus   := ref.statuses.busyStatus,
+                                    initializationStatus := ref.statuses.initializationStatus,
+                                    operatingStatus := ref.statuses.operatingStatus));
+
+timing(ref := ref.parts.timing);]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

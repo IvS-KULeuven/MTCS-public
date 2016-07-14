@@ -1,0 +1,14 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="AxesMoveVelocityProcessArgs" Id="{e938051e-555e-4e7f-b8a5-17bb97590ac2}">
+    <Declaration><![CDATA[TYPE AxesMoveVelocityProcessArgs :
+STRUCT
+	///Units of the 'value' argument (RADIANS_PER_SECOND, DEGREES_PER_SECOND, ...)
+	units: AxesMoveVelocityUnits;
+	///Move the axis with this velocity (which units depends on the 'units' argument)
+	value: LREAL;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

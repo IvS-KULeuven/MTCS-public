@@ -1,0 +1,37 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="SM_TelemetryAccelerometers" Id="{fdcce7f5-c101-47af-9c3c-35db6063ca5e}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK SM_TelemetryAccelerometers
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+	///Current status description
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	actualStatus: STRING;
+	///Accelerometer box at the tube
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	tube: TelemetryAccelerometer;
+	///Statuses of the state machine
+	statuses: TelemetryAccelerometersStatuses;
+END_VAR
+VAR_IN_OUT
+	///Configuration of the accelerometers
+	{attribute 'OPC.UA.DA' := '0'}
+	config: TelemetryAccelerometersConfig;
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[tube(
+    xConfig := config.tube.x,
+    yConfig := config.tube.y);
+statuses.healthStatus(
+    isGood := tube.statuses.xHealthStatus.isGood AND tube.statuses.yHealthStatus.isGood,
+    hasWarning := tube.statuses.xHealthStatus.hasWarning OR tube.statuses.yHealthStatus.hasWarning);
+]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

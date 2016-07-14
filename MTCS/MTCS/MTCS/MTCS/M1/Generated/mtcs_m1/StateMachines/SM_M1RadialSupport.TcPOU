@@ -1,0 +1,109 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="SM_M1RadialSupport" Id="{faeeae70-38ea-4ed1-8287-456306f455c0}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK SM_M1RadialSupport
+VAR_INPUT
+	///Output value
+	{attribute 'OPC.UA.DA' := '0'}
+	pressureSetpointOutput AT %Q*: INT;
+END_VAR
+VAR_OUTPUT
+	///Current status description
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	actualStatus: STRING;
+	///Pressure measurement at the regulator
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	regulatorPressure: PressureMeasurement;
+	///Pressure measurement at the mirror
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	mirrorPressure: PressureMeasurement;
+	///Pressure setpoint actually used
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	actualPressureSetpoint: Pressure;
+	///Pressure setpoint in AUTO mode
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	autoPressureSetpoint: Pressure;
+	///Pressure setpoint in MANUAL mode
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	manualPressureSetpoint: Pressure;
+	///Statuses of the state machine
+	statuses: M1RadialSupportStatuses;
+	///Parts of the state machine
+	parts: M1RadialSupportParts;
+	///Processes of the state machine
+	processes: M1RadialSupportProcesses;
+END_VAR
+VAR_IN_OUT
+	{attribute 'OPC.UA.DA' := '0'}
+	config: M1RadialSupportConfig;
+	{attribute 'OPC.UA.DA' := '0'}
+	inclinometer: M1Inclinometer;
+	{attribute 'OPC.UA.DA' := '0'}
+	operatorStatus: OperatorStatus;
+	{attribute 'OPC.UA.DA' := '0'}
+	operatingStatus: OperatingStatus;
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[regulatorPressure(
+    config := config.regulatorPressure,
+    conversionFactor := config.regulatorPressureSensorFullScale / 32768.0);
+mirrorPressure(
+    config := config.mirrorPressure,
+    conversionFactor := config.mirrorPressureSensorFullScale / 32768.0);
+parts.vacuumRelay( isEnabled := statuses.busyStatus.idle AND (operatingStatus.manual AND operatorStatus.tech) );
+statuses.pressureSetpointStatus();
+statuses.healthStatus(
+    isGood := (processes.changePressureSetpointState.statuses.healthStatus.isGood AND (processes.changePressureSetpoint.statuses.healthStatus.isGood AND regulatorPressure.statuses.healthStatus.isGood)) AND (mirrorPressure.statuses.healthStatus.isGood OR mirrorPressure.statuses.enabledStatus.disabled),
+    hasWarning := (processes.changePressureSetpointState.statuses.healthStatus.hasWarning OR (processes.changePressureSetpoint.statuses.healthStatus.hasWarning OR (regulatorPressure.statuses.healthStatus.hasWarning OR mirrorPressure.statuses.healthStatus.hasWarning))) OR parts.vacuumRelay.digitalOutput);
+statuses.busyStatus( isBusy := processes.changePressureSetpointState.statuses.busyStatus.busy OR (processes.changePressureSetpoint.statuses.busyStatus.busy OR parts.vacuumRelay.statuses.busyStatus.busy) );
+processes.changePressureSetpoint( isEnabled := parts.vacuumRelay.isEnabled );
+processes.changePressureSetpointState( isEnabled := parts.vacuumRelay.isEnabled );
+]]></ST>
+    </Implementation>
+    <Method Name="changePressureSetpointState" Id="{7c9bdbc2-bb4e-4800-a875-30a87436ed33}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD changePressureSetpointState : RequestResults
+VAR_INPUT
+	state: OperatingStates;
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[changePressureSetpointState := THIS^.processes.changePressureSetpointState.request( state := state );
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="changePressureSetpoint" Id="{f5e9c3a3-382c-458d-ae31-e11fbbb1d845}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD changePressureSetpoint : RequestResults
+VAR_INPUT
+	setpoint: LREAL;
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[changePressureSetpoint := THIS^.processes.changePressureSetpoint.request( setpoint := setpoint );
+]]></ST>
+      </Implementation>
+    </Method>
+  </POU>
+</TcPlcObject>

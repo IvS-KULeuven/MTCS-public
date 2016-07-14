@@ -1,0 +1,49 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.2">
+  <POU Name="MeasurementWidget" Id="{2fec0466-45e9-42aa-9920-0e9c2cbcfe65}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK MeasurementWidget
+VAR_INPUT
+    value : LREAL;
+    actualStatus : STRING;
+END_VAR
+VAR_IN_OUT
+    healthStatus : HealthStatus;
+END_VAR
+VAR_OUTPUT
+    display : STRING;
+    _formatString : FB_FormatString;
+END_VAR
+VAR
+    name : STRING;
+    actualStatusWidget : StatusWidget;
+    format : STRING;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[actualStatusWidget(text  := actualStatus,
+                   color := HealthToColor(healthStatus));
+
+IF healthStatus.good OR healthStatus.warning THEN
+    _formatString(sFormat := format, 
+                  arg1    := F_LREAL(value),
+                  sOut    => display);
+ELSE
+    display := '';
+END_IF]]></ST>
+    </Implementation>
+    <Method Name="FB_init" Id="{53522e88-6693-469d-835b-729e5c9e25f3}">
+      <Declaration><![CDATA[METHOD FB_init : BOOL
+VAR_INPUT
+	bInitRetains : BOOL; // if TRUE, the retain variables are initialized (warm start / cold start)
+	bInCopyCode : BOOL;  // if TRUE, the instance afterwards gets moved into the copy code (online change)
+    n : STRING;
+    f : STRING;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[name := n;
+format := f;]]></ST>
+      </Implementation>
+    </Method>
+  </POU>
+</TcPlcObject>

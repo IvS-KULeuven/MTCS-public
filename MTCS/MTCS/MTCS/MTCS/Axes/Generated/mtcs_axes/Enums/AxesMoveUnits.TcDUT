@@ -1,0 +1,13 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="AxesMoveUnits" Id="{2f00a7ab-e827-4e96-834c-b7e8e3a259a2}">
+    <Declaration><![CDATA[TYPE AxesMoveUnits :
+(
+	DEGREES := 0,
+	RADIANS := 1,
+	ARCSECONDS := 2
+);
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

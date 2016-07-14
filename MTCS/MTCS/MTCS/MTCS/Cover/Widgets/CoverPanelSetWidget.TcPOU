@@ -1,0 +1,48 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.2">
+  <POU Name="CoverPanelSetWidget" Id="{11e88725-0002-42fc-b4dd-433657f149d7}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK CoverPanelSetWidget
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+    actualStatus : StatusWidget;
+END_VAR
+VAR_IN_OUT
+	panelSet : CoverPanelSet;
+	panelSetConfig : CoverPanelSetConfig;
+END_VAR
+VAR
+	p1 : CoverPanelWidget;
+	p2 : CoverPanelWidget;
+	p3 : CoverPanelWidget;
+	p4 : CoverPanelWidget;
+    
+    magnetsRelay : SimpleRelayWidget;
+    
+    
+    button_p1     : SubSubSystemButtonWidget('Top 1', 0);
+    button_p2     : SubSubSystemButtonWidget('Top 2', 1);
+    button_p3     : SubSubSystemButtonWidget('Top 3', 2);
+    button_p4     : SubSubSystemButtonWidget('Top 4', 3);
+    activeTab : INT := 0;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[p1(panel := panelSet.parts.p1, panelConfig := panelSetConfig.p1);
+p2(panel := panelSet.parts.p2, panelConfig := panelSetConfig.p2);
+p3(panel := panelSet.parts.p3, panelConfig := panelSetConfig.p3);
+p4(panel := panelSet.parts.p4, panelConfig := panelSetConfig.p4);
+
+magnetsRelay(ref := panelSet.parts.magnetsRelay);
+
+actualStatus(text := panelSet.actualStatus, 
+             color := HealthBusyToColor(panelSet.statuses.healthStatus, busyStatus := panelSet.statuses.busyStatus));
+             
+             
+button_p1(color := p1.actualStatus.color, activeTab := activeTab);
+button_p2(color := p2.actualStatus.color, activeTab := activeTab);
+button_p3(color := p3.actualStatus.color, activeTab := activeTab);
+button_p4(color := p4.actualStatus.color, activeTab := activeTab);]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

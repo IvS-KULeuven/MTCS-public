@@ -1,0 +1,14 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="SafetyMotionBlockingStatuses" Id="{1146011f-1781-4f83-823d-d1a121e11bbc}">
+    <Declaration><![CDATA[TYPE SafetyMotionBlockingStatuses :
+STRUCT
+	///Is the safety busy?
+	busyStatus: BusyStatus;
+	///Is everything unblocked? Good=unblocked, Bad=safe stopped
+	healthStatus: HealthStatus;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

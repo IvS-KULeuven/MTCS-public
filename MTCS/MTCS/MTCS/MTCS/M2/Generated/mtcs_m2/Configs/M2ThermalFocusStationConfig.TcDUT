@@ -1,0 +1,18 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="M2ThermalFocusStationConfig" Id="{480e07e6-0c4c-4f36-b54d-331679ab82ee}">
+    <Declaration><![CDATA[TYPE M2ThermalFocusStationConfig :
+STRUCT
+	///focus = offset + topCoefficient*topTemperature + centreCoefficient*centreTemperature + mirrorCellCoefficient*mirrorCellTemperature
+	offset: LREAL;
+	///focus = offset + topCoefficient*topTemperature + centreCoefficient*centreTemperature + mirrorCellCoefficient*mirrorCellTemperature
+	topCoefficient: LREAL;
+	///focus = offset + topCoefficient*topTemperature + centreCoefficient*centreTemperature + mirrorCellCoefficient*mirrorCellTemperature
+	centreCoefficient: LREAL;
+	///focus = offset + topCoefficient*topTemperature + centreCoefficient*centreTemperature + mirrorCellCoefficient*mirrorCellTemperature
+	mirrorCellCoefficient: LREAL;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

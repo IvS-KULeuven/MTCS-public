@@ -1,0 +1,41 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.2">
+  <POU Name="OperatingButtonWidget" Id="{ea4bb834-c4e2-40ef-b3bc-ab0bfc48442d}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK OperatingButtonWidget
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+    text : STRING;
+    deactivate : BOOL;
+END_VAR
+VAR_IN_OUT
+    status : OperatingStatus;
+	process : ChangeOperatingStateProcess;
+END_VAR
+VAR
+    do_request : BOOL := FALSE;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[IF status.auto THEN
+    text := 'Manual';
+    process.set.state := OperatingStates.MANUAL;
+    deactivate := process.statuses.enabledStatus.disabled;
+ELSIF status.manual THEN
+    text := 'Auto';
+    process.set.state := OperatingStates.AUTO;
+    deactivate := process.statuses.enabledStatus.disabled;
+ELSE
+    text := 'Auto';
+    process.set.state := OperatingStates.MANUAL;
+    deactivate := TRUE;
+END_IF
+
+
+IF do_request THEN
+    process.request(state := process.set.state);
+    do_request := FALSE;
+END_IF]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

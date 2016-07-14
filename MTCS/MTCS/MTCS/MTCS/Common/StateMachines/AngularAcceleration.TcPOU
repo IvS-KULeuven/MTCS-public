@@ -1,0 +1,17 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.5">
+  <POU Name="AngularAcceleration" Id="{0b51a99b-520f-4d3f-bd6d-77d631952085}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK AngularAcceleration EXTENDS SM_AngularAcceleration
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR
+    _testVar : INT;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[SUPER^();]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

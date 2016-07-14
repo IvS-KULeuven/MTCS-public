@@ -1,0 +1,26 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.5">
+  <POU Name="M2AxisToString" Id="{b4577431-db68-4ad2-a898-66b1530aec29}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION M2AxisToString : STRING
+VAR_INPUT
+    axis : M2Axes;
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[CASE axis OF
+    M2Axes.Z:
+        M2AxisToString := 'Z';
+    M2Axes.Y:
+        M2AxisToString := 'Y';
+    M2Axes.X:
+        M2AxisToString := 'X';
+    M2Axes.TILTY:
+        M2AxisToString := 'Tilt Y';
+    M2Axes.TILTX:
+        M2AxisToString := 'Tilt X';
+END_CASE]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

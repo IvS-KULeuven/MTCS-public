@@ -1,0 +1,36 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="TelemetryTemperaturesConfig" Id="{f5c72f2c-f765-4686-813e-41fbafc3e86f}">
+    <Declaration><![CDATA[TYPE TelemetryTemperaturesConfig :
+STRUCT
+	///Temperature of M1
+	m1: MeasurementConfig;
+	///Temperature of the mirror cell
+	mirrorCell: MeasurementConfig;
+	///Temperature of M2
+	m2: MeasurementConfig;
+	///Temperature of the M2 electronics
+	m2Electronics: MeasurementConfig;
+	///Temperature of the top of the tube
+	topTube: MeasurementConfig;
+	///Temperature of the centre of the tube
+	centreTube: MeasurementConfig;
+	///Temperature of the fork
+	fork: MeasurementConfig;
+	///Temperature of the air inside the Nasmyth focal station
+	nasmythAir: MeasurementConfig;
+	///Temperature inside the REM cabinet
+	rem: MeasurementConfig;
+	///Temperature inside the RPM cabinet
+	rpm: MeasurementConfig;
+	///Temperature inside the HERMES telescope adapter
+	hermesTelescopeAdapter: MeasurementConfig;
+	///Temperature of the air at the top of the tube
+	topAir: MeasurementConfig;
+	///Temperature of the air inside the tube
+	insideTube: MeasurementConfig;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

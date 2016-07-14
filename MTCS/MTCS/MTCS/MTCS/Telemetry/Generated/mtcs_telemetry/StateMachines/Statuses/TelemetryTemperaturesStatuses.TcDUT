@@ -1,0 +1,12 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="TelemetryTemperaturesStatuses" Id="{d5515d79-28e2-4d1f-99f0-dd609dedec36}">
+    <Declaration><![CDATA[TYPE TelemetryTemperaturesStatuses :
+STRUCT
+	///Are all temperatures in a healthy state?
+	healthStatus: HealthStatus;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

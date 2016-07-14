@@ -1,0 +1,12 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="SetEnabledProcessArgs" Id="{ad2ac0d0-5601-422d-9064-3248e422f699}">
+    <Declaration><![CDATA[TYPE SetEnabledProcessArgs :
+STRUCT
+	///True to enable, false to disable
+	enabled: BOOL;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

@@ -1,0 +1,21 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.5">
+  <DUT Name="ServicesTimingDateTime" Id="{6343c967-95b2-4219-850c-ac40657a92ab}">
+    <Declaration><![CDATA[TYPE ServicesTimingDateTime :
+STRUCT
+    years : DINT;
+    months : DINT;
+    days : DINT;
+    hours : DINT;
+    minutes : DINT;
+    seconds : DINT;
+    microseconds : DINT;
+    fractionOfDay : LREAL;
+    
+    dateString : STRING;
+    timeString : STRING;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

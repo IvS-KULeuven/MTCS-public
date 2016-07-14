@@ -1,0 +1,68 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.5">
+  <POU Name="TelemetryWidget" Id="{c90d4f6a-cae9-41ea-9fd6-6bd2a941f4c2}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK TelemetryWidget
+VAR_INPUT
+    activeTab : TelemetryTabs := TelemetryTabs.OVERVIEW;
+END_VAR
+VAR_OUTPUT
+    configManager           : ConfigManagerWidget;
+	actualStatus            : StatusWidget;
+	initializationStatus    : InitializationStatusWidget;
+
+    name : STRING := 'Telemetry';
+
+END_VAR
+VAR_IN_OUT
+	ref : Telemetry;
+END_VAR
+VAR
+    io : TelemetryIOWidget;
+    button_initialize : InitializeButtonWidget;
+    button_operating  : OperatingButtonWidget;
+    button_locking    : LockingButtonWidget;
+    
+    button_overview   : SubSystemButtonWidget('Overview', TelemetryTabs.OVERVIEW);
+    button_leds        : SubSystemButtonWidget('FF LEDs'     , TelemetryTabs.LEDS);
+    button_accelerometers : SubSystemButtonWidget('Accelerometers'     , TelemetryTabs.ACCELEROMETERS);
+    button_io         : SubSystemButtonWidget('I/O'     , TelemetryTabs.IO);
+    button_config     : SubSystemButtonWidget('Config'  , TelemetryTabs.CONFIG);
+    
+    temperatures : TelemetryTemperaturesWidget;
+    relativeHumidities : TelemetryRelativeHumiditiesWidget;
+    dewpoints : TelemetryDewpointsWidget;
+    flatfieldLeds : TelemetryFlatfieldLedsWidget;
+    accelerometers : TelemetryAccelerometersWidget;
+    
+    activeConfigTab : INT;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[initializationStatus(status := ref.statuses.initializationStatus);
+configManager(mgr := ref.parts.configManager);
+io(ref := ref.parts.io);
+
+button_initialize(status := ref.statuses.initializationStatus, process := ref.processes.initialize);
+button_operating(status := ref.statuses.operatingStatus, process := ref.processes.changeOperatingState);
+button_locking(status := ref.statuses.initializationStatus, lock := ref.processes.lock, unlock := ref.processes.unlock);
+
+button_overview(        color := actualStatus.color                 , activeTab := activeTab);
+button_leds(            color := flatfieldLeds.actualStatus.color   , activeTab := activeTab);
+button_accelerometers(  color := accelerometers.actualStatus.color  , activeTab := activeTab);
+button_io(              color := io.actualStatus.color              , activeTab := activeTab);
+button_config(          color := configManager.actualStatus.color   , activeTab := activeTab);
+
+actualStatus(text  := ref.actualStatus,
+             color := SystemToColor(healthStatus := ref.statuses.healthStatus,
+                                    busyStatus   := ref.statuses.busyStatus,
+                                    initializationStatus := ref.statuses.initializationStatus,
+                                    operatingStatus := ref.statuses.operatingStatus));
+                                    
+temperatures(ref := ref.parts.temperatures);
+relativeHumidities(ref := ref.parts.relativeHumidities);
+dewpoints(ref := ref.parts.dewpoints);
+flatfieldLeds(ref := ref.parts.flatfieldLeds);
+accelerometers(ref := ref.parts.accelerometers);]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

@@ -1,0 +1,12 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="M2DoThermalFocusForStationNameArgs" Id="{8eb60772-dfa3-4aaa-ac16-086392cab000}">
+    <Declaration><![CDATA[TYPE M2DoThermalFocusForStationNameArgs :
+STRUCT
+	///The configured station name, for which the thermal focus should be executed
+	station: STRING;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

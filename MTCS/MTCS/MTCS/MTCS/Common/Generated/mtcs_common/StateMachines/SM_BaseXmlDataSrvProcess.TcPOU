@@ -1,0 +1,23 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="SM_BaseXmlDataSrvProcess" Id="{57bdd20b-8f07-4572-b5e4-5bdac4a0f7b5}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK SM_BaseXmlDataSrvProcess EXTENDS BaseProcess
+VAR_INPUT
+	///Error ID according to Beckhoff XML Data Server library
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	errorId: UDINT;
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[SUPER^();
+]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

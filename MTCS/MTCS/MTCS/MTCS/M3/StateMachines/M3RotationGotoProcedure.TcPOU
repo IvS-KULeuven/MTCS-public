@@ -1,0 +1,657 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.2">
+  <POU Name="M3RotationGotoProcedure" Id="{9a861f11-cabb-4908-910e-f80da81765bd}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK M3RotationGotoProcedure EXTENDS SM_M3RotationGotoProcedure
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR
+    substate : INT;
+    
+    _cause : M3RotateProcedureStates;
+    _ton : TON;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[_update();
+    
+// run the procedure
+CASE state OF
+    M3RotateProcedureStates.IDLE: 
+        _idle();
+    M3RotateProcedureStates.ABORTED: 
+        _aborted();
+    M3RotateProcedureStates.PREPARE_PROCESS: 
+        _prepareProcess();
+    M3RotateProcedureStates.DECOUPLING_AXES: 
+        _decouplingAxes();
+    M3RotateProcedureStates.ENABLING_AXES: 
+        _enablingAxes();
+    M3RotateProcedureStates.UNDOING_OFFSET: 
+        _undoingOffset();
+    M3RotateProcedureStates.COUPLING_AXES: 
+        _couplingAxes();
+    M3RotateProcedureStates.BOTH_GOING_TO_TARGET_PLUS_OFFSET: 
+        _bothGoingToTargetPlusOffset();
+    M3RotateProcedureStates.DECOUPLING_AXES_AGAIN: 
+        _decouplingAxesAgain();
+    M3RotateProcedureStates.MOVING_ABL_TO_FINAL_POSITION: 
+        _movingAblToFinalPosition();
+    M3RotateProcedureStates.DISABLING_ABL: 
+        _disablingAbl();
+    M3RotateProcedureStates.MOVING_POS_TO_FINAL_POSITION: 
+        _movingPosToFinalPosition();
+    M3RotateProcedureStates.IMPROVING_POSITION: 
+        _improvingPosition();
+    M3RotateProcedureStates.DISABLING_POS: 
+        _disablingPos();
+    M3RotateProcedureStates.ERROR: 
+        _error();
+    M3RotateProcedureStates.RESETTING: 
+        _resetting();
+    M3RotateProcedureStates.ABORTING: 
+        _aborting();
+END_CASE
+
+IF state = M3RotateProcedureStates.ERROR THEN
+    actualStatus := CONCAT('Error @ ',_stateToString(_cause));
+ELSE
+    actualStatus := _stateToString(state);
+END_IF
+
+_update();]]></ST>
+    </Implementation>
+    <Method Name="_enablingAxes" Id="{0d8a964f-e594-4d77-b31d-5b8590cb4a57}">
+      <Declaration><![CDATA[METHOD _enablingAxes
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// enable the axes
+CASE substate OF
+    0:
+        positioningAxis.processes.power.start(enable := TRUE);
+        antiBacklashAxis.processes.power.start(enable := TRUE);
+        substate := 1;
+    1:
+        IF positioningAxis.processes.power.isIdle() AND antiBacklashAxis.processes.power.isIdle() THEN
+            IF positioningAxis.processes.power.isGood() AND antiBacklashAxis.processes.power.isGood() THEN
+                state    := M3RotateProcedureStates.UNDOING_OFFSET;
+                substate := 0;
+            ELSE
+                state    := M3RotateProcedureStates.ERROR;
+                substate := 0;
+                _cause   := M3RotateProcedureStates.ENABLING_AXES;
+            END_IF
+        END_IF
+END_CASE]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_movingAblToFinalPosition" Id="{2464eeac-94fd-4073-b088-472e3e34f128}">
+      <Declaration><![CDATA[METHOD _movingAblToFinalPosition
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[
+CASE substate OF
+    0:
+        antiBacklashAxis.processes.moveAbsolute.start( // in motor reference system (=mirrorunits * transmissionratio)
+                    position := positioningHallAxis.actPos.degrees.value,
+                    maxVelocity := config.gotoOffsetVelocity);
+        substate := 1;
+    1:
+        IF antiBacklashAxis.processes.moveAbsolute.isIdle() THEN
+            IF antiBacklashAxis.processes.moveAbsolute.isGood() THEN
+                state    := M3RotateProcedureStates.DISABLING_ABL;
+                substate := 0;
+            ELSE
+                state    := M3RotateProcedureStates.ERROR;
+                substate := 0;
+                _cause   := M3RotateProcedureStates.MOVING_ABL_TO_FINAL_POSITION;
+            END_IF
+        END_IF
+END_CASE]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="start" Id="{2600a861-00b1-465c-b2c2-80782b7cafc6}">
+      <Declaration><![CDATA[METHOD start
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF state = M3RotateProcedureStates.IDLE OR state = M3RotateProcedureStates.ERROR OR state = M3RotateProcedureStates.ABORTED THEN
+    state    := M3RotateProcedureStates.PREPARE_PROCESS;
+    substate := 0;
+ELSIF state = M3RotateProcedureStates.BOTH_GOING_TO_TARGET_PLUS_OFFSET THEN
+    // stay in the BOTH_GOING_TO_TARGET_PLUS_OFFSET state, but "restart" from substate 0 
+    substate := 0;
+END_IF
+
+_update();]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_bothGoingToTargetPlusOffset" Id="{3199d162-de0d-4efa-af06-e50d9af5199a}">
+      <Declaration><![CDATA[METHOD _bothGoingToTargetPlusOffset
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// move the positioning axis to the target at a high velocity.
+// The anti-backlash axis will follow synchronously, as it is coupled to the positioning axis.
+
+CASE substate OF
+    0:
+        positioningAxis.processes.moveAbsolute.start(
+                    position := target.position.degrees.value + (target.offset.degrees.value / config.motorToMirrorRatio),
+                    maxVelocity := config.gotoTargetVelocity);
+        substate := 1;
+    1:
+        IF positioningAxis.processes.moveAbsolute.isIdle() THEN
+            IF positioningAxis.processes.moveAbsolute.isGood() THEN
+                state    := M3RotateProcedureStates.DECOUPLING_AXES_AGAIN;
+                substate := 0;
+            ELSE
+                state    := M3RotateProcedureStates.ERROR;
+                substate := 0;
+                _cause   := M3RotateProcedureStates.BOTH_GOING_TO_TARGET_PLUS_OFFSET;
+            END_IF
+        END_IF
+END_CASE]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="reset" Id="{41d2605c-851a-4765-90d6-93c76802b139}">
+      <Declaration><![CDATA[METHOD reset
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF state = M3RotateProcedureStates.ERROR THEN
+    // return to the idle state
+    state    := M3RotateProcedureStates.RESETTING;
+    substate := 0;
+    _cause   := M3RotateProcedureStates.ERROR;
+    _update();
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_update" Id="{4574f876-f637-431c-ac7b-6e6042c564d1}">
+      <Declaration><![CDATA[METHOD _update
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[SUPER^(
+    config := config,
+    positioningAxis := positioningAxis, 
+    antiBacklashAxis := antiBacklashAxis, 
+    positioningDrive := positioningDrive, 
+    antiBacklashDrive := antiBacklashDrive, 
+    positioningHallAxis := positioningHallAxis, 
+    target := target,
+    positiveLimitSwitchActive := positiveLimitSwitchActive,
+	negativeLimitSwitchActive := negativeLimitSwitchActive,
+	actualPosition := actualPosition,
+	actualPositionError := actualPositionError,
+	actualOffset := actualOffset,
+	actualOffsetError := actualOffsetError);
+
+// this flag allows us to allow Goto even at certain times during the procedure!
+isGotoAllowed :=    state = M3RotateProcedureStates.IDLE
+                 OR state = M3RotateProcedureStates.ABORTED
+                 OR state = M3RotateProcedureStates.ERROR
+                 OR state = M3RotateProcedureStates.BOTH_GOING_TO_TARGET_PLUS_OFFSET;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_disablingAbl" Id="{4d0ea3f5-84bc-4bba-9c2e-6296f3b80fac}">
+      <Declaration><![CDATA[METHOD _disablingAbl
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[CASE substate OF
+    0:
+        antiBacklashAxis.processes.power.start(enable := FALSE);
+        substate := 1;
+    1:
+        IF antiBacklashAxis.processes.power.isIdle() THEN
+            IF antiBacklashAxis.processes.power.isGood() THEN
+                // Okay, all done!
+                state    := M3RotateProcedureStates.MOVING_POS_TO_FINAL_POSITION;
+                substate := 0;
+            ELSE
+                state    := M3RotateProcedureStates.ERROR;
+                substate := 0;
+                _cause   := M3RotateProcedureStates.DISABLING_ABL;
+            END_IF
+        END_IF
+END_CASE]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_disablingPos" Id="{6251d5d5-df11-4417-b6c2-e9e277785af6}">
+      <Declaration><![CDATA[METHOD _disablingPos
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[CASE substate OF
+    0:
+        positioningAxis.processes.power.start(enable := FALSE);
+        substate := 1;
+    1:
+        IF positioningAxis.processes.power.isIdle() THEN
+            IF positioningAxis.processes.power.isGood() THEN
+                // Okay, all done!
+                state    := M3RotateProcedureStates.IDLE;
+                substate := 0;
+            ELSE
+                state    := M3RotateProcedureStates.ERROR;
+                substate := 0;
+                _cause   := M3RotateProcedureStates.DISABLING_POS;
+            END_IF
+        END_IF
+END_CASE]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="abort" Id="{68de2550-c491-4f92-8b4a-7074fe3cb77e}">
+      <Declaration><![CDATA[METHOD abort
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF statuses.busyStatus.busy THEN
+    // go to the aborting state
+    state    := M3RotateProcedureStates.ABORTING;
+    substate := 0;
+    _cause   := M3RotateProcedureStates.ABORTING;
+    _update();
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_couplingAxes" Id="{73aff4fd-fdd0-4b96-b69f-fa35e1c58702}">
+      <Declaration><![CDATA[METHOD _couplingAxes
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// couple the axes, so that they remain synchronized.
+// As a result, we can move the mirror without the cluch applying a "tension" (torque).
+
+CASE substate OF
+    0:
+        antiBacklashAxis.processes.gearIn.start();
+        substate := 1;
+    1:
+        IF antiBacklashAxis.processes.gearIn.isIdle() THEN
+            IF antiBacklashAxis.processes.gearIn.isGood() THEN
+                state    := M3RotateProcedureStates.BOTH_GOING_TO_TARGET_PLUS_OFFSET;
+                substate := 0;
+            ELSE
+                state    := M3RotateProcedureStates.ERROR;
+                substate := 0;
+                _cause   := M3RotateProcedureStates.COUPLING_AXES;
+            END_IF
+        END_IF
+        
+END_CASE]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_error" Id="{73b990fa-b345-4c13-a580-224d30888fbc}">
+      <Declaration><![CDATA[METHOD _error
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[CASE substate OF
+    0:  
+        // first decouple the axis (if needed)
+        IF antiBacklashAxis.axis_ref.Status.Coupled THEN
+            antiBacklashAxis.processes.gearOut.start();
+            substate := 1;
+        ELSE
+            substate := 2;
+        END_IF;
+    1:
+        IF antiBacklashAxis.processes.gearOut.isIdle() THEN
+            substate := 2;
+        END_IF;
+    2: 
+        // halt both axes
+        positioningAxis.processes.stop.start();
+        antiBacklashAxis.processes.stop.start();
+        substate := 3;
+    3: 
+        IF positioningAxis.processes.stop.isIdle() AND antiBacklashAxis.processes.stop.isIdle() THEN
+            // whatever happens, always try to disable the drives
+            substate := 4;
+        END_IF
+    4:
+        // disable the drives
+        positioningAxis.processes.power.start(enable := FALSE);
+        antiBacklashAxis.processes.power.start(enable := FALSE);
+        substate := 5;
+    5: 
+        ; // we cannot do more, simply wait for reset now
+END_CASE]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_idle" Id="{75e45dcf-1c63-4bef-971e-c94bd6657734}">
+      <Declaration><![CDATA[METHOD _idle
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// not doing anything, just being idle... :-)
+;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_aborted" Id="{811a39d9-fa6d-488c-ae3c-673c4ec4c162}">
+      <Declaration><![CDATA[METHOD _aborted
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// not doing anything, just being aborted... :-)
+;]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_stateToString" Id="{9e753bb7-8a57-48cd-a748-8229accb7495}">
+      <Declaration><![CDATA[METHOD _stateToString : STRING
+VAR_INPUT
+    x : M3RotateProcedureStates;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[CASE x OF
+    M3RotateProcedureStates.IDLE: 
+        _stateToString := 'Idle';
+    M3RotateProcedureStates.ABORTED: 
+        _stateToString := 'Aborted';
+    M3RotateProcedureStates.PREPARE_PROCESS: 
+        _stateToString := 'Preparing process';
+    M3RotateProcedureStates.DECOUPLING_AXES: 
+        _stateToString := 'Decoupling axes';
+    M3RotateProcedureStates.ENABLING_AXES: 
+        _stateToString := 'Enabling axes';
+    M3RotateProcedureStates.UNDOING_OFFSET: 
+        _stateToString := 'Undoing offset';
+    M3RotateProcedureStates.COUPLING_AXES: 
+        _stateToString := 'Coupling axes';
+    M3RotateProcedureStates.BOTH_GOING_TO_TARGET_PLUS_OFFSET: 
+        _stateToString := 'Going to target + offset';
+    M3RotateProcedureStates.DECOUPLING_AXES_AGAIN: 
+        _stateToString := 'Decoupling axes again';
+    M3RotateProcedureStates.MOVING_ABL_TO_FINAL_POSITION: 
+        _stateToString := 'Moving ABL to final position';
+    M3RotateProcedureStates.DISABLING_ABL: 
+        _stateToString := 'Disabling ABL';
+    M3RotateProcedureStates.MOVING_POS_TO_FINAL_POSITION: 
+        _stateToString := 'Moving POS to final position';
+    M3RotateProcedureStates.IMPROVING_POSITION: 
+        _stateToString := 'Improving position';
+    M3RotateProcedureStates.DISABLING_POS: 
+        _stateToString := 'Disabling POS';
+    M3RotateProcedureStates.ERROR: 
+        _stateToString := 'Error';
+    M3RotateProcedureStates.RESETTING: 
+        _stateToString := 'Resetting';
+    M3RotateProcedureStates.ABORTING: 
+        _stateToString := 'Aborting';
+END_CASE]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_undoingOffset" Id="{aa9f4bf5-3511-43ad-9e83-fd05cc2592de}">
+      <Declaration><![CDATA[METHOD _undoingOffset
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// we move the ABL axis to the same position as the POS axis.
+// As a result, both axes will have the same position, and there will be no offset.
+// In other words, there will be no "tension" (torque) applied by the clutch anymore.
+
+CASE substate OF
+    0:
+        _ton(IN := FALSE);
+        _ton(IN := TRUE,
+             PT := T#1S);
+        substate := 1;
+    1:
+        _ton(IN := TRUE);
+        IF _ton.Q THEN
+            substate := 2;
+		END_IF
+    2:
+        antiBacklashAxis.processes.moveAbsolute.start(
+            position := positioningHallAxis.actPos.degrees.value,
+            maxVelocity := config.gotoOffsetVelocity);
+        substate := 4;
+    4:
+        IF antiBacklashAxis.processes.moveAbsolute.isIdle() THEN
+            IF antiBacklashAxis.processes.moveAbsolute.isGood() THEN
+                state    := M3RotateProcedureStates.COUPLING_AXES;
+                substate := 0;
+            ELSE
+                state    := M3RotateProcedureStates.ERROR;
+                substate := 0;
+                _cause   := M3RotateProcedureStates.UNDOING_OFFSET;
+            END_IF
+        END_IF
+        
+END_CASE]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_decouplingAxes" Id="{b361b2fd-9a8e-457e-b284-30923151a6e4}">
+      <Declaration><![CDATA[METHOD _decouplingAxes
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// decouple the anti-backlash (=slave) axis from the positioning (=master) axis, if needed
+IF antiBacklashAxis.axis_ref.Status.Coupled THEN
+    CASE substate OF
+        0:
+            antiBacklashAxis.processes.gearOut.start();
+            substate := 1;
+        1:
+            IF antiBacklashAxis.processes.gearOut.isIdle() THEN
+                IF antiBacklashAxis.processes.gearOut.isGood() THEN
+                    state    := M3RotateProcedureStates.ENABLING_AXES;
+                    substate := 0;
+                ELSE
+                    state    := M3RotateProcedureStates.ERROR;
+                    substate := 0;
+                    _cause   := M3RotateProcedureStates.DECOUPLING_AXES;
+                END_IF
+            END_IF
+            
+    END_CASE
+ELSE
+    state    := M3RotateProcedureStates.ENABLING_AXES;
+    substate := 0;
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_aborting" Id="{b72cf772-d1fe-4cf7-9be0-bedab47df0dd}">
+      <Declaration><![CDATA[METHOD _aborting
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[CASE substate OF
+    0:  
+        // first decouple the axis (if needed)
+        IF antiBacklashAxis.axis_ref.Status.Coupled THEN
+            antiBacklashAxis.processes.gearOut.start();
+            substate := 1;
+        ELSE
+            substate := 2;
+        END_IF;
+    1:
+        IF antiBacklashAxis.processes.gearOut.isIdle() THEN
+            substate := 2;
+        END_IF;
+    2: 
+        // halt both axes
+        positioningAxis.processes.stop.start();
+        antiBacklashAxis.processes.stop.start();
+        substate := 3;
+    3: 
+        IF positioningAxis.processes.stop.isIdle() AND antiBacklashAxis.processes.stop.isIdle() THEN
+            // whatever happens, always try to disable the drives
+            substate := 4;
+        END_IF
+    4:
+        // disable the drives
+        positioningAxis.processes.power.start(enable := FALSE);
+        antiBacklashAxis.processes.power.start(enable := FALSE);
+        substate := 5;
+    5: 
+        IF positioningAxis.processes.power.isIdle() AND antiBacklashAxis.processes.power.isIdle() THEN
+            IF positioningAxis.processes.power.isGood() AND antiBacklashAxis.processes.power.isGood() THEN
+                // Okay, all done!
+                state    := M3RotateProcedureStates.ABORTED;
+                substate := 0;
+            ELSE
+                state    := M3RotateProcedureStates.ERROR;
+                substate := 0;
+                _cause   := M3RotateProcedureStates.ABORTING;
+            END_IF
+        END_IF
+            
+END_CASE]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_prepareProcess" Id="{cebc715e-1a9d-436b-9d50-f142a02d831f}">
+      <Declaration><![CDATA[METHOD _prepareProcess
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// reset the axes
+CASE substate OF
+    0:
+        positioningAxis.processes.reset.start();
+        antiBacklashAxis.processes.reset.start();
+        substate := 1;
+    1:
+        IF positioningAxis.processes.reset.isIdle() AND antiBacklashAxis.processes.reset.isIdle() THEN
+            IF positioningAxis.processes.reset.isGood() AND antiBacklashAxis.processes.reset.isGood() THEN
+                state    := M3RotateProcedureStates.DECOUPLING_AXES;
+                substate := 0;
+            ELSE
+                state    := M3RotateProcedureStates.ERROR;
+                substate := 0;
+                _cause   := M3RotateProcedureStates.PREPARE_PROCESS;
+            END_IF
+        END_IF
+END_CASE]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_improvingPosition" Id="{d29f6915-fff5-4bc2-bf67-174634eb1320}">
+      <Declaration><![CDATA[METHOD _improvingPosition
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// After the previous command, we know that the position is within the required limits.
+// By taking some extra seconds (during which the controller remains enabled!), we can improve it even further!
+CASE substate OF
+    0:
+        _ton(IN := FALSE);
+        _ton(IN := TRUE,
+             PT := LREAL_TO_TIME(1000.0 * config.gotoImprovingPositionTime)); // convert sec to millisec
+        substate := 1;
+    1:
+        _ton(IN := TRUE);
+        IF _ton.Q THEN
+            substate := 2;
+		END_IF
+    2:
+        state    := M3RotateProcedureStates.DISABLING_POS;
+        substate := 0;
+END_CASE]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_decouplingAxesAgain" Id="{d3d6154a-1456-401d-b5df-3dd29a49ec4c}">
+      <Declaration><![CDATA[METHOD _decouplingAxesAgain
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// decouple the anti-backlash (=slave) axis from the positioning (=master) axis
+CASE substate OF
+    0:
+        antiBacklashAxis.processes.gearOut.start();
+        substate := 1;
+    1:
+        IF antiBacklashAxis.processes.gearOut.isIdle() THEN
+            IF antiBacklashAxis.processes.gearOut.isGood() THEN
+                state    := M3RotateProcedureStates.MOVING_ABL_TO_FINAL_POSITION;
+                substate := 0;
+            ELSE
+                state    := M3RotateProcedureStates.ERROR;
+                substate := 0;
+                _cause   := M3RotateProcedureStates.DECOUPLING_AXES_AGAIN;
+            END_IF
+        END_IF
+        
+END_CASE]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_movingPosToFinalPosition" Id="{d9df00e5-aebd-430e-9fcd-0742da9b6da9}">
+      <Declaration><![CDATA[METHOD _movingPosToFinalPosition
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[
+CASE substate OF
+    0:
+        positioningAxis.processes.moveAbsolute.start( // in mirror reference system
+                    position := target.position.degrees.value,
+                    maxVelocity := config.gotoTargetVelocity);
+        substate := 1;
+    1:
+        IF positioningAxis.processes.moveAbsolute.isIdle() THEN
+            IF positioningAxis.processes.moveAbsolute.isGood() THEN
+                state    := M3RotateProcedureStates.IMPROVING_POSITION;
+                substate := 0;
+            ELSE
+                state    := M3RotateProcedureStates.ERROR;
+                substate := 0;
+                _cause   := M3RotateProcedureStates.MOVING_POS_TO_FINAL_POSITION;
+            END_IF
+        END_IF
+END_CASE]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_resetting" Id="{efab3e98-0a4c-47eb-9ce0-3dea8f7fd38a}">
+      <Declaration><![CDATA[METHOD _resetting
+VAR_INPUT
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// reset the axes
+CASE substate OF
+    0:
+        positioningAxis.processes.reset.start();
+        antiBacklashAxis.processes.reset.start();
+        substate := 1;
+    1:
+        IF positioningAxis.processes.reset.isIdle() AND antiBacklashAxis.processes.reset.isIdle() THEN
+            IF positioningAxis.processes.reset.isGood() AND antiBacklashAxis.processes.reset.isGood() THEN
+                state    := M3RotateProcedureStates.IDLE;
+                substate := 0;
+            ELSE
+                state    := M3RotateProcedureStates.ERROR;
+                substate := 0;
+                _cause   := M3RotateProcedureStates.RESETTING;
+            END_IF
+        END_IF
+END_CASE]]></ST>
+      </Implementation>
+    </Method>
+  </POU>
+</TcPlcObject>

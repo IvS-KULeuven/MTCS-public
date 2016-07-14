@@ -1,0 +1,26 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="M1RadialSupportConfig" Id="{43bf1efc-3909-4e68-97c3-db381d8bdbd3}">
+    <Declaration><![CDATA[TYPE M1RadialSupportConfig :
+STRUCT
+	///Regulator pressure config, in Bar
+	regulatorPressure: MeasurementConfig;
+	///Regulator pressure config, in Bar
+	mirrorPressure: MeasurementConfig;
+	///Sensor full scale range, in Bar
+	regulatorPressureSensorFullScale: LREAL;
+	///Sensor full scale range, in Bar
+	mirrorPressureSensorFullScale: LREAL;
+	///Correction coefficient for radial pressure
+	correctionCoefficient: LREAL;
+	///Maximum output of the controller, in Bar
+	controllerLimitMax: LREAL;
+	///Minimum output of the controller, in Bar
+	controllerLimitMin: LREAL;
+	///Pressure regulator range, in Bar
+	pressureRegulatorRange: LREAL;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

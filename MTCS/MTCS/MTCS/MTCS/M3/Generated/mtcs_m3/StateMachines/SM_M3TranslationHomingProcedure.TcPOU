@@ -1,0 +1,48 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="SM_M3TranslationHomingProcedure" Id="{35b82604-3515-446d-96a2-d302339c02d0}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK SM_M3TranslationHomingProcedure
+VAR_INPUT
+	///State to be set by the manual implementation
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	state: M3TranslationHomingProcedureStates;
+END_VAR
+VAR_OUTPUT
+	///Current status description
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	actualStatus: STRING;
+	///Statuses of the state machine
+	statuses: M3TranslationHomingProcedureStatuses;
+END_VAR
+VAR_IN_OUT
+	{attribute 'OPC.UA.DA' := '0'}
+	config: M3TranslationConfig;
+	{attribute 'OPC.UA.DA' := '0'}
+	motorAxis: LinearAxis;
+	{attribute 'OPC.UA.DA' := '0'}
+	motorDrive: FaulhaberDrive;
+	{attribute 'OPC.UA.DA' := '0'}
+	target: M3TranslationTarget;
+	{attribute 'OPC.UA.DA' := '0'}
+	positiveLimitSwitchActive: BOOL;
+	{attribute 'OPC.UA.DA' := '0'}
+	negativeLimitSwitchActive: BOOL;
+	{attribute 'OPC.UA.DA' := '0'}
+	actualPosition: LinearPosition;
+	{attribute 'OPC.UA.DA' := '0'}
+	actualPositionError: LinearPosition;
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[statuses.busyStatus( isBusy := NOT((state = M3TranslationHomingProcedureStates.IDLE) OR ((state = M3TranslationHomingProcedureStates.ABORTED) OR (state = M3TranslationHomingProcedureStates.ERROR))) );
+statuses.healthStatus(
+    isGood := NOT(state = M3TranslationHomingProcedureStates.ERROR),
+    hasWarning := state = M3TranslationHomingProcedureStates.ABORTED);
+]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

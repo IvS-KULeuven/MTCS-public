@@ -1,0 +1,17 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="AxesElevationAxisTabs" Id="{68065868-4b7f-488e-8c11-6e54936cce4f}">
+    <Declaration><![CDATA[TYPE AxesElevationAxisTabs :
+(
+	OVERVIEW := 0,
+    PROCESSES := 1,
+    DRIVE_CHANNEL := 2,
+    VIRTUAL_AXIS := 3,
+    PHYSICAL_AXIS := 4,
+    LIDAS := 5,
+    ABSOLUTE_ENCODER := 6
+);
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

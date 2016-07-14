@@ -1,0 +1,39 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="MotionStatus" Id="{84ad357f-f715-4c58-a95f-f3f01c8cb839}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK MotionStatus
+VAR_INPUT
+	///Super state (TRUE if the super state is active, or if there is no super state)
+	superState: BOOL := TRUE;
+	///Actual velocity
+	actVel: LREAL;
+	///Tolerance (should be positive)!
+	tolerance: LREAL;
+END_VAR
+VAR_OUTPUT
+	///Moving forwared
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	forward: BOOL;
+	///Moving backward
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	backward: BOOL;
+	///Standing still
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	standstill: BOOL;
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[standstill := (NOT(forward OR backward)) AND superState;
+forward := (actVel > (ABS(tolerance))) AND superState;
+backward := (actVel < (-(ABS(tolerance)))) AND superState;
+]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

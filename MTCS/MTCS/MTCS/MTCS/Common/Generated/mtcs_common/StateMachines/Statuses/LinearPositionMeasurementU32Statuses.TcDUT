@@ -1,0 +1,16 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <DUT Name="LinearPositionMeasurementU32Statuses" Id="{a20193b3-c51a-4fdb-8511-17507cea3cdd}">
+    <Declaration><![CDATA[TYPE LinearPositionMeasurementU32Statuses :
+STRUCT
+	///Is the position being measured?
+	enabledStatus: EnabledStatus;
+	///Is the measurement OK?
+	healthStatus: HealthStatus;
+	///Alarm status
+	alarmStatus: HiHiLoLoAlarmStatus;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

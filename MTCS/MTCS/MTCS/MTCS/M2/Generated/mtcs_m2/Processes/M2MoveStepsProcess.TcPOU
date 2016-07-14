@@ -1,0 +1,98 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="M2MoveStepsProcess" Id="{c1c6b9d2-3f92-4b2a-abbd-6024c8e686e2}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK M2MoveStepsProcess EXTENDS BaseProcess
+VAR_INPUT
+	///Arguments to be set, before writing do_request TRUE
+	{attribute 'OPC.UA.DA' := '1'}
+	set: M2MoveStepsProcessArgs;
+END_VAR
+VAR_OUTPUT
+	///Arguments in use by the process, if do_request was accepted
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	get: M2MoveStepsProcessArgs;
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[IF do_request THEN
+    do_request_result := request(
+    axis := set.axis,
+    steps := set.steps,
+    cw := set.cw,
+    fast := set.fast);
+    do_request := FALSE;
+END_IF;
+SUPER^();
+]]></ST>
+    </Implementation>
+    <Method Name="request" Id="{0e035f04-69fa-4d41-ac86-f0298063b8e9}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD request : RequestResults
+VAR_INPUT
+	///The axis to move
+	axis: M2Axes;
+	///Move a certain number of steps
+	steps: UDINT;
+	///True if the axis should be moved in CW (negative) direction
+	cw: BOOL;
+	///True if the axis should be moved fast (only used in case of Z-axis!)
+	fast: BOOL;
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF THIS^.statuses.enabledStatus.enabled THEN
+    THIS^.start(
+        axis := axis,
+        steps := steps,
+        cw := cw,
+        fast := fast);
+    request := RequestResults.ACCEPTED;
+ELSE
+    request := RequestResults.REJECTED;
+END_IF;
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="start" Id="{f8d7f3e9-1a07-478a-852f-1f6abff6d5ff}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable' := '1'}
+METHOD start
+VAR_INPUT
+	///The axis to move
+	axis: M2Axes;
+	///Move a certain number of steps
+	steps: UDINT;
+	///True if the axis should be moved in CW (negative) direction
+	cw: BOOL;
+	///True if the axis should be moved fast (only used in case of Z-axis!)
+	fast: BOOL;
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[THIS^.get.axis := axis;
+THIS^.get.steps := steps;
+THIS^.get.cw := cw;
+THIS^.get.fast := fast;
+THIS^.statuses.busyStatus( isBusy := TRUE );
+THIS^.statuses.healthStatus( isGood := TRUE );
+]]></ST>
+      </Implementation>
+    </Method>
+  </POU>
+</TcPlcObject>

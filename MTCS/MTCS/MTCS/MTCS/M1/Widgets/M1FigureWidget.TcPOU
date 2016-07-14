@@ -1,0 +1,150 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.2">
+  <POU Name="M1FigureWidget" Id="{1464b4c4-1b08-4a3a-9008-c0ccd2ef7031}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK M1FigureWidget
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+    ref : M1;
+END_VAR
+VAR
+    axialSouthAngle : REAL := 0;
+    axialNorthEastAngle : REAL := 120;
+    axialNorthWestAngle : REAL := 240;
+    
+    radPad0Angle : REAL := -30-1*(120/5);
+    radPad1Angle : REAL := -30-2*(120/5);
+    radPad2Angle : REAL := -30-3*(120/5);
+    radPad3Angle : REAL := -30-4*(120/5);
+    
+    axPad0Angle : REAL := 1* 30;
+    axPad1Angle : REAL := 2* 30;
+    axPad2Angle : REAL := 3* 30;
+    axPad3Angle : REAL := 5* 30;
+    axPad4Angle : REAL := 6* 30;
+    axPad5Angle : REAL := 7* 30;
+    axPad6Angle : REAL := 9* 30;
+    axPad7Angle : REAL := 10* 30;
+    axPad8Angle : REAL := 11* 30;
+    
+    axPadInner0Angle : LREAL := -15 + 0*60;
+    axPadInner1Angle : LREAL := -15 + 1*60;
+    axPadInner2Angle : LREAL := -15 + 2*60;
+    axPadInner3Angle : LREAL := -15 + 3*60;
+    axPadInner4Angle : LREAL := -15 + 4*60;
+    axPadInner5Angle : LREAL := -15 + 5*60;
+    
+    supplyPressureString : STRING;
+    axialRegulatorPressureString : STRING;
+    axialMirrorPressureString : STRING;
+    axialRegulatorSetpointString : STRING;
+    radialRegulatorPressureString : STRING;
+    radialMirrorPressureString : STRING;
+    radialRegulatorSetpointString : STRING;
+    axialForceStringSO : STRING;
+    axialForceStringNE : STRING;
+    axialForceStringNW : STRING;
+    
+    _formatString : FB_FormatString;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[supplyPressureString            := _getPressureMeasurementString(ref.pneumaticSupplyPressure);
+radialRegulatorPressureString   := _getPressureMeasurementString(ref.parts.radialSupport.regulatorPressure);
+radialMirrorPressureString      := _getPressureMeasurementString(ref.parts.radialSupport.mirrorPressure);
+radialRegulatorSetpointString   := _getPressureSetpointString(ref.parts.radialSupport.actualPressureSetpoint);
+axialRegulatorPressureString    := _getPressureMeasurementString(ref.parts.axialSupport.regulatorPressure);
+axialMirrorPressureString       := _getPressureMeasurementString(ref.parts.axialSupport.mirrorPressure);
+axialRegulatorSetpointString    := _getPressureSetpointString(ref.parts.axialSupport.actualPressureSetpoint);
+axialForceStringSO              := _getForceMeasurementString(ref.parts.axialSupport.mirrorSouthForce);
+axialForceStringNE              := _getForceMeasurementString(ref.parts.axialSupport.mirrorNorthEastForce);
+axialForceStringNW              := _getForceMeasurementString(ref.parts.axialSupport.mirrorNorthWestForce);]]></ST>
+    </Implementation>
+    <Method Name="_getPressureMeasurementString" Id="{363f3897-45c3-4192-b886-9f4c4a9e57a8}">
+      <Declaration><![CDATA[METHOD _getPressureMeasurementString : STRING
+VAR_INPUT
+END_VAR
+VAR_IN_OUT
+    measurement : PressureMeasurement;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[_getPressureMeasurementString := _getValueString(
+        value           := measurement.average.bar.value,
+        format          := '%.1f bar',
+        underrange      := measurement.underrange,
+        overrange       := measurement.overrange,
+        error           := measurement.error,
+        enabled         := measurement.statuses.enabledStatus.enabled,
+        disabled        := measurement.statuses.enabledStatus.disabled);]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_getPressureSetpointString" Id="{75093d75-920d-49b0-bea9-b869ff9523da}">
+      <Declaration><![CDATA[METHOD _getPressureSetpointString : STRING
+VAR_INPUT
+END_VAR
+VAR_IN_OUT
+    setpoint : Pressure;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[_formatString(sFormat := '%.1f bar', 
+              arg1    := F_LREAL(setpoint.bar.value),
+              sOut    => _getPressureSetpointString);]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_getValueString" Id="{89706bbb-3e5b-42cb-86c9-195fb2465b1a}">
+      <Declaration><![CDATA[METHOD _getValueString : STRING
+VAR_INPUT
+    value : LREAL;
+    format : STRING;
+    underrange : BOOL;
+    overrange : BOOL;
+    error : BOOL;
+    enabled : BOOL;
+    disabled : BOOL;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF disabled THEN
+    _getValueString := 'Disabled';
+ELSIF enabled THEN
+    IF underrange THEN
+        _getValueString := 'Underrange';
+    ELSIF overrange THEN
+        _getValueString := 'Overrange';
+    ELSIF error THEN
+        _getValueString := 'Error';
+    ELSE
+        _formatString(sFormat := format, 
+                      arg1    := F_LREAL(value),
+                      sOut    => _getValueString);
+	END_IF
+ELSE
+    _getValueString := '';
+END_IF]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="_getForceMeasurementString" Id="{eeac1734-9924-4196-a1ca-da55d7a1556a}">
+      <Declaration><![CDATA[METHOD _getForceMeasurementString : STRING
+VAR_INPUT
+END_VAR
+VAR_IN_OUT
+    measurement : ForceMeasurement;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[_getForceMeasurementString := _getValueString(
+        value           := measurement.average.decaNewton.value,
+        format          := '%.1f daN',
+        underrange      := measurement.underrange,
+        overrange       := measurement.overrange,
+        error           := measurement.error,
+        enabled         := measurement.statuses.enabledStatus.enabled,
+        disabled        := measurement.statuses.enabledStatus.disabled);]]></ST>
+      </Implementation>
+    </Method>
+  </POU>
+</TcPlcObject>

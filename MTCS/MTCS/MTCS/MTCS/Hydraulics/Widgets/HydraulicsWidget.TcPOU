@@ -1,0 +1,112 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="HydraulicsWidget" Id="{10d4eb11-d036-491c-ae99-737f366f5a8b}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK HydraulicsWidget
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+    configManager : ConfigManagerWidget;
+	initializationStatus : InitializationStatusWidget;
+	actualStatus : StatusWidget;
+	pumpsStatus : StatusWidget;
+    name : STRING := 'Hydraulics';
+    
+END_VAR
+VAR_IN_OUT
+	ref : Hydraulics;
+    ref_safetyIO : SafetyIO;
+END_VAR
+VAR
+    io : HydraulicsIOWidget;
+    
+    button_initialize : InitializeButtonWidget;
+    button_operating  : OperatingButtonWidget;
+    button_locking    : LockingButtonWidget;
+    
+    activeTab       : HydraulicsTabs := HydraulicsTabs.OVERVIEW;
+    button_overview : SubSystemButtonWidget('Overview'      , HydraulicsTabs.OVERVIEW);
+    button_technical: SubSystemButtonWidget('Technical'     , HydraulicsTabs.TECHNICAL);
+    button_io       : SubSystemButtonWidget('I/O'           , HydraulicsTabs.IO);
+    button_config   : SubSystemButtonWidget('Config'        , HydraulicsTabs.CONFIG);
+    
+    top             : HydraulicsSideWidget;
+    bottom          : HydraulicsSideWidget;
+    
+	bearingTemperatureStatus : StatusWidget;
+    
+    _formatString : FB_FormatString;
+    activeConfigTab : INT;
+    
+    bearingTemperature  : MeasurementWidget('Bearing temperature', '%.2f °C');
+    topFrequencyMeasurement  : MeasurementWidget('Top drive output frequency', '%.2f Hz');
+    topPressureMeasurement  : MeasurementWidget('Top pressure', '%.2f Bar');
+    bottomFrequencyMeasurement  : MeasurementWidget('Bottom drive output frequency', '%.2f Hz');
+    bottomPressureMeasurement  : MeasurementWidget('Bottom pressure', '%.2f Bar');
+    
+    circulationStatus : StatusWidget;
+    circulationPumpRelay : SimpleRelayWidget;
+    pumpsPowerRelay : SimpleRelayWidget;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[initializationStatus(status := ref.statuses.initializationStatus);
+configManager(mgr := ref.parts.configManager);
+
+actualStatus(text  := ref.actualStatus,
+             color := SystemToColor(healthStatus := ref.statuses.healthStatus,
+                                    busyStatus   := ref.statuses.busyStatus,
+                                    initializationStatus := ref.statuses.initializationStatus,
+                                    operatingStatus := ref.statuses.operatingStatus));
+
+pumpsStatus(text  := ref.pumpsStatus, color := actualStatus.color);
+                                    
+io(ref := ref.parts.io, ref_safetyIO := ref_safetyIO);
+
+button_initialize(status := ref.statuses.initializationStatus, process := ref.processes.initialize);
+button_operating(status := ref.statuses.operatingStatus, process := ref.processes.changeOperatingState);
+button_locking(status := ref.statuses.initializationStatus, lock := ref.processes.lock, unlock := ref.processes.unlock);
+
+button_overview(    color := actualStatus.color                 , activeTab := activeTab);
+button_technical(   color := actualStatus.color                 , activeTab := activeTab);
+button_io(          color := io.actualStatus.color              , activeTab := activeTab);
+button_config(      color := configManager.actualStatus.color   , activeTab := activeTab);
+
+top(ref := ref.parts.top, powered := ref.parts.pumpsPowerRelay.digitalOutput);
+bottom(ref := ref.parts.bottom, powered := ref.parts.pumpsPowerRelay.digitalOutput);
+
+bearingTemperatureStatus(color := HealthToColor(ref.bearingTemperature.statuses.healthStatus));
+_formatString(sFormat := '%.1f °C',  arg1 := F_LREAL(ref.bearingTemperature.average.celsius.value), sOut => bearingTemperatureStatus.text);
+
+
+bearingTemperature(value        := ref.bearingTemperature.average.celsius.value, 
+                   actualStatus := ref.bearingTemperature.actualStatus, 
+                   healthStatus := ref.bearingTemperature.statuses.healthStatus);
+topFrequencyMeasurement(value        := ref.parts.top.frequencyMeasurement.average.hertz.value, 
+                        actualStatus := ref.parts.top.frequencyMeasurement.actualStatus, 
+                        healthStatus := ref.parts.top.frequencyMeasurement.statuses.healthStatus);
+bottomFrequencyMeasurement( value        := ref.parts.bottom.frequencyMeasurement.average.hertz.value, 
+                            actualStatus := ref.parts.bottom.frequencyMeasurement.actualStatus, 
+                            healthStatus := ref.parts.bottom.frequencyMeasurement.statuses.healthStatus);
+topPressureMeasurement(value        := ref.parts.top.pressureMeasurement.average.bar.value, 
+                        actualStatus := ref.parts.top.pressureMeasurement.actualStatus, 
+                        healthStatus := ref.parts.top.pressureMeasurement.statuses.healthStatus);
+bottomPressureMeasurement(value        := ref.parts.bottom.pressureMeasurement.average.bar.value, 
+                          actualStatus := ref.parts.bottom.pressureMeasurement.actualStatus, 
+                          healthStatus := ref.parts.bottom.pressureMeasurement.statuses.healthStatus);
+
+IF ref.parts.circulationPumpRelay.digitalOutput THEN
+    circulationStatus.text := 'ON';
+    circulationStatus.color.fg := Colors.BLACK;
+    circulationStatus.color.bg := Colors.GREEN;
+ELSE
+    circulationStatus.text := 'OFF';
+    circulationStatus.color.fg := Colors.BLACK;
+    circulationStatus.color.bg := Colors.GRAY;
+END_IF
+
+circulationPumpRelay(ref := ref.parts.circulationPumpRelay);
+pumpsPowerRelay(ref := ref.parts.pumpsPowerRelay);
+]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

@@ -1,0 +1,54 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="AxesManualOffsetsWidget" Id="{a053bda4-b58c-4698-8b46-5cf8409a3ddc}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK AxesManualOffsetsWidget
+VAR_INPUT
+    moveRelative : AxesMultiMoveProcessWIdget;
+    pointRelative : AxesPointRelativeProcessWidget;
+    alphaOffsetted : AxesAlphaWidget;
+    deltaOffsetted : AxesDeltaWidget;
+    rocTargetOffset : AxesAngleWidget;
+    ronTargetOffset : AxesAngleWidget;
+    aziTargetOffset : AxesAngleWidget;
+    eleTargetOffset : AxesAngleWidget;
+    preferMostTravel : BOOL;
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+    ref : Axes;
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[
+
+moveRelative(
+    aziDisabled := ref.processes.moveRelative.statuses.enabledStatus.disabled OR ref.parts.azi.statuses.poweredStatus.disabled,
+    eleDisabled := ref.processes.moveRelative.statuses.enabledStatus.disabled OR ref.parts.ele.statuses.poweredStatus.disabled,
+    rocDisabled := ref.processes.moveRelative.statuses.enabledStatus.disabled OR ref.parts.roc.statuses.poweredStatus.disabled,
+    ronDisabled := ref.processes.moveRelative.statuses.enabledStatus.disabled OR ref.parts.ron.statuses.poweredStatus.disabled,
+    process := ref.processes.moveRelative,  
+    title := 'Move relative');
+
+pointRelative(
+    alphaDisabled := ref.processes.pointRelative.statuses.enabledStatus.disabled OR ref.parts.azi.statuses.poweredStatus.disabled OR ref.parts.ele.statuses.poweredStatus.disabled,
+    deltaDisabled := ref.processes.pointRelative.statuses.enabledStatus.disabled OR ref.parts.azi.statuses.poweredStatus.disabled OR ref.parts.ele.statuses.poweredStatus.disabled,
+    rocDisabled := ref.processes.pointRelative.statuses.enabledStatus.disabled OR ref.parts.roc.statuses.poweredStatus.disabled,
+    ronDisabled := ref.processes.pointRelative.statuses.enabledStatus.disabled OR ref.parts.ron.statuses.poweredStatus.disabled,
+    units := moveRelative.units, // use the same units
+    process := ref.processes.pointRelative,  
+    title := 'Point relative');
+
+alphaOffsetted(radians := ref.target.alphaOffsetted.radians.value);
+deltaOffsetted(radians := ref.target.deltaOffsetted.radians.value);
+
+aziTargetOffset(degrees := ref.parts.azi.targetOffset.degrees.value);
+eleTargetOffset(degrees := ref.parts.ele.targetOffset.degrees.value);
+rocTargetOffset(degrees := ref.parts.roc.targetOffset.degrees.value);
+ronTargetOffset(degrees := ref.parts.ron.targetOffset.degrees.value);
+]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

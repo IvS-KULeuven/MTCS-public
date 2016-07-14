@@ -1,0 +1,50 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4019.2">
+  <POU Name="SM_TelemetryDewpoint" Id="{6b205870-d306-4ab6-b7e2-022b553c87d6}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK SM_TelemetryDewpoint
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+	///Current status description
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	actualStatus: STRING;
+	///Actual dewpoint temperature
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	actual: Temperature;
+	///Average dewpoint temperature
+	{attribute 'OPC.UA.DA' := '1'}
+	{attribute 'OPC.UA.DA.Access' := '1'}
+	average: Temperature;
+	///Statuses of the state machine
+	statuses: TelemetryDewpointStatuses;
+END_VAR
+VAR_IN_OUT
+	///Configuration
+	{attribute 'OPC.UA.DA' := '0'}
+	config: MeasurementConfig;
+	///Temperature to be taken into account
+	{attribute 'OPC.UA.DA' := '0'}
+	temperature: TemperatureMeasurement;
+	///Relative humidity to be taken into account
+	{attribute 'OPC.UA.DA' := '0'}
+	relativeHumidity: RelativeHumidityMeasurement;
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[statuses.enabledStatus( isEnabled := config.enabled );
+statuses.healthStatus(
+    superState := statuses.enabledStatus.enabled,
+    isGood := NOT(temperature.error OR (relativeHumidity.error OR (statuses.alarmStatus.hiHi OR statuses.alarmStatus.loLo))),
+    hasWarning := statuses.alarmStatus.hi OR statuses.alarmStatus.lo);
+statuses.alarmStatus(
+    superState := statuses.enabledStatus.enabled,
+    config := config.alarms,
+    value := average.celsius.value);
+]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

@@ -1,0 +1,42 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4018.5">
+  <POU Name="SafetyDomeAccessWidget" Id="{a8694d05-adc7-4fea-8954-14d16397eebb}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK SafetyDomeAccessWidget
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+	actualStatus : StatusWidget;
+    lampsRelay1 : SimpleRelayWidget;
+    lampsRelay2 : SimpleRelayWidget;
+    lampsRelay3 : SimpleRelayWidget;
+    lampsRelay4 : SimpleRelayWidget;
+    bypassTimeAfterPassword : LREAL;
+    moving : BOOL;
+    sleeping : BOOL;
+    awake : BOOL;
+END_VAR
+VAR_IN_OUT
+	ref : SafetyDomeAccess;
+	ref_config : SafetyDomeAccessConfig;
+	ref_activityStatus : ActivityStatus;
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[
+actualStatus(text  := ref.actualStatus,
+             color := HealthBusyToColor(healthStatus := ref.statuses.healthStatus, busyStatus := ref.statuses.busyStatus));
+
+lampsRelay1(ref := ref.parts.lampsRelay1);
+lampsRelay2(ref := ref.parts.lampsRelay2);
+lampsRelay3(ref := ref.parts.lampsRelay3);
+lampsRelay4(ref := ref.parts.lampsRelay4);
+
+bypassTimeAfterPassword := ref_config.bypassTimeAfterPassword;
+moving := ref_activityStatus.moving;
+sleeping := ref_activityStatus.sleeping;
+awake := ref_activityStatus.awake;]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>
